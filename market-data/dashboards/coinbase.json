@@ -1,0 +1,300 @@
+[
+  {
+    "id": "bad0f748-5b56-4743-9bee-5f2f3ef1269c",
+    "title": "new panel",
+    "description": "",
+    "position": {
+      "h": 1,
+      "nextX": 3,
+      "nextY": 1,
+      "w": 3,
+      "x": 0,
+      "y": 0
+    },
+    "viz_type": "control",
+    "viz_content": "",
+    "viz_config": {
+      "chartType": "selector",
+      "defaultValue": "BTC-USD",
+      "inlineValues": "BTC-USD,ETC-USD,DAI-USD",
+      "label": "Product",
+      "labelWidth": "42",
+      "target": "filter_product"
+    }
+  },
+  {
+    "id": "031da2c1-1089-48b3-91f5-b8f79b288130",
+    "title": "new panel",
+    "description": "",
+    "position": {
+      "h": 1,
+      "nextX": 9,
+      "nextY": 1,
+      "w": 3,
+      "x": 6,
+      "y": 0
+    },
+    "viz_type": "control",
+    "viz_content": "",
+    "viz_config": {
+      "chartType": "selector",
+      "defaultValue": "1h",
+      "inlineValues": "1m,5m,15m,1h,2h,12h,24h",
+      "label": "Time Range",
+      "labelWidth": "60",
+      "target": "filter_time_range"
+    }
+  },
+  {
+    "id": "b3af75db-957d-4c31-89f6-40940cd4de82",
+    "title": "new panel",
+    "description": "",
+    "position": {
+      "h": 1,
+      "nextX": 6,
+      "nextY": 1,
+      "w": 3,
+      "x": 3,
+      "y": 0
+    },
+    "viz_type": "control",
+    "viz_content": "",
+    "viz_config": {
+      "chartType": "selector",
+      "defaultValue": "1m",
+      "inlineValues": "1s,5s,1m,5m,15m,1h,24h",
+      "label": "Window Size",
+      "labelWidth": "60",
+      "target": "filter_window_size"
+    }
+  },
+  {
+    "id": "751e6afe-3337-4e22-95dc-b387b5ecaf9e",
+    "title": "OHLC (Open, High, Low, Close)",
+    "description": "",
+    "position": {
+      "h": 4,
+      "nextX": 6,
+      "nextY": 5,
+      "w": 6,
+      "x": 0,
+      "y": 1
+    },
+    "viz_type": "chart",
+    "viz_content": "SELECT\n  window_start as time, earliest(price) AS open, latest(price) AS close, max(price) AS high, min(price) AS low\nFROM\n  tumble([[ .DB ]].coinbase_tickers, {{filter_window_size}})\nWHERE product_id = '{{filter_product}}' and _tp_time > now() -{{filter_time_range}}\nGROUP BY\n  window_start",
+    "viz_config": {
+      "chartType": "ohlc",
+      "config": {
+        "xRange": "Infinity",
+        "yRange": {
+          "max": null,
+          "min": null
+        }
+      }
+    }
+  },
+  {
+    "id": "d2931af2-b3e6-4abf-8174-6f07858fc84b",
+    "title": "Real-time Returns",
+    "description": "",
+    "position": {
+      "h": 4,
+      "nextX": 12,
+      "nextY": 5,
+      "w": 6,
+      "x": 6,
+      "y": 1
+    },
+    "viz_type": "chart",
+    "viz_content": "with ohlc as (\nSELECT\n  window_start as time, earliest(price) AS open, latest(price) AS close, max(price) AS high, min(price) AS low\nFROM\n  tumble([[ .DB ]].coinbase_tickers, {{filter_window_size}})\nWHERE product_id = '{{filter_product}}' and _tp_time > now() -{{filter_time_range}}\nGROUP BY\n  window_start\n)\nSELECT\n  time, close, lag(close) AS prev_close, (close - prev_close) / prev_close AS ret\nFROM\n  ohlc\nWHERE\n  prev_close > 0",
+    "viz_config": {
+      "chartType": "column",
+      "config": {
+        "color": "",
+        "colors": [
+          "#ED64A6",
+          "#F0BE3E",
+          "#DA4B36",
+          "#9A1563",
+          "#FF4A71",
+          "#D12D50",
+          "#8934D9",
+          "#D53F8C",
+          "#F7775A",
+          "#8934D9"
+        ],
+        "dataLabel": false,
+        "fractionDigits": 2,
+        "gridlines": true,
+        "groupType": "stack",
+        "legend": false,
+        "unit": {
+          "position": "left",
+          "value": ""
+        },
+        "updateKey": "",
+        "updateMode": "all",
+        "xAxis": "time",
+        "xFormat": "LT",
+        "xTickLabel": {
+          "maxChar": null
+        },
+        "xTitle": "",
+        "yAxis": "ret",
+        "yTickLabel": {
+          "maxChar": 25
+        },
+        "yTitle": ""
+      }
+    }
+  },
+  {
+    "id": "d665f406-629e-45cd-a4c7-12ee90ea9b98",
+    "title": "RSI (Relative Strength Index)",
+    "description": "",
+    "position": {
+      "h": 4,
+      "nextX": 6,
+      "nextY": 9,
+      "w": 12,
+      "x": 0,
+      "y": 5
+    },
+    "viz_type": "chart",
+    "viz_content": "with ohlc as (\nSELECT\n  window_start as time, earliest(price) AS open, latest(price) AS close, max(price) AS high, min(price) AS low\nFROM\n  tumble([[ .DB ]].coinbase_tickers, {{filter_window_size}})\nWHERE product_id = '{{filter_product}}' and _tp_time > now() -{{filter_time_range}}\nGROUP BY\n  window_start\n),\nreturns as (\nSELECT\n  time, close, lag(close) AS prev_close, (close - prev_close) / prev_close AS ret\nFROM\n  ohlc\nWHERE\n  prev_close > 0\n)\nSELECT\n  time,\n  lags(ret, 1, 14) AS rets,\n  array_avg(array_map(x -> if(x > 0, x, 0), rets)) AS avg_gains,\n  array_avg(array_map(x -> if(x > 0, 0, -x), rets)) AS avg_losses,\n  avg_gains / avg_losses AS RS,\n  100 - (100/(1+RS)) as RSI\nFROM returns",
+    "viz_config": {
+      "chartType": "line",
+      "config": {
+        "color": "",
+        "colors": [
+          "#ED64A6",
+          "#F0BE3E",
+          "#DA4B36",
+          "#9A1563",
+          "#FF4A71",
+          "#D12D50",
+          "#8934D9",
+          "#D53F8C",
+          "#F7775A",
+          "#8934D9"
+        ],
+        "dataLabel": true,
+        "fractionDigits": 2,
+        "gridlines": true,
+        "legend": false,
+        "lineStyle": "curve",
+        "points": true,
+        "showAll": false,
+        "unit": {
+          "position": "left",
+          "value": ""
+        },
+        "xAxis": "time",
+        "xFormat": "",
+        "xRange": "Infinity",
+        "xTitle": "",
+        "yAxis": "RSI",
+        "yRange": {
+          "max": null,
+          "min": null
+        },
+        "yTickLabel": {
+          "maxChar": 25
+        },
+        "yTitle": ""
+      }
+    }
+  },
+  {
+    "id": "2c925a76-c40e-4893-8f27-c178cabd6287",
+    "title": "OHLC Trending Highlight",
+    "description": "",
+    "position": {
+      "h": 4,
+      "nextX": 12,
+      "nextY": 13,
+      "w": 12,
+      "x": 0,
+      "y": 9
+    },
+    "viz_type": "chart",
+    "viz_content": "SELECT\n  window_start as time, product_id, earliest(price) AS open, latest(price) AS close, max(price) AS high, min(price) AS low\nFROM\n  tumble([[ .DB ]].coinbase_tickers, {{filter_window_size}})\nWHERE _tp_time > now() -{{filter_time_range}}\nGROUP BY\n  window_start,product_id",
+    "viz_config": {
+      "chartType": "table",
+      "config": {
+        "rowCount": 5,
+        "tableStyles": {
+          "close": {
+            "conditions": [],
+            "decreaseColor": "red",
+            "highlightRow": false,
+            "increaseColor": "green",
+            "miniChartType": "",
+            "name": "",
+            "show": true,
+            "trend": true,
+            "width": 161
+          },
+          "high": {
+            "conditions": [],
+            "decreaseColor": "red",
+            "highlightRow": false,
+            "increaseColor": "green",
+            "miniChartType": "",
+            "name": "",
+            "show": true,
+            "trend": true,
+            "width": 166
+          },
+          "low": {
+            "conditions": [],
+            "decreaseColor": "red",
+            "highlightRow": false,
+            "increaseColor": "green",
+            "miniChartType": "",
+            "name": "",
+            "show": true,
+            "trend": true,
+            "width": 289
+          },
+          "open": {
+            "conditions": [],
+            "decreaseColor": "red",
+            "highlightRow": false,
+            "increaseColor": "green",
+            "miniChartType": "",
+            "name": "",
+            "show": true,
+            "trend": true,
+            "width": 163
+          },
+          "product_id": {
+            "conditions": [],
+            "decreaseColor": "red",
+            "highlightRow": false,
+            "increaseColor": "green",
+            "miniChartType": "",
+            "name": "",
+            "show": true,
+            "trend": false,
+            "width": 139
+          },
+          "time": {
+            "conditions": [],
+            "decreaseColor": "red",
+            "highlightRow": false,
+            "increaseColor": "green",
+            "miniChartType": "",
+            "name": "",
+            "show": true,
+            "trend": false,
+            "width": 210
+          }
+        },
+        "tableWrap": false,
+        "updateKey": "product_id",
+        "updateMode": "key"
+      }
+    }
+  }
+]

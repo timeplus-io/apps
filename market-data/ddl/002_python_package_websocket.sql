@@ -1,0 +1,1 @@
+SYSTEM INSTALL PYTHON PACKAGE 'websocket-client>=1.4.0'

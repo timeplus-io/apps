@@ -1,0 +1,92 @@
+package_format_version: 1
+id: io.timeplus.market-data
+name: Market Data (Coinbase)
+version: 1.0.0
+author: Timeplus
+description: >
+  Real-time crypto market data from Coinbase WebSocket — OHLC candlesticks,
+  RSI, order book snapshots, VWAP, and quantitative alpha signals.
+db_name: market_data
+
+config:
+  - key: websocket_url
+    type: string
+    required: false
+    default: "wss://ws-feed.exchange.coinbase.com"
+    description: Coinbase WebSocket feed URL
+
+resources:
+  - file: ddl/001_python_package_json5.sql
+    type: system
+    name: python_package_json5
+  - file: ddl/002_python_package_websocket.sql
+    type: system
+    name: python_package_websocket
+  - file: ddl/003_coinbase_websocket.sql
+    type: external_stream
+    name: coinbase_websocket_read_connector
+  - file: ddl/004_coinbase_tickers.sql
+    type: stream
+    name: coinbase_tickers
+  - file: ddl/005_mv_tickers_extracted.sql
+    type: materialized_view
+    name: mv_coinbase_tickers_extracted
+  - file: ddl/006_v_btc_ohlc_1m.sql
+    type: view
+    name: v_coinbase_btc_ohlc_1m
+  - file: ddl/007_v_btc_1m_ret.sql
+    type: view
+    name: v_coinbase_btc_1m_ret
+  - file: ddl/008_v_btc_1m_rsi.sql
+    type: view
+    name: v_coinbase_btc_1m_rsi
+  - file: ddl/009_coinbase_ohlc_1m_vkv.sql
+    type: mutable_stream
+    name: coinbase_ohlc_1m_vkv
+  - file: ddl/010_mv_ohlc_by_symbol.sql
+    type: materialized_view
+    name: mv_ohlc_by_symbol
+  - file: ddl/011_coinbase_1s.sql
+    type: stream
+    name: coinbase_1s
+  - file: ddl/012_mv_coinbase_1s.sql
+    type: materialized_view
+    name: mv_coinbase_1s
+  - file: ddl/013_alpha_momentum.sql
+    type: view
+    name: v_alpha_momentum
+  - file: ddl/014_alpha_mean_reversion.sql
+    type: view
+    name: v_alpha_mean_reversion
+  - file: ddl/015_alpha_spread_pressure.sql
+    type: view
+    name: v_alpha_spread_pressure
+  - file: ddl/016_alpha_ma_crossover.sql
+    type: view
+    name: v_alpha_ma_crossover
+  - file: ddl/017_alpha_price_acceleration.sql
+    type: view
+    name: v_alpha_price_acceleration
+  - file: ddl/018_alpha_bollinger_position.sql
+    type: view
+    name: v_alpha_bollinger_position
+  - file: ddl/019_alpha_vwap.sql
+    type: view
+    name: v_alpha_vwap
+  - file: ddl/020_alpha_trade_flow.sql
+    type: view
+    name: v_alpha_trade_flow
+  - file: ddl/021_alpha_spread_regime.sql
+    type: view
+    name: v_alpha_spread_regime
+  - file: ddl/022_alpha_volume_spike.sql
+    type: view
+    name: v_alpha_volume_spike
+  - file: ddl/023_alpha_composite.sql
+    type: view
+    name: v_alpha_composite
+
+dashboards:
+  - file: dashboards/coinbase.json
+    name: Coinbase Market Data
+    description: Real-time OHLC, returns, and RSI for Coinbase crypto pairs
