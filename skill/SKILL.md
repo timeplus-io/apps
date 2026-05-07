@@ -51,6 +51,10 @@ config:                            # optional — user-supplied parameters
     default: "wss://example.com/feed"
     description: WebSocket feed URL
 
+python_packages:                   # optional — installed before any DDL runs
+  - json5>=0.9.6
+  - websocket-client>=1.4.0
+
 resources:                         # executed in listed order
   - file: ddl/001_source.sql
     type: external_stream
@@ -79,7 +83,6 @@ dashboards:
 | `view` | `CREATE VIEW` | `DROP VIEW` |
 | `external_table` | `CREATE TABLE` | `DROP TABLE` |
 | `udf` | `CREATE FUNCTION` | `DROP FUNCTION` |
-| `system` | any `SYSTEM ...` statement | skipped (no rollback) |
 
 ## DDL Template Variables
 
@@ -88,7 +91,7 @@ DDL files are rendered with Go `text/template` using `{{ }}` delimiters.
 | Expression | Expands to |
 |---|---|
 | `{{ .DB }}` | The resolved database name (value of `db_name`) |
-| `{{ index .Config "key" }}` | Value of config key (after defaults applied) |
+| `{{ .Config.key }}` | Value of config key (after defaults applied) |
 
 ```sql
 -- ddl/002_events.sql
@@ -100,9 +103,9 @@ TTL to_datetime(_tp_time) + INTERVAL 24 HOUR;
 ```
 
 ```sql
--- ddl/001_source.sql  (config key with underscore — must use index syntax)
+-- ddl/001_source.sql
 CREATE EXTERNAL STREAM IF NOT EXISTS {{ .DB }}.raw_feed (msg string)
-SETTINGS url='{{ index .Config "websocket_url" }}', type='websocket';
+SETTINGS url='{{ .Config.websocket_url }}', type='websocket';
 ```
 
 **Use `IF NOT EXISTS` on every `CREATE`** — makes resources idempotent and safe for upgrade.
@@ -120,7 +123,7 @@ Dashboard JSON is rendered with `[[ ]]` delimiters (to avoid collision with the 
 | Expression | Expands to |
 |---|---|
 | `[[ .DB ]]` | Database name |
-| `[[ index .Config "key" ]]` | Config value |
+| `[[ .Config.key ]]` | Config value |
 | `{{filter_*}}` | Left as-is — resolved by the frontend at query time |
 
 ## File Ordering and Dependencies
@@ -128,12 +131,10 @@ Dashboard JSON is rendered with `[[ ]]` delimiters (to avoid collision with the 
 Name DDL files with a numeric prefix so they execute in dependency order:
 
 ```
-001_python_package_json5.sql     ← system packages first
-002_python_package_websocket.sql ← one statement per file for SYSTEM INSTALL
-003_source_stream.sql            ← external streams / sources
-004_target_stream.sql            ← destination streams
-005_mv_extract.sql               ← materialized views (depend on streams)
-006_v_aggregated.sql             ← views (depend on streams/MVs)
+001_source_stream.sql            ← external streams / sources
+002_target_stream.sql            ← destination streams
+003_mv_extract.sql               ← materialized views (depend on streams)
+004_v_aggregated.sql             ← views (depend on streams/MVs)
 ```
 
 ## Config Defaults
@@ -150,28 +151,14 @@ config:
 ```
 
 ```sql
-TTL to_datetime(_tp_time) + INTERVAL {{ index .Config "retention_hours" }} HOUR
+TTL to_datetime(_tp_time) + INTERVAL {{ .Config.retention_hours }} HOUR
 ```
 
 ## Common Mistakes
 
 ### Multi-statement SQL files
 **Error:** `Syntax error: Multi-statements are not allowed`  
-**Fix:** One SQL statement per file. Split `SYSTEM INSTALL PYTHON PACKAGE` calls into separate files.
-
-```
-# ❌ 001_packages.sql
-SYSTEM INSTALL PYTHON PACKAGE 'json5>=0.9.6';
-SYSTEM INSTALL PYTHON PACKAGE 'websocket-client>=1.4.0';
-
-# ✅ 001_pkg_json5.sql
-SYSTEM INSTALL PYTHON PACKAGE 'json5>=0.9.6'
-
-# ✅ 002_pkg_websocket.sql
-SYSTEM INSTALL PYTHON PACKAGE 'websocket-client>=1.4.0'
-```
-
-Note: omit the trailing semicolon on `SYSTEM INSTALL` statements.
+**Fix:** One SQL statement per file.
 
 ### Reserved column names
 **Error:** `Column window_start is reserved`  
@@ -182,19 +169,8 @@ Note: omit the trailing semicolon on `SYSTEM INSTALL` statements.
 SELECT window_start AS time, product_id, ...
 ```
 
-### Config keys with underscores
-**Fix:** Always use `index` syntax for map access — dot notation doesn't work for keys containing underscores:
-```
-✅ {{ index .Config "websocket_url" }}
-❌ {{ .Config.websocket_url }}
-```
-
-### Python package timing
-`SYSTEM INSTALL PYTHON PACKAGE` is asynchronous. Creating an external stream that imports the package immediately after may fail with `No module named 'X'`. Check installation status:
-```sql
-SELECT * FROM system.python_packages WHERE name = 'websocket-client'
-```
-Wait until `status = 'installed'` before proceeding.
+### Python packages not available at DDL time
+**Fix:** Declare packages in `python_packages` in the manifest — the installer installs them and waits for completion before running any DDL. Do not use `SYSTEM INSTALL PYTHON PACKAGE` as a DDL resource; it is not needed and has no rollback.
 
 ### Wrong template delimiter in dashboards
 **Fix:** Use `[[ .DB ]]` in dashboard JSON, not `{{ .DB }}`. The `{{ }}` delimiter is reserved for frontend filter variables like `{{filter_product}}`.
