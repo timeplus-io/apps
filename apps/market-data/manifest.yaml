@@ -15,13 +15,11 @@ config:
     default: "wss://ws-feed.exchange.coinbase.com"
     description: Coinbase WebSocket feed URL
 
+python_packages:
+  - json5>=0.9.6
+  - websocket-client>=1.4.0
+
 resources:
-  - file: ddl/001_python_package_json5.sql
-    type: system
-    name: python_package_json5
-  - file: ddl/002_python_package_websocket.sql
-    type: system
-    name: python_package_websocket
   - file: ddl/003_coinbase_websocket.sql
     type: external_stream
     name: coinbase_websocket_read_connector
