@@ -1,10 +1,15 @@
-name: Release app
+name: Release registry
 
-# Trigger: push a tag like  cep-v1.0.1  or  market-data-v2.0.0
+# Trigger: push a tag like  registry-v1.0.0
 on:
   push:
     tags:
-      - '*-v[0-9]*'
+      - 'registry-v[0-9]*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g. registry-v1.0.0)'
+        required: true
 
 jobs:
   release:
@@ -15,33 +20,34 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          # fetch full history so we can push back to main
           fetch-depth: 0
 
-      # Derive app name from tag: "cep-v1.0.1" → "cep"
-      - name: Parse tag
+      - name: Resolve tag
         id: tag
         run: |
-          TAG="${GITHUB_REF_NAME}"
-          APP="${TAG%-v*}"
-          VERSION="${TAG#*-v}"
-          echo "app=$APP"     >> $GITHUB_OUTPUT
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "tag=$TAG"     >> $GITHUB_OUTPUT
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG="${{ github.event.inputs.tag }}"
+          else
+            TAG="${GITHUB_REF_NAME}"
+          fi
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
 
-      - name: Build .tpapp
+      - name: Build all .tpapp packages
         run: |
-          cd apps/${{ steps.tag.outputs.app }}
-          zip -r ${{ steps.tag.outputs.app }}.tpapp manifest.yaml ddl/ dashboards/
+          for app in apps/*/; do
+            name=$(basename "$app")
+            [ -f "$app/manifest.yaml" ] || continue
+            echo "Building $name..."
+            (cd "$app" && zip -r "${name}.tpapp" $(ls manifest.yaml ddl dashboards 2>/dev/null))
+          done
 
-      - name: Create GitHub release and upload artifact
+      - name: Create GitHub release and upload all artifacts
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.tag.outputs.tag }}
-          name: "${{ steps.tag.outputs.app }} v${{ steps.tag.outputs.version }}"
-          files: apps/${{ steps.tag.outputs.app }}/${{ steps.tag.outputs.app }}.tpapp
+          name: "Registry ${{ steps.tag.outputs.tag }}"
+          files: apps/*/*.tpapp
 
-      # Regenerate index.json with GitHub release download URLs for all apps
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -49,7 +55,9 @@ jobs:
       - name: Rebuild registry index
         run: |
           pip install -q pyyaml
-          GITHUB_REPO=${{ github.repository }} python3 registry/build.py
+          GITHUB_REPO=${{ github.repository }} \
+          GITHUB_RELEASE_TAG=${{ steps.tag.outputs.tag }} \
+          python3 registry/build.py
 
       - name: Commit updated index.json
         run: |
