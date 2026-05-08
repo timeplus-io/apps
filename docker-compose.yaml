@@ -1,0 +1,9 @@
+services:
+  registry:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        BASE_URL: ${BASE_URL:-http://localhost:9090}
+    ports:
+      - "9090:80"
