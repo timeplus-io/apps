@@ -1,0 +1,60 @@
+name: Release app
+
+# Trigger: push a tag like  cep-v1.0.1  or  market-data-v2.0.0
+on:
+  push:
+    tags:
+      - '*-v[0-9]*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # create releases + commit index.json
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # fetch full history so we can push back to main
+          fetch-depth: 0
+
+      # Derive app name from tag: "cep-v1.0.1" → "cep"
+      - name: Parse tag
+        id: tag
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          APP="${TAG%-v*}"
+          VERSION="${TAG#*-v}"
+          echo "app=$APP"     >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=$TAG"     >> $GITHUB_OUTPUT
+
+      - name: Build .tpapp
+        run: |
+          cd apps/${{ steps.tag.outputs.app }}
+          zip -r ${{ steps.tag.outputs.app }}.tpapp manifest.yaml ddl/ dashboards/
+
+      - name: Create GitHub release and upload artifact
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: "${{ steps.tag.outputs.app }} v${{ steps.tag.outputs.version }}"
+          files: apps/${{ steps.tag.outputs.app }}/${{ steps.tag.outputs.app }}.tpapp
+
+      # Regenerate index.json with GitHub release download URLs for all apps
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Rebuild registry index
+        run: |
+          pip install -q pyyaml
+          GITHUB_REPO=${{ github.repository }} python3 registry/build.py
+
+      - name: Commit updated index.json
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add registry/index.json
+          git diff --cached --quiet || git commit -m "registry: update index for ${{ steps.tag.outputs.tag }}"
+          git push origin HEAD:main

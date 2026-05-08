@@ -1,0 +1,238 @@
+[
+  {
+    "package_format_version": 1,
+    "id": "io.timeplus.cep",
+    "name": "Complex Event Processing",
+    "version": "1.0.0",
+    "author": "Timeplus",
+    "description": "Complex event processing demo with SQL-based fraud detection and JavaScript UDF pattern matching over simulated random event streams.",
+    "db_name": "cep",
+    "resources": [
+      {
+        "file": "ddl/001_cep_test_stream.sql",
+        "type": "stream",
+        "name": "cep_test_stream"
+      },
+      {
+        "file": "ddl/002_login_events.sql",
+        "type": "stream",
+        "name": "login_events"
+      },
+      {
+        "file": "ddl/003_purchase_events.sql",
+        "type": "stream",
+        "name": "purchase_events"
+      },
+      {
+        "file": "ddl/004_udf_simple_pattern.sql",
+        "type": "udf",
+        "name": "cep_simple_pattern"
+      },
+      {
+        "file": "ddl/005_udf_advanced_pattern.sql",
+        "type": "udf",
+        "name": "cep_advanced_pattern"
+      },
+      {
+        "file": "ddl/006_unified_user_events.sql",
+        "type": "view",
+        "name": "unified_user_events"
+      },
+      {
+        "file": "ddl/007_sql_based_cep_fraud_detection.sql",
+        "type": "materialized_view",
+        "name": "sql_based_cep_fraud_detection"
+      }
+    ],
+    "dashboards": [
+      {
+        "file": "dashboards/main.json",
+        "name": "CEP Dashboard",
+        "description": "Real-time complex event processing visualization"
+      }
+    ],
+    "download_url": "http://localhost:9090/cep.tpapp"
+  },
+  {
+    "package_format_version": 1,
+    "id": "io.timeplus.github",
+    "name": "GitHub Events",
+    "version": "1.0.0",
+    "author": "Timeplus",
+    "description": "Real-time GitHub public events pipeline. Streams public events from the GitHub API into Timeplus for live analytics.",
+    "db_name": "github",
+    "config": [
+      {
+        "key": "github_token",
+        "type": "string",
+        "required": true,
+        "description": "GitHub personal access token (PAT) with public_repo scope"
+      }
+    ],
+    "python_packages": [
+      "PyGithub>=2.0.0"
+    ],
+    "resources": [
+      {
+        "file": "ddl/001_github_events_stream.sql",
+        "type": "external_stream",
+        "name": "github_events_stream"
+      },
+      {
+        "file": "ddl/002_github_events.sql",
+        "type": "stream",
+        "name": "github_events"
+      },
+      {
+        "file": "ddl/003_mv_github_events.sql",
+        "type": "materialized_view",
+        "name": "mv_github_events"
+      }
+    ],
+    "dashboards": [
+      {
+        "file": "dashboards/main.json",
+        "name": "GitHub Events Dashboard",
+        "description": "Real-time view of GitHub public events"
+      }
+    ],
+    "download_url": "http://localhost:9090/github.tpapp"
+  },
+  {
+    "package_format_version": 1,
+    "id": "io.timeplus.market-data",
+    "name": "Market Data (Coinbase)",
+    "version": "1.0.0",
+    "author": "Timeplus",
+    "description": "Real-time crypto market data from Coinbase WebSocket \u2014 OHLC candlesticks, RSI, order book snapshots, VWAP, and quantitative alpha signals.\n",
+    "db_name": "market_data",
+    "config": [
+      {
+        "key": "websocket_url",
+        "type": "string",
+        "required": false,
+        "default": "wss://ws-feed.exchange.coinbase.com",
+        "description": "Coinbase WebSocket feed URL"
+      }
+    ],
+    "python_packages": [
+      "json5>=0.9.6",
+      "websocket-client>=1.4.0"
+    ],
+    "resources": [
+      {
+        "file": "ddl/003_coinbase_websocket.sql",
+        "type": "external_stream",
+        "name": "coinbase_websocket_read_connector"
+      },
+      {
+        "file": "ddl/004_coinbase_tickers.sql",
+        "type": "stream",
+        "name": "coinbase_tickers"
+      },
+      {
+        "file": "ddl/005_mv_tickers_extracted.sql",
+        "type": "materialized_view",
+        "name": "mv_coinbase_tickers_extracted"
+      },
+      {
+        "file": "ddl/006_v_btc_ohlc_1m.sql",
+        "type": "view",
+        "name": "v_coinbase_btc_ohlc_1m"
+      },
+      {
+        "file": "ddl/007_v_btc_1m_ret.sql",
+        "type": "view",
+        "name": "v_coinbase_btc_1m_ret"
+      },
+      {
+        "file": "ddl/008_v_btc_1m_rsi.sql",
+        "type": "view",
+        "name": "v_coinbase_btc_1m_rsi"
+      },
+      {
+        "file": "ddl/009_coinbase_ohlc_1m_vkv.sql",
+        "type": "mutable_stream",
+        "name": "coinbase_ohlc_1m_vkv"
+      },
+      {
+        "file": "ddl/010_mv_ohlc_by_symbol.sql",
+        "type": "materialized_view",
+        "name": "mv_ohlc_by_symbol"
+      },
+      {
+        "file": "ddl/011_coinbase_1s.sql",
+        "type": "stream",
+        "name": "coinbase_1s"
+      },
+      {
+        "file": "ddl/012_mv_coinbase_1s.sql",
+        "type": "materialized_view",
+        "name": "mv_coinbase_1s"
+      },
+      {
+        "file": "ddl/013_alpha_momentum.sql",
+        "type": "view",
+        "name": "v_alpha_momentum"
+      },
+      {
+        "file": "ddl/014_alpha_mean_reversion.sql",
+        "type": "view",
+        "name": "v_alpha_mean_reversion"
+      },
+      {
+        "file": "ddl/015_alpha_spread_pressure.sql",
+        "type": "view",
+        "name": "v_alpha_spread_pressure"
+      },
+      {
+        "file": "ddl/016_alpha_ma_crossover.sql",
+        "type": "view",
+        "name": "v_alpha_ma_crossover"
+      },
+      {
+        "file": "ddl/017_alpha_price_acceleration.sql",
+        "type": "view",
+        "name": "v_alpha_price_acceleration"
+      },
+      {
+        "file": "ddl/018_alpha_bollinger_position.sql",
+        "type": "view",
+        "name": "v_alpha_bollinger_position"
+      },
+      {
+        "file": "ddl/019_alpha_vwap.sql",
+        "type": "view",
+        "name": "v_alpha_vwap"
+      },
+      {
+        "file": "ddl/020_alpha_trade_flow.sql",
+        "type": "view",
+        "name": "v_alpha_trade_flow"
+      },
+      {
+        "file": "ddl/021_alpha_spread_regime.sql",
+        "type": "view",
+        "name": "v_alpha_spread_regime"
+      },
+      {
+        "file": "ddl/022_alpha_volume_spike.sql",
+        "type": "view",
+        "name": "v_alpha_volume_spike"
+      },
+      {
+        "file": "ddl/023_alpha_composite.sql",
+        "type": "view",
+        "name": "v_alpha_composite"
+      }
+    ],
+    "dashboards": [
+      {
+        "file": "dashboards/coinbase.json",
+        "name": "Coinbase Market Data",
+        "description": "Real-time OHLC, returns, and RSI for Coinbase crypto pairs"
+      }
+    ],
+    "download_url": "http://localhost:9090/market-data.tpapp"
+  }
+]

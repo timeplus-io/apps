@@ -4,6 +4,6 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        BASE_URL: ${BASE_URL:-http://localhost:9090}
+        BASE_URL: ${BASE_URL:-http://host.docker.internal:9090}
     ports:
       - "9090:80"
