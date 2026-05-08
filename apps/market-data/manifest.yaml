@@ -14,6 +14,11 @@ config:
     required: false
     default: "wss://ws-feed.exchange.coinbase.com"
     description: Coinbase WebSocket feed URL
+  - key: product_ids
+    type: list
+    required: false
+    default: '["BTC-USD"]'
+    description: Coinbase product IDs to subscribe to (e.g. ["BTC-USD","ETH-USD"])
 
 python_packages:
   - json5>=0.9.6

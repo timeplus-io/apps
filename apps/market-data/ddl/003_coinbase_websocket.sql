@@ -13,7 +13,7 @@ from datetime import datetime
 
 def read_coinbase_websocket_stream():
     websocket_url = "{{ .Config.websocket_url }}"
-    subscription_message = '{"type": "subscribe", "product_ids": ["BTC-USD"], "channels": ["ticker"]}'
+    subscription_message = '{"type": "subscribe", "product_ids": {{ .Config.product_ids }}, "channels": ["ticker"]}'
 
     ws = None
     while True:

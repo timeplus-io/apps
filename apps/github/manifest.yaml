@@ -10,6 +10,7 @@ config:
   - key: github_token
     type: string
     required: true
+    secret: true
     description: GitHub personal access token (PAT) with public_repo scope
 
 python_packages:
