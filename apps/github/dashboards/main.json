@@ -1,0 +1,413 @@
+[
+  {
+    "id": "6e2cb9a2-4732-4ea3-a51b-f71612e860c9",
+    "title": "Events Materialized in Timeplus",
+    "description": "",
+    "position": {
+      "h": 4,
+      "nextX": 6,
+      "nextY": 4,
+      "w": 6,
+      "x": 0,
+      "y": 0
+    },
+    "viz_type": "chart",
+    "viz_content": "select count() from [[ .DB ]].mv_github_events settings seek_to='earliest'",
+    "viz_config": {
+      "chartType": "singleValue",
+      "config": {
+        "color": "blue",
+        "decreaseColor": "red",
+        "delta": true,
+        "fontSize": 64,
+        "fractionDigits": 0,
+        "increaseColor": "green",
+        "sparkline": true,
+        "sparklineColor": "blue",
+        "unit": {
+          "position": "right",
+          "value": ""
+        },
+        "value": "count()"
+      }
+    }
+  },
+  {
+    "id": "338a493f-1eaf-456a-a46c-0eb8f37d82b8",
+    "title": "Hot Repos (by WatchEvent in last 10m)",
+    "description": "",
+    "position": {
+      "h": 4,
+      "nextX": 6,
+      "nextY": 8,
+      "w": 6,
+      "x": 0,
+      "y": 4
+    },
+    "viz_type": "chart",
+    "viz_content": "SELECT repo, count(distinct actor) AS new_followers, emit_version()\nFROM [[ .DB ]].mv_github_events WHERE type ='WatchEvent' and _tp_time>now()-10m\nGROUP BY repo ORDER BY new_followers desc\nlimit 5 by emit_version()",
+    "viz_config": {
+      "chartType": "bar",
+      "config": {
+        "color": "repo",
+        "colors": [
+          "#ED64A6",
+          "#F0BE3E",
+          "#DA4B36",
+          "#9A1563",
+          "#FF4A71",
+          "#D12D50",
+          "#8934D9",
+          "#D53F8C",
+          "#F7775A",
+          "#8934D9"
+        ],
+        "dataLabel": true,
+        "fractionDigits": 0,
+        "gridlines": true,
+        "groupType": "stack",
+        "legend": false,
+        "unit": {
+          "position": "left",
+          "value": ""
+        },
+        "updateKey": "emit_version()",
+        "updateMode": "time",
+        "xAxis": "repo",
+        "xFormat": "HH:mm",
+        "xTickLabel": {
+          "maxChar": 50
+        },
+        "xTitle": "",
+        "yAxis": "new_followers",
+        "yTickLabel": {
+          "maxChar": 25
+        },
+        "yTitle": ""
+      }
+    }
+  },
+  {
+    "id": "c36d62dc-04c0-42dd-80f0-9a8e726c80a3",
+    "title": "Hot Repos (by WatchEvent in last 24h)",
+    "description": "",
+    "position": {
+      "h": 4,
+      "nextX": 12,
+      "nextY": 8,
+      "w": 6,
+      "x": 6,
+      "y": 4
+    },
+    "viz_type": "chart",
+    "viz_content": "SELECT repo, count(distinct actor) AS new_followers\nFROM table([[ .DB ]].mv_github_events) WHERE type ='WatchEvent' and _tp_time>now()-1d\nGROUP BY repo ORDER BY new_followers desc\nlimit 5",
+    "viz_config": {
+      "chartType": "bar",
+      "config": {
+        "color": "repo",
+        "colors": [
+          "#ED64A6",
+          "#F0BE3E",
+          "#DA4B36",
+          "#9A1563",
+          "#FF4A71",
+          "#D12D50",
+          "#8934D9",
+          "#D53F8C",
+          "#F7775A",
+          "#8934D9"
+        ],
+        "dataLabel": true,
+        "fractionDigits": 0,
+        "gridlines": true,
+        "groupType": "stack",
+        "legend": false,
+        "unit": {
+          "position": "left",
+          "value": ""
+        },
+        "updateKey": "",
+        "updateMode": "all",
+        "xAxis": "repo",
+        "xFormat": "HH:mm",
+        "xTickLabel": {
+          "maxChar": 50
+        },
+        "xTitle": "",
+        "yAxis": "new_followers",
+        "yTickLabel": {
+          "maxChar": 25
+        },
+        "yTitle": ""
+      }
+    }
+  },
+  {
+    "id": "10a1ce2c-e046-45f0-9191-b56b85d04b6c",
+    "title": "Event Count (by types last hour)",
+    "description": "",
+    "position": {
+      "h": 4,
+      "nextX": 6,
+      "nextY": 16,
+      "w": 6,
+      "x": 0,
+      "y": 12
+    },
+    "viz_type": "chart",
+    "viz_content": "SELECT type, count(*) AS cnt,emit_version() FROM [[ .DB ]].mv_github_events WHERE _tp_time>now()-1h GROUP BY type ORDER BY cnt DESC limit 5 by emit_version() ",
+    "viz_config": {
+      "chartType": "bar",
+      "config": {
+        "color": "type",
+        "colors": [
+          "#ED64A6",
+          "#F0BE3E",
+          "#DA4B36",
+          "#9A1563",
+          "#FF4A71",
+          "#D12D50",
+          "#8934D9",
+          "#D53F8C",
+          "#F7775A",
+          "#8934D9"
+        ],
+        "dataLabel": true,
+        "fractionDigits": 0,
+        "gridlines": true,
+        "groupType": "stack",
+        "legend": false,
+        "unit": {
+          "position": "left",
+          "value": ""
+        },
+        "updateKey": "emit_version()",
+        "updateMode": "time",
+        "xAxis": "type",
+        "xFormat": "HH:mm",
+        "xTickLabel": {
+          "maxChar": 20
+        },
+        "xTitle": "",
+        "yAxis": "cnt",
+        "yTickLabel": {
+          "maxChar": 25
+        },
+        "yTitle": ""
+      }
+    }
+  },
+  {
+    "id": "cc436b21-4ab9-4a12-9e3b-27ec46470edc",
+    "title": "Event Count (by types last 24h)",
+    "description": "",
+    "position": {
+      "h": 4,
+      "nextX": 12,
+      "nextY": 16,
+      "w": 6,
+      "x": 6,
+      "y": 12
+    },
+    "viz_type": "chart",
+    "viz_content": "SELECT type, count(*) AS cnt FROM table([[ .DB ]].mv_github_events) WHERE _tp_time>now()-1d GROUP BY type ORDER BY cnt DESC limit 5",
+    "viz_config": {
+      "chartType": "bar",
+      "config": {
+        "color": "type",
+        "colors": [
+          "#ED64A6",
+          "#F0BE3E",
+          "#DA4B36",
+          "#9A1563",
+          "#FF4A71",
+          "#D12D50",
+          "#8934D9",
+          "#D53F8C",
+          "#F7775A",
+          "#8934D9"
+        ],
+        "dataLabel": true,
+        "fractionDigits": 0,
+        "gridlines": true,
+        "groupType": "stack",
+        "legend": false,
+        "unit": {
+          "position": "left",
+          "value": ""
+        },
+        "updateKey": "",
+        "updateMode": "all",
+        "xAxis": "type",
+        "xFormat": "HH:mm",
+        "xTickLabel": {
+          "maxChar": 20
+        },
+        "xTitle": "",
+        "yAxis": "cnt",
+        "yTickLabel": {
+          "maxChar": 25
+        },
+        "yTitle": ""
+      }
+    }
+  },
+  {
+    "id": "219bbf6d-ee26-4d15-b4da-6ba7a4088e96",
+    "title": "Hot Repos (by PushEvent last 10 mins)",
+    "description": "",
+    "position": {
+      "h": 4,
+      "nextX": 6,
+      "nextY": 12,
+      "w": 6,
+      "x": 0,
+      "y": 8
+    },
+    "viz_type": "chart",
+    "viz_content": "SELECT repo, count() AS pushCount,emit_version()\nFROM [[ .DB ]].mv_github_events WHERE type ='PushEvent' and _tp_time>now()-10m\nGROUP BY repo ORDER BY pushCount desc\nlimit 5 by emit_version()",
+    "viz_config": {
+      "chartType": "bar",
+      "config": {
+        "color": "repo",
+        "colors": [
+          "#ED64A6",
+          "#F0BE3E",
+          "#DA4B36",
+          "#9A1563",
+          "#FF4A71",
+          "#D12D50",
+          "#8934D9",
+          "#D53F8C",
+          "#F7775A",
+          "#8934D9"
+        ],
+        "dataLabel": true,
+        "fractionDigits": 0,
+        "gridlines": true,
+        "groupType": "stack",
+        "legend": false,
+        "unit": {
+          "position": "left",
+          "value": ""
+        },
+        "updateKey": "emit_version()",
+        "updateMode": "time",
+        "xAxis": "repo",
+        "xFormat": "HH:mm",
+        "xTickLabel": {
+          "maxChar": 20
+        },
+        "xTitle": "",
+        "yAxis": "pushCount",
+        "yTickLabel": {
+          "maxChar": 25
+        },
+        "yTitle": ""
+      }
+    }
+  },
+  {
+    "id": "1901e48c-7bca-43bf-9431-500657d9736f",
+    "title": "Hot Repos (by PushEvent last 24h)",
+    "description": "",
+    "position": {
+      "h": 4,
+      "nextX": 12,
+      "nextY": 12,
+      "w": 6,
+      "x": 6,
+      "y": 8
+    },
+    "viz_type": "chart",
+    "viz_content": "SELECT repo, count() AS pushCount\nFROM table([[ .DB ]].mv_github_events) WHERE type ='PushEvent' and _tp_time>now()-1d\nGROUP BY repo ORDER BY pushCount desc\nlimit 5",
+    "viz_config": {
+      "chartType": "bar",
+      "config": {
+        "color": "repo",
+        "colors": [
+          "#ED64A6",
+          "#F0BE3E",
+          "#DA4B36",
+          "#9A1563",
+          "#FF4A71",
+          "#D12D50",
+          "#8934D9",
+          "#D53F8C",
+          "#F7775A",
+          "#8934D9"
+        ],
+        "dataLabel": true,
+        "fractionDigits": 0,
+        "gridlines": true,
+        "groupType": "stack",
+        "legend": false,
+        "unit": {
+          "position": "left",
+          "value": ""
+        },
+        "updateKey": "",
+        "updateMode": "all",
+        "xAxis": "repo",
+        "xFormat": "HH:mm",
+        "xTickLabel": {
+          "maxChar": 20
+        },
+        "xTitle": "",
+        "yAxis": "pushCount",
+        "yTickLabel": {
+          "maxChar": 25
+        },
+        "yTitle": ""
+      }
+    }
+  },
+  {
+    "id": "92daac9c-5c13-458c-8938-f02a6988e5ca",
+    "title": "What is happening on GitHub NOW! ",
+    "description": "",
+    "position": {
+      "h": 4,
+      "nextX": 12,
+      "nextY": 4,
+      "w": 6,
+      "x": 6,
+      "y": 0
+    },
+    "viz_type": "chart",
+    "viz_content": "select _tp_time, case \nwhen type='PushEvent' then actor||' pushed to'||repo\nwhen type='CreateEvent' then actor||' created '||repo\nwhen type='ForkEvent' then actor||' forked '||payload:forkee.full_name||' as '||repo\nwhen type='PullRequestEvent' then actor||' '||payload:action||'ed pr for '||repo\nwhen type='WatchEvent' then actor||' added 🌟 to '||repo\nwhen type='ReleaseEvent' then actor||' released '||repo\nelse 'unknown'\nend as msg\nfrom [[ .DB ]].mv_github_events where id like '%0' and not type in ('PublicEvent','IssueCommentEvent','IssuesEvent','PullRequestReviewEvent','PullRequestReviewCommentEvent','DeleteEvent')",
+    "viz_config": {
+      "chartType": "table",
+      "config": {
+        "rowCount": 5,
+        "tableStyles": {
+          "_tp_time": {
+            "conditions": [],
+            "decreaseColor": "red",
+            "highlightRow": false,
+            "increaseColor": "green",
+            "miniChartType": "",
+            "name": "",
+            "show": true,
+            "trend": false,
+            "width": 210
+          },
+          "msg": {
+            "conditions": [],
+            "decreaseColor": "red",
+            "highlightRow": false,
+            "increaseColor": "green",
+            "miniChartType": "",
+            "name": "",
+            "show": true,
+            "trend": false,
+            "width": 486
+          }
+        },
+        "tableWrap": false,
+        "updateKey": "",
+        "updateMode": "all"
+      }
+    }
+  }
+]

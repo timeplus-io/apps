@@ -84,7 +84,7 @@ DDL files use Go `text/template` with `{{ }}` delimiters:
 | Expression | Value |
 |---|---|
 | `{{ .DB }}` | resolved `db_name` |
-| `{{ index .Config "key" }}` | config value (always use `index` syntax — dot notation fails for keys with underscores) |
+| `{{ .Config.key_name }}` | config value (always use dot notation — never use `index` syntax) |
 
 Dashboard JSON uses `[[ ]]` delimiters (to avoid collision with frontend filter variables like `{{filter_product}}`).
 

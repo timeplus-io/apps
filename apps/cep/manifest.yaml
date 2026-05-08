@@ -1,0 +1,35 @@
+package_format_version: 1
+id: io.timeplus.cep
+name: Complex Event Processing
+version: 1.0.0
+author: Timeplus
+description: Complex event processing demo with SQL-based fraud detection and JavaScript UDF pattern matching over simulated random event streams.
+db_name: cep
+
+resources:
+  - file: ddl/001_cep_test_stream.sql
+    type: stream
+    name: cep_test_stream
+  - file: ddl/002_login_events.sql
+    type: stream
+    name: login_events
+  - file: ddl/003_purchase_events.sql
+    type: stream
+    name: purchase_events
+  - file: ddl/004_udf_simple_pattern.sql
+    type: udf
+    name: cep_simple_pattern
+  - file: ddl/005_udf_advanced_pattern.sql
+    type: udf
+    name: cep_advanced_pattern
+  - file: ddl/006_unified_user_events.sql
+    type: view
+    name: unified_user_events
+  - file: ddl/007_sql_based_cep_fraud_detection.sql
+    type: materialized_view
+    name: sql_based_cep_fraud_detection
+
+dashboards:
+  - file: dashboards/main.json
+    name: CEP Dashboard
+    description: Real-time complex event processing visualization

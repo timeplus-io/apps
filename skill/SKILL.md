@@ -91,7 +91,9 @@ DDL files are rendered with Go `text/template` using `{{ }}` delimiters.
 | Expression | Expands to |
 |---|---|
 | `{{ .DB }}` | The resolved database name (value of `db_name`) |
-| `{{ .Config.key }}` | Value of config key (after defaults applied) |
+| `{{ .Config.key_name }}` | Value of config key (after defaults applied) |
+
+**Always use dot notation for config values** — `{{ .Config.my_key }}`, never `{{ index .Config "my_key" }}`.
 
 ```sql
 -- ddl/002_events.sql

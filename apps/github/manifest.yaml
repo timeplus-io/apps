@@ -1,0 +1,32 @@
+package_format_version: 1
+id: io.timeplus.github
+name: GitHub Events
+version: 1.0.0
+author: Timeplus
+description: Real-time GitHub public events pipeline. Streams public events from the GitHub API into Timeplus for live analytics.
+db_name: github
+
+config:
+  - key: github_token
+    type: string
+    required: true
+    description: GitHub personal access token (PAT) with public_repo scope
+
+python_packages:
+  - PyGithub>=2.0.0
+
+resources:
+  - file: ddl/001_github_events_stream.sql
+    type: external_stream
+    name: github_events_stream
+  - file: ddl/002_github_events.sql
+    type: stream
+    name: github_events
+  - file: ddl/003_mv_github_events.sql
+    type: materialized_view
+    name: mv_github_events
+
+dashboards:
+  - file: dashboards/main.json
+    name: GitHub Events Dashboard
+    description: Real-time view of GitHub public events

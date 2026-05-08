@@ -1,0 +1,374 @@
+[
+  {
+    "id": "92f403ce-691c-4e01-96ac-765a07e0929d",
+    "title": "User activities",
+    "description": "",
+    "position": {
+      "h": 3,
+      "nextX": 12,
+      "nextY": 3,
+      "w": 12,
+      "x": 0,
+      "y": 0
+    },
+    "viz_type": "chart",
+    "viz_content": "select * from [[ .DB ]].unified_user_events",
+    "viz_config": {
+      "chartType": "table",
+      "config": {
+        "rowCount": 5,
+        "tableStyles": {
+          "amount": {
+            "conditions": [],
+            "decreaseColor": "red",
+            "highlightRow": false,
+            "increaseColor": "green",
+            "miniChartType": "",
+            "name": "",
+            "show": true,
+            "trend": false,
+            "width": 100
+          },
+          "eventType": {
+            "conditions": [],
+            "decreaseColor": "red",
+            "highlightRow": false,
+            "increaseColor": "green",
+            "miniChartType": "",
+            "name": "",
+            "show": true,
+            "trend": false,
+            "width": 200
+          },
+          "location": {
+            "conditions": [],
+            "decreaseColor": "red",
+            "highlightRow": false,
+            "increaseColor": "green",
+            "miniChartType": "",
+            "name": "",
+            "show": true,
+            "trend": false,
+            "width": 200
+          },
+          "source_stream": {
+            "conditions": [],
+            "decreaseColor": "red",
+            "highlightRow": false,
+            "increaseColor": "green",
+            "miniChartType": "",
+            "name": "",
+            "show": true,
+            "trend": false,
+            "width": 200
+          },
+          "timestamp": {
+            "conditions": [],
+            "decreaseColor": "red",
+            "highlightRow": false,
+            "increaseColor": "green",
+            "miniChartType": "",
+            "name": "",
+            "show": true,
+            "trend": false,
+            "width": 210
+          },
+          "userId": {
+            "conditions": [],
+            "decreaseColor": "red",
+            "highlightRow": false,
+            "increaseColor": "green",
+            "miniChartType": "",
+            "name": "",
+            "show": true,
+            "trend": false,
+            "width": 200
+          }
+        },
+        "tableWrap": false,
+        "updateKey": "",
+        "updateMode": "all"
+      }
+    }
+  },
+  {
+    "id": "d2a07b81-23a5-45fa-81d4-bd6a20145c4a",
+    "title": "SQL based Fraud Detection",
+    "description": "",
+    "position": {
+      "h": 3,
+      "nextX": 12,
+      "nextY": 6,
+      "w": 6,
+      "x": 6,
+      "y": 3
+    },
+    "viz_type": "chart",
+    "viz_content": "select * from [[ .DB ]].sql_based_cep_fraud_detection",
+    "viz_config": {
+      "chartType": "table",
+      "config": {
+        "rowCount": 5,
+        "tableStyles": {
+          "_tp_time": {
+            "conditions": [],
+            "decreaseColor": "red",
+            "highlightRow": false,
+            "increaseColor": "green",
+            "miniChartType": "",
+            "name": "",
+            "show": false,
+            "trend": false,
+            "width": 210
+          },
+          "all_locations": {
+            "conditions": [],
+            "decreaseColor": "red",
+            "highlightRow": false,
+            "increaseColor": "green",
+            "miniChartType": "",
+            "name": "",
+            "show": true,
+            "trend": false,
+            "width": 200
+          },
+          "event_sequence": {
+            "conditions": [],
+            "decreaseColor": "red",
+            "highlightRow": false,
+            "increaseColor": "green",
+            "miniChartType": "",
+            "name": "",
+            "show": true,
+            "trend": false,
+            "width": 200
+          },
+          "login_count": {
+            "conditions": [],
+            "decreaseColor": "red",
+            "highlightRow": false,
+            "increaseColor": "green",
+            "miniChartType": "",
+            "name": "",
+            "show": true,
+            "trend": false,
+            "width": 100
+          },
+          "purchase_count": {
+            "conditions": [],
+            "decreaseColor": "red",
+            "highlightRow": false,
+            "increaseColor": "green",
+            "miniChartType": "",
+            "name": "",
+            "show": true,
+            "trend": false,
+            "width": 100
+          },
+          "t_end": {
+            "conditions": [],
+            "decreaseColor": "red",
+            "highlightRow": false,
+            "increaseColor": "green",
+            "miniChartType": "",
+            "name": "",
+            "show": false,
+            "trend": false,
+            "width": 210
+          },
+          "t_start": {
+            "conditions": [],
+            "decreaseColor": "red",
+            "highlightRow": false,
+            "increaseColor": "green",
+            "miniChartType": "",
+            "name": "",
+            "show": false,
+            "trend": false,
+            "width": 210
+          },
+          "time_sequence": {
+            "conditions": [],
+            "decreaseColor": "red",
+            "highlightRow": false,
+            "increaseColor": "green",
+            "miniChartType": "",
+            "name": "",
+            "show": true,
+            "trend": false,
+            "width": 200
+          },
+          "total_events": {
+            "conditions": [],
+            "decreaseColor": "red",
+            "highlightRow": false,
+            "increaseColor": "green",
+            "miniChartType": "",
+            "name": "",
+            "show": true,
+            "trend": false,
+            "width": 100
+          },
+          "total_purchase_amount": {
+            "conditions": [],
+            "decreaseColor": "red",
+            "highlightRow": false,
+            "increaseColor": "green",
+            "miniChartType": "",
+            "name": "",
+            "show": true,
+            "trend": false,
+            "width": 100
+          },
+          "userId": {
+            "conditions": [],
+            "decreaseColor": "red",
+            "highlightRow": false,
+            "increaseColor": "green",
+            "miniChartType": "",
+            "name": "",
+            "show": true,
+            "trend": false,
+            "width": 200
+          }
+        },
+        "tableWrap": false,
+        "updateKey": "",
+        "updateMode": "all"
+      }
+    }
+  },
+  {
+    "id": "77584cef-456c-4aeb-82ff-9fc7fc5c5437",
+    "title": "Test Stream",
+    "description": "",
+    "position": {
+      "h": 3,
+      "nextX": 6,
+      "nextY": 6,
+      "w": 6,
+      "x": 0,
+      "y": 3
+    },
+    "viz_type": "chart",
+    "viz_content": "select * from [[ .DB ]].cep_test_stream",
+    "viz_config": {
+      "chartType": "table",
+      "config": {
+        "rowCount": 5,
+        "tableStyles": {
+          "_tp_time": {
+            "conditions": [],
+            "decreaseColor": "red",
+            "highlightRow": false,
+            "increaseColor": "green",
+            "miniChartType": "",
+            "name": "",
+            "show": false,
+            "trend": false,
+            "width": 210
+          },
+          "event": {
+            "conditions": [],
+            "decreaseColor": "red",
+            "highlightRow": false,
+            "increaseColor": "green",
+            "miniChartType": "",
+            "name": "",
+            "show": true,
+            "trend": false,
+            "width": 200
+          },
+          "time": {
+            "conditions": [],
+            "decreaseColor": "red",
+            "highlightRow": false,
+            "increaseColor": "green",
+            "miniChartType": "",
+            "name": "",
+            "show": true,
+            "trend": false,
+            "width": 210
+          }
+        },
+        "tableWrap": false,
+        "updateKey": "",
+        "updateMode": "all"
+      }
+    }
+  },
+  {
+    "id": "3a9793cb-e544-4272-b86e-5114fee88f67",
+    "title": "JS UDF based Simple CEP Pattern A - B - A",
+    "description": "",
+    "position": {
+      "h": 4,
+      "nextX": 6,
+      "nextY": 10,
+      "w": 6,
+      "x": 0,
+      "y": 6
+    },
+    "viz_type": "chart",
+    "viz_content": "SELECT cep_simple_pattern(time, event) FROM [[ .DB ]].cep_test_stream;\n",
+    "viz_config": {
+      "chartType": "table",
+      "config": {
+        "rowCount": 5,
+        "tableStyles": {
+          "cep_simple_pattern(time, event)": {
+            "conditions": [],
+            "decreaseColor": "red",
+            "highlightRow": false,
+            "increaseColor": "green",
+            "miniChartType": "",
+            "name": "",
+            "show": true,
+            "trend": false,
+            "width": 513
+          }
+        },
+        "tableWrap": false,
+        "updateKey": "",
+        "updateMode": "all"
+      }
+    }
+  },
+  {
+    "id": "5aa1dbf7-3d48-404d-bbcc-7544507b72dc",
+    "title": "JS UDF based Advanced CEP Patterns",
+    "description": "",
+    "position": {
+      "h": 4,
+      "nextX": 12,
+      "nextY": 10,
+      "w": 6,
+      "x": 6,
+      "y": 6
+    },
+    "viz_type": "chart",
+    "viz_content": "SELECT cep_advanced_pattern(time, event) FROM [[ .DB ]].cep_test_stream;\n",
+    "viz_config": {
+      "chartType": "table",
+      "config": {
+        "rowCount": 5,
+        "tableStyles": {
+          "cep_advanced_pattern(time, event)": {
+            "conditions": [],
+            "decreaseColor": "red",
+            "highlightRow": false,
+            "increaseColor": "green",
+            "miniChartType": "",
+            "name": "",
+            "show": true,
+            "trend": false,
+            "width": 589
+          }
+        },
+        "tableWrap": false,
+        "updateKey": "",
+        "updateMode": "all"
+      }
+    }
+  }
+]
