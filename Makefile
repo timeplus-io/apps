@@ -1,13 +1,12 @@
 APP         ?= market-data
 NEUTRON_URL ?= http://localhost:8000
 TENANT      ?= default
-BASE_URL    ?= http://localhost:9090
 GITHUB_REPO        ?= timeplus-io/apps
 GITHUB_RELEASE_TAG ?= registry-v1.0.0
 
 APPS        := market-data github cep
 
-.PHONY: build install build-all install-all registry-index registry-index-github registry-serve registry-docker $(APPS)
+.PHONY: build install build-all install-all registry-serve registry-index-github registry-docker $(APPS)
 
 build:
 	$(MAKE) -C apps/$(APP) build NEUTRON_URL=$(NEUTRON_URL) TENANT=$(TENANT)
@@ -23,20 +22,17 @@ install-all:
 
 # Registry targets
 
-registry-index: build-all
+registry-serve: build-all
+	@echo ""
+	@echo "Registry running at http://localhost:9090"
+	@echo "Set in .neutron.yaml:  app-registry-url: http://localhost:9090/index.json"
+	@echo ""
 	pip3 install -q -r registry/requirements.txt
-	BASE_URL=$(BASE_URL) python3 registry/build.py
-
-registry-serve: registry-index
-	@echo ""
-	@echo "Registry running at $(BASE_URL)"
-	@echo "Set in .neutron.yaml:  app-registry-url: $(BASE_URL)/index.json"
-	@echo ""
-	cd registry && python3 -m http.server 9090
+	python3 registry/server.py
 
 registry-index-github:
 	pip3 install -q -r registry/requirements.txt
 	GITHUB_REPO=$(GITHUB_REPO) GITHUB_RELEASE_TAG=$(GITHUB_RELEASE_TAG) python3 registry/build.py
 
 registry-docker:
-	BASE_URL=$(BASE_URL) docker compose up --build
+	docker compose up --build
