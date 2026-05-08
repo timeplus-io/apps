@@ -7,6 +7,8 @@ A collection of installable Timeplus apps (`.tpapp` packages). Each app bundles 
 | App | Description |
 |-----|-------------|
 | [market-data](apps/market-data/readme.md) | Real-time crypto market data from Coinbase WebSocket — OHLC, RSI, VWAP, and alpha signals |
+| [github](apps/github/) | Real-time GitHub public events pipeline — hot repos, push activity, and live event feed via PyGithub |
+| [cep](apps/cep/) | Complex event processing demo — SQL-based fraud detection and JavaScript UDF pattern matching over simulated event streams |
 
 ## Build & Install
 
