@@ -47,9 +47,44 @@ db_name: my_app                    # ^[a-z][a-z0-9_]{0,31}$, used as-is
 config:                            # optional — user-supplied parameters
   - key: websocket_url
     type: string
-    required: false
-    default: "wss://example.com/feed"
+    required: true
     description: WebSocket feed URL
+  - key: api_key
+    type: string
+    required: true
+    secret: true                   # mask value in UI; stored as IsSecret
+    description: API key
+  - key: timeout
+    type: integer
+    required: false
+    default: "30"
+    description: Connection timeout in seconds
+  - key: tls_enabled
+    type: bool
+    required: false
+    default: "false"
+    description: Enable TLS
+  - key: topics
+    type: list
+    required: true
+    description: Kafka topics (JSON array of strings, e.g. '["a","b"]')
+  - key: broker_type
+    type: choice
+    required: true
+    description: Message broker
+    options:
+      - kafka
+      - pulsar
+      - redpanda
+  - key: features
+    type: multi_choice
+    required: false
+    default: '["metrics"]'
+    description: Features to enable
+    options:
+      - metrics
+      - tracing
+      - alerting
 
 python_packages:                   # optional — installed before any DDL runs
   - json5>=0.9.6
@@ -139,6 +174,53 @@ Name DDL files with a numeric prefix so they execute in dependency order:
 004_v_aggregated.sql             ← views (depend on streams/MVs)
 ```
 
+## Config Types
+
+Seven types are supported. Omitting `type` defaults to `string`.
+
+| Type | Stored as | Valid example | Notes |
+|------|-----------|---------------|-------|
+| `string` | plain string | `"localhost:9092"` | Default type |
+| `integer` | decimal string | `"30"`, `"-5"` | Must be a whole number |
+| `float` | decimal string | `"3.14"`, `"30"` | Decimal or whole |
+| `bool` | `"true"` or `"false"` | `"true"` | No other values accepted |
+| `list` | JSON array of strings | `["a","b"]` | Comma-separated strings NOT accepted |
+| `choice` | string matching one option | `"kafka"` | Requires `options:` list |
+| `multi_choice` | JSON array of strings, each matching an option | `["kafka","pulsar"]` | Requires `options:` list |
+
+**`options`** — required for `choice` and `multi_choice`; lists the allowed values:
+
+```yaml
+  - key: broker_type
+    type: choice
+    required: true
+    options:
+      - kafka
+      - pulsar
+```
+
+**`secret`** — only valid on `string` type; marks the value as sensitive (masked in UI, stored with `IsSecret: true`):
+
+```yaml
+  - key: api_key
+    type: string
+    required: true
+    secret: true
+    description: API secret key
+```
+
+**`default`** — always a string regardless of type, and must be a valid encoding for the declared type:
+
+```yaml
+  - key: timeout
+    type: integer
+    default: "30"         # valid — "30" is a legal integer encoding
+  - key: features
+    type: multi_choice
+    default: '["metrics"]'
+    options: [metrics, tracing]
+```
+
 ## Config Defaults
 
 Declared `default` values are applied automatically before template rendering. Users only need to supply required keys or keys they want to override.
@@ -146,7 +228,7 @@ Declared `default` values are applied automatically before template rendering. U
 ```yaml
 config:
   - key: retention_hours
-    type: string
+    type: integer
     required: false
     default: "24"
     description: Stream retention in hours
