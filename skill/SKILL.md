@@ -118,6 +118,12 @@ dashboards:
 | `view` | `CREATE VIEW` | `DROP VIEW` |
 | `external_table` | `CREATE TABLE` | `DROP TABLE` |
 | `udf` | `CREATE FUNCTION` | `DROP FUNCTION` |
+| `task` | `CREATE TASK` | `DROP TASK` |
+| `alert` | `CREATE ALERT` | `DROP ALERT` |
+| `input` | `CREATE INPUT` | `DROP INPUT` |
+| `dictionary` | `CREATE DICTIONARY` | `DROP DICTIONARY` |
+| `format_schema` | `CREATE FORMAT SCHEMA` | `DROP FORMAT SCHEMA` |
+| `named_collection` | `CREATE NAMED COLLECTION` | `DROP NAMED COLLECTION` |
 
 ## DDL Template Variables
 
@@ -258,6 +264,248 @@ SELECT window_start AS time, product_id, ...
 
 ### Wrong template delimiter in dashboards
 **Fix:** Use `[[ .DB ]]` in dashboard JSON, not `{{ .DB }}`. The `{{ }}` delimiter is reserved for frontend filter variables like `{{filter_product}}`.
+
+## Resource Type Reference
+
+### stream
+
+A `stream` is the core storage primitive — an append-only event log with optional TTL. Use it as the destination for materialized views or external stream ingestion.
+
+```sql
+-- ddl/002_events.sql
+CREATE STREAM IF NOT EXISTS {{ .DB }}.events (
+  id        string,
+  product   string,
+  price     float64,
+  _tp_time  datetime64(3) DEFAULT now64(3)
+)
+TTL to_datetime(_tp_time) + INTERVAL 24 HOUR;
+```
+
+Manifest entry:
+```yaml
+  - file: ddl/002_events.sql
+    type: stream
+    name: events
+```
+
+### external_stream
+
+An `external_stream` connects to an outside data source (Kafka, WebSocket, Pulsar, etc.) without storing data locally. Queries read directly from the external system.
+
+```sql
+-- ddl/001_source.sql
+CREATE EXTERNAL STREAM IF NOT EXISTS {{ .DB }}.raw_feed (msg string)
+SETTINGS
+  type='websocket',
+  url='{{ .Config.websocket_url }}';
+```
+
+Manifest entry:
+```yaml
+  - file: ddl/001_source.sql
+    type: external_stream
+    name: raw_feed
+```
+
+Common `type` values: `kafka`, `websocket`, `pulsar`, `redpanda`, `confluent`.
+
+### mutable_stream
+
+A `mutable_stream` is like a stream but supports upserts — rows with the same primary key overwrite each other. Use it for keyed state (e.g., latest price per symbol).
+
+```sql
+-- ddl/005_ohlc.sql
+CREATE MUTABLE STREAM IF NOT EXISTS {{ .DB }}.ohlc_1m (
+  time      datetime64(3),
+  symbol    string,
+  open      float64,
+  high      float64,
+  low       float64,
+  close     float64,
+  PRIMARY KEY (time, symbol)
+);
+```
+
+Manifest entry:
+```yaml
+  - file: ddl/005_ohlc.sql
+    type: mutable_stream
+    name: ohlc_1m
+```
+
+### materialized_view
+
+A `materialized_view` continuously reads from a source stream, transforms the data, and writes results into a target stream. It runs as a persistent background query.
+
+```sql
+-- ddl/003_mv_parse.sql
+CREATE MATERIALIZED VIEW IF NOT EXISTS {{ .DB }}.mv_parse
+INTO {{ .DB }}.events
+AS SELECT
+  json_value(msg, '$.id')    AS id,
+  json_value(msg, '$.price') AS price,
+  now64(3)                   AS _tp_time
+FROM {{ .DB }}.raw_feed;
+```
+
+Manifest entry:
+```yaml
+  - file: ddl/003_mv_parse.sql
+    type: materialized_view
+    name: mv_parse
+```
+
+The target stream (`INTO`) must be declared before the MV in the manifest.
+
+### view
+
+A `view` is a saved streaming query with no storage of its own. Every query against the view re-executes the underlying SELECT in real time.
+
+```sql
+-- ddl/004_v_btc.sql
+CREATE VIEW IF NOT EXISTS {{ .DB }}.v_btc
+AS SELECT * FROM {{ .DB }}.events WHERE product = 'BTC-USD';
+```
+
+Manifest entry:
+```yaml
+  - file: ddl/004_v_btc.sql
+    type: view
+    name: v_btc
+```
+
+### external_table
+
+An `external_table` maps to external storage (S3, ClickHouse, etc.) for historical (batch) queries. Unlike external streams, it is not suited for real-time streaming reads.
+
+```sql
+-- ddl/006_s3_archive.sql
+CREATE TABLE IF NOT EXISTS {{ .DB }}.s3_archive (
+  event_time datetime,
+  payload    string
+) SETTINGS
+  type='s3',
+  url='{{ .Config.s3_url }}',
+  format='JSONEachRow';
+```
+
+Manifest entry:
+```yaml
+  - file: ddl/006_s3_archive.sql
+    type: external_table
+    name: s3_archive
+```
+
+### udf
+
+A `udf` registers a Python function for use in SQL queries. The function body is embedded directly in the DDL.
+
+```sql
+-- ddl/007_notify_slack.sql
+CREATE OR REPLACE FUNCTION {{ .DB }}.notify_slack(channel string, message string)
+RETURNS bool
+LANGUAGE PYTHON AS $$
+import requests
+def notify_slack(channel, message):
+    url = '{{ .Config.slack_webhook_url }}'
+    requests.post(url, json={'channel': channel, 'text': message})
+    return [True] * len(channel)
+$$;
+```
+
+Manifest entry:
+```yaml
+  - file: ddl/007_notify_slack.sql
+    type: udf
+    name: notify_slack
+```
+
+## Tasks, Alerts, and Inputs
+
+### Task
+
+A `task` runs a historical (batch) query on a schedule and writes results to a target stream. It complements materialized views for periodic aggregations or snapshots.
+
+```sql
+-- ddl/010_hourly_summary.sql
+CREATE TASK IF NOT EXISTS {{ .DB }}.hourly_summary
+SCHEDULE INTERVAL 1 HOUR
+TIMEOUT INTERVAL 5 MINUTE
+INTO {{ .DB }}.summary_stream
+AS SELECT product_id, avg(price) AS avg_price, count() AS trades
+   FROM {{ .DB }}.coinbase_tickers
+   WHERE _tp_time > now() - INTERVAL 1 HOUR;
+```
+
+Manifest entry:
+```yaml
+  - file: ddl/010_hourly_summary.sql
+    type: task
+    name: hourly_summary
+```
+
+Key clauses:
+- `SCHEDULE INTERVAL <n> <unit>` — how often to run; next run begins only after previous completes
+- `TIMEOUT INTERVAL <n> <unit>` — aborts the run if it exceeds this duration
+- `INTO <target_stream>` — destination stream for results
+
+### Alert
+
+An `alert` monitors a streaming query and calls a Python UDF when the condition is met. Use it to send notifications (Slack, email, webhook) or trigger external actions.
+
+```sql
+-- ddl/011_price_alert.sql
+CREATE ALERT IF NOT EXISTS {{ .DB }}.price_spike_alert
+BATCH 10 EVENTS WITH TIMEOUT 5s
+LIMIT 1 ALERTS PER 10s
+CALL {{ .DB }}.notify_slack
+AS SELECT product_id, price, _tp_time
+   FROM {{ .DB }}.coinbase_tickers
+   WHERE price > {{ .Config.alert_threshold }};
+```
+
+Manifest entry:
+```yaml
+  - file: ddl/011_price_alert.sql
+    type: alert
+    name: price_spike_alert
+```
+
+Key clauses:
+- `BATCH <N> EVENTS WITH TIMEOUT <interval>` — fires the UDF after N events accumulate or the timeout elapses, whichever comes first
+- `LIMIT <M> ALERTS PER <interval>` — rate-limits to prevent alert storms
+- `CALL <python_udf>` — the Python UDF to invoke; its signature must match the SELECT projection
+- The query must be a simple SELECT — no joins or aggregations (use a materialized view upstream for complex logic)
+- Only Python UDFs are supported
+
+### Input
+
+An `input` starts a long-running server (TCP, UDP, HTTP, or gRPC) that accepts data pushed by external clients and writes it to a target stream. Supported protocols: `splunk-s2s`, `splunk-hec`, `datadog`, `elastic`, `otel`, `netflow`, `syslog`.
+
+```sql
+-- ddl/001_syslog_input.sql
+CREATE INPUT IF NOT EXISTS {{ .DB }}.syslog_in
+SETTINGS
+  type='syslog',
+  target_stream='{{ .DB }}.raw_logs',
+  tcp_port={{ .Config.syslog_port }},
+  listen_host='0.0.0.0'
+COMMENT 'Syslog receiver';
+```
+
+Manifest entry:
+```yaml
+  - file: ddl/001_syslog_input.sql
+    type: input
+    name: syslog_in
+```
+
+Key settings:
+- `type` — protocol (`splunk-s2s`, `splunk-hec`, `datadog`, `elastic`, `otel`, `netflow`, `syslog`)
+- `target_stream` — destination stream (must exist before the input is created)
+- `tcp_port` — port to bind
+- `listen_host` — address to bind (use `'0.0.0.0'` for all interfaces)
 
 ## Error Messages Include Resource Name
 
