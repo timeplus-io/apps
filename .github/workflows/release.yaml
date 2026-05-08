@@ -41,25 +41,27 @@ jobs:
             (cd "$app" && zip -r "${name}.tpapp" $(ls manifest.yaml ddl dashboards 2>/dev/null))
           done
 
-      - name: Create GitHub release and upload all artifacts
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ steps.tag.outputs.tag }}
-          name: "Registry ${{ steps.tag.outputs.tag }}"
-          files: apps/*/*.tpapp
-
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
 
-      - name: Rebuild registry index
+      - name: Build registry index
         run: |
           pip install -q pyyaml
           GITHUB_REPO=${{ github.repository }} \
           GITHUB_RELEASE_TAG=${{ steps.tag.outputs.tag }} \
           python3 registry/build.py
 
-      - name: Commit updated index.json
+      - name: Create GitHub release and upload all artifacts
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: "Registry ${{ steps.tag.outputs.tag }}"
+          files: |
+            apps/*/*.tpapp
+            registry/index.json
+
+      - name: Commit updated index.json to main
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
