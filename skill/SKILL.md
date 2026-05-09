@@ -42,6 +42,7 @@ name: My App
 version: 1.0.0
 author: Acme
 description: What this app does.
+icon: "data:image/png;base64,..."  # optional — base64 data URI; frontend shows default when absent
 db_name: my_app                    # ^[a-z][a-z0-9_]{0,31}$, used as-is
 
 config:                            # optional — user-supplied parameters
@@ -225,6 +226,32 @@ Seven types are supported. Omitting `type` defaults to `string`.
     type: multi_choice
     default: '["metrics"]'
     options: [metrics, tracing]
+```
+
+## Icon
+
+The `icon` field in `manifest.yaml` sets the app's icon in the UI. It is optional — when absent, the frontend displays a default icon.
+
+**Format:** base64 data URI with an image MIME type.
+
+```yaml
+icon: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+```
+
+Valid MIME types: `image/png`, `image/jpeg`, `image/svg+xml`, `image/gif`, etc.
+
+**Rules enforced by the installer:**
+- Must start with `data:image/`
+- Must contain `;base64,` followed by a non-empty payload
+- An invalid icon causes the install to fail (same as a malformed manifest field)
+
+**Generating a data URI:**
+```bash
+# PNG file → data URI
+echo "data:image/png;base64,$(base64 -i icon.png | tr -d '\n')"
+
+# SVG file → data URI
+echo "data:image/svg+xml;base64,$(base64 -i icon.svg | tr -d '\n')"
 ```
 
 ## Config Defaults
