@@ -43,6 +43,9 @@ version: 1.0.0
 author: Acme
 description: What this app does.
 icon: "data:image/png;base64,..."  # optional — base64 data URI; frontend shows default when absent
+categories:                        # optional — free-form tags for discovery/filtering
+  - security
+  - observability
 db_name: my_app                    # ^[a-z][a-z0-9_]{0,31}$, used as-is
 
 config:                            # optional — user-supplied parameters
@@ -253,6 +256,24 @@ echo "data:image/png;base64,$(base64 -i icon.png | tr -d '\n')"
 # SVG file → data URI
 echo "data:image/svg+xml;base64,$(base64 -i icon.svg | tr -d '\n')"
 ```
+
+## Categories
+
+The `categories` field in `manifest.yaml` assigns free-form tags to the app for discovery and filtering in the UI. It is optional — when absent the app has no categories.
+
+**Format:** a YAML list of strings. Values are unrestricted.
+
+```yaml
+categories:
+  - security
+  - observability
+```
+
+Categories are surfaced in:
+- `GET /v1beta2/apps` — each `AppInstance` includes a `categories` array
+- `GET /v1beta2/apps/available` — each `CatalogEntry` includes a `categories` array
+
+An app can belong to any number of categories. An empty or absent field is omitted from the JSON response (`omitempty`).
 
 ## Config Defaults
 

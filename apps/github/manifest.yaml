@@ -5,6 +5,9 @@ version: 1.0.0
 author: Timeplus
 description: Real-time GitHub public events pipeline. Streams public events from the GitHub API into Timeplus for live analytics.
 db_name: github
+categories:
+  - analytics
+  - devops
 
 config:
   - key: github_token

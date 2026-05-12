@@ -5,6 +5,9 @@ version: 1.0.0
 author: Timeplus
 description: Complex event processing demo with SQL-based fraud detection and JavaScript UDF pattern matching over simulated random event streams.
 db_name: cep
+categories:
+  - analytics
+  - security
 
 resources:
   - file: ddl/001_cep_test_stream.sql

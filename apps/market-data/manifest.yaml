@@ -7,6 +7,9 @@ description: >
   Real-time crypto market data from Coinbase WebSocket — OHLC candlesticks,
   RSI, order book snapshots, VWAP, and quantitative alpha signals.
 db_name: market_data
+categories:
+  - analytics
+  - finance
 
 config:
   - key: websocket_url
