@@ -55,7 +55,7 @@
         "description": "Real-time complex event processing visualization"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.2.0/cep.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.2.1/cep.tpapp"
   },
   {
     "package_format_version": 1,
@@ -105,7 +105,7 @@
         "description": "Real-time view of GitHub public events"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.2.0/github.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.2.1/github.tpapp"
   },
   {
     "package_format_version": 1,
@@ -253,6 +253,6 @@
         "description": "Real-time OHLC, returns, and RSI for Coinbase crypto pairs"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.2.0/market-data.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.2.1/market-data.tpapp"
   }
 ]
