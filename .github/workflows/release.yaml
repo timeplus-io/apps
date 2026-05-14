@@ -38,7 +38,9 @@ jobs:
             name=$(basename "$app")
             [ -f "$app/manifest.yaml" ] || continue
             echo "Building $name..."
-            (cd "$app" && zip -r "${name}.tpapp" $(ls manifest.yaml ddl dashboards 2>/dev/null))
+            (cd "$app" && zip -r "${name}.tpapp" manifest.yaml \
+              $([ -d ddl ] && echo ddl) \
+              $([ -d dashboards ] && echo dashboards))
           done
 
       - uses: actions/setup-python@v5
