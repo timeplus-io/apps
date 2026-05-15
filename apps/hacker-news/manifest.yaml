@@ -1,0 +1,64 @@
+package_format_version: 1
+id: io.timeplus.hacker-news
+name: Hacker News Live Feed
+version: 1.0.0
+author: Timeplus
+description: >
+  Continuously ingests Hacker News posts and comments via the official Firebase
+  API into a Timeplus stream, ready for real-time analysis of trending stories,
+  active users, and post-type distributions.
+db_name: hn
+categories:
+  - analytics
+  - demo
+
+python_packages:
+  - requests>=2.28.0
+
+config:
+  - key: stream_ttl_days
+    type: integer
+    required: false
+    default: "7"
+    description: Retention period in days for the hn_post stream
+  - key: logstore_retention_bytes
+    type: string
+    required: false
+    default: "107374182"
+    description: Logstore retention size in bytes for the hn_post stream (default 100 MB)
+  - key: logstore_retention_ms
+    type: string
+    required: false
+    default: "300000"
+    description: Logstore retention duration in milliseconds for the hn_post stream (default 5 min)
+  - key: task_schedule
+    type: string
+    required: false
+    default: "10s"
+    description: How often the ingestion task runs (e.g. 10s, 1m, 5m)
+  - key: task_timeout
+    type: string
+    required: false
+    default: "30s"
+    description: Maximum runtime per task execution before it is aborted (e.g. 30s, 1m)
+  - key: lookback
+    type: integer
+    required: false
+    default: "3"
+    description: Number of recent items to look back on the first run (before any post is stored)
+  - key: fetch_limit
+    type: integer
+    required: false
+    default: "20"
+    description: Maximum number of new items to fetch per task execution
+
+resources:
+  - file: ddl/001_udf_get_hn_posts.sql
+    type: udf
+    name: get_hn_posts_after_id_with_retry
+  - file: ddl/002_hn_post.sql
+    type: stream
+    name: hn_post
+  - file: ddl/003_task_get_hn_post.sql
+    type: task
+    name: get_hn_post

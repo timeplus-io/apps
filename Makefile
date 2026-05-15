@@ -4,7 +4,7 @@ TENANT      ?= default
 GITHUB_REPO        ?= timeplus-io/apps
 GITHUB_RELEASE_TAG ?= registry-v1.0.0
 
-APPS        := market-data github cep game-feature-pipeline
+APPS        := market-data github cep game-feature-pipeline hacker-news
 
 .PHONY: build install build-all install-all registry-serve registry-index-github registry-docker $(APPS)
 
