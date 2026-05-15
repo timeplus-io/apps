@@ -449,9 +449,11 @@ Manifest entry:
 
 A `udf` registers a Python function for use in SQL queries. The function body is embedded directly in the DDL.
 
+**UDFs are global** — they do not belong to a database. Never prefix the function name with `{{ .DB }}.` in `CREATE FUNCTION` or `CALL`; doing so causes a syntax error (`failed at position N ('.')`).
+
 ```sql
 -- ddl/007_notify_slack.sql
-CREATE OR REPLACE FUNCTION {{ .DB }}.notify_slack(channel string, message string)
+CREATE OR REPLACE FUNCTION notify_slack(channel string, message string)
 RETURNS bool
 LANGUAGE PYTHON AS $$
 import requests

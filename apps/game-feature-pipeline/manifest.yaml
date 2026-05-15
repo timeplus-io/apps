@@ -1,0 +1,137 @@
+package_format_version: 1
+id: io.timeplus.game-feature-pipeline
+name: Real-time Machine Learning Feature Pipeline for Game Analytics Demo
+version: 1.0.0
+author: Timeplus
+description: >
+  Demo of real-time ML feature pipeline for game analytics — player action features,
+  transaction features, social engagement features, and composite feature views
+  for player behaviour analysis and spend anomaly detection.
+db_name: game
+categories:
+  - analytics
+  - gaming
+  - machine-learning
+  - demo
+
+config:
+  - key: logstore_retention_bytes
+    type: string
+    required: false
+    default: "107374182"
+    description: Logstore retention size in bytes for all streams (default 100 MB)
+  - key: logstore_retention_ms
+    type: string
+    required: false
+    default: "300000"
+    description: Logstore retention duration in milliseconds for all streams (default 5 min)
+  - key: stream_ttl_hours
+    type: integer
+    required: false
+    default: "24"
+    description: Retention period in hours for all event and feature streams
+  - key: player_actions_eps
+    type: integer
+    required: false
+    default: "50"
+    description: Events per second for the player actions random stream
+  - key: transactions_eps
+    type: integer
+    required: false
+    default: "10"
+    description: Events per second for the transactions random stream
+  - key: performance_metrics_eps
+    type: integer
+    required: false
+    default: "20"
+    description: Events per second for the performance metrics random stream
+  - key: slack_webhook_url
+    type: string
+    required: false
+    default: ""
+    description: Slack webhook URL for spend-anomaly alerts (leave blank to disable)
+  - key: alert_threshold
+    type: float
+    required: false
+    default: "750"
+    description: Total-spend threshold (USD) across last 10 transactions that triggers an alert
+
+resources:
+  # ── Source random streams (data generators) ──────────────────────────────
+  - file: ddl/001_src_player_actions.sql
+    type: stream
+    name: src_player_actions
+  - file: ddl/002_src_transactions.sql
+    type: stream
+    name: src_transactions
+  - file: ddl/004_src_performance_metrics.sql
+    type: stream
+    name: src_performance_metrics
+
+  # ── Target event streams ──────────────────────────────────────────────────
+  - file: ddl/005_player_actions.sql
+    type: stream
+    name: player_actions
+  - file: ddl/006_transactions.sql
+    type: stream
+    name: transactions
+  - file: ddl/008_performance_metrics.sql
+    type: stream
+    name: performance_metrics
+
+  # ── Ingest: random streams → target streams ───────────────────────────────
+  - file: ddl/009_mv_src_player_actions.sql
+    type: materialized_view
+    name: mv_src_player_actions
+  - file: ddl/010_mv_src_transactions.sql
+    type: materialized_view
+    name: mv_src_transactions
+  - file: ddl/012_mv_src_performance_metrics.sql
+    type: materialized_view
+    name: mv_src_performance_metrics
+
+  # ── Time-window features (2_time_window_features.sql) ────────────────────
+  - file: ddl/013_player_features_5m.sql
+    type: stream
+    name: player_features_5m
+  - file: ddl/014_mv_player_features_5m.sql
+    type: materialized_view
+    name: mv_player_features_5m
+  - file: ddl/015_transaction_features_15m.sql
+    type: stream
+    name: transaction_features_15m
+  - file: ddl/016_mv_transaction_features_15m.sql
+    type: materialized_view
+    name: mv_transaction_features_15m
+  # ── Cumulative features (3_cumulative_features.sql) ───────────────────────
+  - file: ddl/019_user_game_stats_feature.sql
+    type: stream
+    name: user_game_stats_feature
+  - file: ddl/020_mv_user_game_stats_feature.sql
+    type: materialized_view
+    name: mv_user_game_stats_feature
+  - file: ddl/021_user_technical_performance_feature.sql
+    type: stream
+    name: user_technical_performance_feature
+  - file: ddl/022_mv_user_technical_performance_feature.sql
+    type: materialized_view
+    name: mv_user_technical_performance_feature
+  # ── Record-based features (4_record_based_features.sql) ──────────────────
+  - file: ddl/026_total_spend_last_10_transaction.sql
+    type: stream
+    name: total_spend_last_10_transaction
+  - file: ddl/027_mv_total_spend_last_10_transaction.sql
+    type: materialized_view
+    name: mv_total_spend_last_10_transaction
+  # ── Composite feature view (6_all_features.sql) ───────────────────────────
+  - file: ddl/032_v_features_all.sql
+    type: view
+    name: v_features_all
+
+  # ── Alert UDF and alert rule (7_alert.sql) ────────────────────────────────
+  - file: ddl/033_alert_to_slack.sql
+    type: udf
+    name: alert_to_slack
+  - file: ddl/034_spending_alert.sql
+    type: alert
+    name: spending_alert
