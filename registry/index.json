@@ -3,13 +3,14 @@
     "package_format_version": 1,
     "id": "io.timeplus.cep",
     "name": "Complex Event Processing Demo",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "author": "Timeplus",
     "description": "Complex event processing demo with SQL-based fraud detection and JavaScript UDF pattern matching over simulated random event streams.",
     "db_name": "cep",
     "categories": [
       "analytics",
-      "security"
+      "security",
+      "demo"
     ],
     "resources": [
       {
@@ -55,7 +56,193 @@
         "description": "Real-time complex event processing visualization"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.2.2/cep.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.3.0/cep.tpapp"
+  },
+  {
+    "package_format_version": 1,
+    "id": "io.timeplus.game-feature-pipeline",
+    "name": "Real-time Machine Learning Feature Pipeline for Game Analytics Demo",
+    "version": "1.0.0",
+    "author": "Timeplus",
+    "description": "Demo of real-time ML feature pipeline for game analytics \u2014 player action features, transaction features, social engagement features, and composite feature views for player behaviour analysis and spend anomaly detection.\n",
+    "db_name": "game",
+    "categories": [
+      "analytics",
+      "gaming",
+      "machine-learning",
+      "demo"
+    ],
+    "config": [
+      {
+        "key": "logstore_retention_bytes",
+        "type": "string",
+        "required": false,
+        "default": "107374182",
+        "description": "Logstore retention size in bytes for all streams (default 100 MB)"
+      },
+      {
+        "key": "logstore_retention_ms",
+        "type": "string",
+        "required": false,
+        "default": "300000",
+        "description": "Logstore retention duration in milliseconds for all streams (default 5 min)"
+      },
+      {
+        "key": "stream_ttl_hours",
+        "type": "integer",
+        "required": false,
+        "default": "24",
+        "description": "Retention period in hours for all event and feature streams"
+      },
+      {
+        "key": "player_actions_eps",
+        "type": "integer",
+        "required": false,
+        "default": "50",
+        "description": "Events per second for the player actions random stream"
+      },
+      {
+        "key": "transactions_eps",
+        "type": "integer",
+        "required": false,
+        "default": "10",
+        "description": "Events per second for the transactions random stream"
+      },
+      {
+        "key": "performance_metrics_eps",
+        "type": "integer",
+        "required": false,
+        "default": "20",
+        "description": "Events per second for the performance metrics random stream"
+      },
+      {
+        "key": "slack_webhook_url",
+        "type": "string",
+        "required": false,
+        "default": "",
+        "description": "Slack webhook URL for spend-anomaly alerts (leave blank to disable)"
+      },
+      {
+        "key": "alert_threshold",
+        "type": "float",
+        "required": false,
+        "default": "750",
+        "description": "Total-spend threshold (USD) across last 10 transactions that triggers an alert"
+      }
+    ],
+    "resources": [
+      {
+        "file": "ddl/001_src_player_actions.sql",
+        "type": "stream",
+        "name": "src_player_actions"
+      },
+      {
+        "file": "ddl/002_src_transactions.sql",
+        "type": "stream",
+        "name": "src_transactions"
+      },
+      {
+        "file": "ddl/004_src_performance_metrics.sql",
+        "type": "stream",
+        "name": "src_performance_metrics"
+      },
+      {
+        "file": "ddl/005_player_actions.sql",
+        "type": "stream",
+        "name": "player_actions"
+      },
+      {
+        "file": "ddl/006_transactions.sql",
+        "type": "stream",
+        "name": "transactions"
+      },
+      {
+        "file": "ddl/008_performance_metrics.sql",
+        "type": "stream",
+        "name": "performance_metrics"
+      },
+      {
+        "file": "ddl/009_mv_src_player_actions.sql",
+        "type": "materialized_view",
+        "name": "mv_src_player_actions"
+      },
+      {
+        "file": "ddl/010_mv_src_transactions.sql",
+        "type": "materialized_view",
+        "name": "mv_src_transactions"
+      },
+      {
+        "file": "ddl/012_mv_src_performance_metrics.sql",
+        "type": "materialized_view",
+        "name": "mv_src_performance_metrics"
+      },
+      {
+        "file": "ddl/013_player_features_5m.sql",
+        "type": "stream",
+        "name": "player_features_5m"
+      },
+      {
+        "file": "ddl/014_mv_player_features_5m.sql",
+        "type": "materialized_view",
+        "name": "mv_player_features_5m"
+      },
+      {
+        "file": "ddl/015_transaction_features_15m.sql",
+        "type": "stream",
+        "name": "transaction_features_15m"
+      },
+      {
+        "file": "ddl/016_mv_transaction_features_15m.sql",
+        "type": "materialized_view",
+        "name": "mv_transaction_features_15m"
+      },
+      {
+        "file": "ddl/019_user_game_stats_feature.sql",
+        "type": "stream",
+        "name": "user_game_stats_feature"
+      },
+      {
+        "file": "ddl/020_mv_user_game_stats_feature.sql",
+        "type": "materialized_view",
+        "name": "mv_user_game_stats_feature"
+      },
+      {
+        "file": "ddl/021_user_technical_performance_feature.sql",
+        "type": "stream",
+        "name": "user_technical_performance_feature"
+      },
+      {
+        "file": "ddl/022_mv_user_technical_performance_feature.sql",
+        "type": "materialized_view",
+        "name": "mv_user_technical_performance_feature"
+      },
+      {
+        "file": "ddl/026_total_spend_last_10_transaction.sql",
+        "type": "stream",
+        "name": "total_spend_last_10_transaction"
+      },
+      {
+        "file": "ddl/027_mv_total_spend_last_10_transaction.sql",
+        "type": "materialized_view",
+        "name": "mv_total_spend_last_10_transaction"
+      },
+      {
+        "file": "ddl/032_v_features_all.sql",
+        "type": "view",
+        "name": "v_features_all"
+      },
+      {
+        "file": "ddl/033_alert_to_slack.sql",
+        "type": "udf",
+        "name": "alert_to_slack"
+      },
+      {
+        "file": "ddl/034_spending_alert.sql",
+        "type": "alert",
+        "name": "spending_alert"
+      }
+    ],
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.3.0/game-feature-pipeline.tpapp"
   },
   {
     "package_format_version": 1,
@@ -105,7 +292,92 @@
         "description": "Real-time view of GitHub public events"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.2.2/github.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.3.0/github.tpapp"
+  },
+  {
+    "package_format_version": 1,
+    "id": "io.timeplus.hacker-news",
+    "name": "Hacker News Live Feed",
+    "version": "1.0.0",
+    "author": "Timeplus",
+    "description": "Continuously ingests Hacker News posts and comments via the official Firebase API into a Timeplus stream, ready for real-time analysis of trending stories, active users, and post-type distributions.\n",
+    "db_name": "hn",
+    "categories": [
+      "analytics",
+      "demo"
+    ],
+    "python_packages": [
+      "requests>=2.28.0"
+    ],
+    "config": [
+      {
+        "key": "stream_ttl_days",
+        "type": "integer",
+        "required": false,
+        "default": "7",
+        "description": "Retention period in days for the hn_post stream"
+      },
+      {
+        "key": "logstore_retention_bytes",
+        "type": "string",
+        "required": false,
+        "default": "107374182",
+        "description": "Logstore retention size in bytes for the hn_post stream (default 100 MB)"
+      },
+      {
+        "key": "logstore_retention_ms",
+        "type": "string",
+        "required": false,
+        "default": "300000",
+        "description": "Logstore retention duration in milliseconds for the hn_post stream (default 5 min)"
+      },
+      {
+        "key": "task_schedule",
+        "type": "string",
+        "required": false,
+        "default": "10s",
+        "description": "How often the ingestion task runs (e.g. 10s, 1m, 5m)"
+      },
+      {
+        "key": "task_timeout",
+        "type": "string",
+        "required": false,
+        "default": "30s",
+        "description": "Maximum runtime per task execution before it is aborted (e.g. 30s, 1m)"
+      },
+      {
+        "key": "lookback",
+        "type": "integer",
+        "required": false,
+        "default": "3",
+        "description": "Number of recent items to look back on the first run (before any post is stored)"
+      },
+      {
+        "key": "fetch_limit",
+        "type": "integer",
+        "required": false,
+        "default": "20",
+        "description": "Maximum number of new items to fetch per task execution"
+      }
+    ],
+    "resources": [
+      {
+        "file": "ddl/001_udf_get_hn_posts.sql",
+        "type": "udf",
+        "name": "get_hn_posts_after_id_with_retry"
+      },
+      {
+        "file": "ddl/002_hn_post.sql",
+        "type": "stream",
+        "name": "hn_post"
+      },
+      {
+        "file": "ddl/003_task_get_hn_post.sql",
+        "type": "task",
+        "name": "get_hn_post"
+      }
+    ],
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.3.0/hacker-news.tpapp"
   },
   {
     "package_format_version": 1,
@@ -253,6 +525,6 @@
         "description": "Real-time OHLC, returns, and RSI for Coinbase crypto pairs"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.2.2/market-data.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.3.0/market-data.tpapp"
   }
 ]
