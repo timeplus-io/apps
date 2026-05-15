@@ -1,7 +1,7 @@
 package_format_version: 1
 id: io.timeplus.cep
-name: Complex Event Processing
-version: 1.0.0
+name: Complex Event Processing Demo
+version: 1.0.1
 author: Timeplus
 description: Complex event processing demo with SQL-based fraud detection and JavaScript UDF pattern matching over simulated random event streams.
 db_name: cep

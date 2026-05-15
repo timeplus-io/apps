@@ -1,7 +1,7 @@
 package_format_version: 1
 id: io.timeplus.market-data
-name: Market Data (Coinbase)
-version: 1.0.0
+name: Coinbase Crypto Analytics
+version: 1.0.2
 author: Timeplus
 description: >
   Real-time crypto market data from Coinbase WebSocket — OHLC candlesticks,
@@ -20,8 +20,12 @@ config:
   - key: product_ids
     type: list
     required: false
-    default: '["BTC-USD"]'
-    description: Coinbase product IDs to subscribe to (e.g. ["BTC-USD","ETH-USD"])
+    default: '["BTC-USD","ETH-USD","SOL-USD"]'
+    description: >
+      Coinbase product IDs to subscribe to. Find valid product IDs at
+      https://docs.cdp.coinbase.com/exchange/reference/exchangerestapi_getproducts
+      or by running: curl https://api.exchange.coinbase.com/products | jq '[.[].id]'
+      Examples: "BTC-USD", "ETH-USD", "SOL-USD", "XRP-USD", "DOGE-USD"
 
 python_packages:
   - json5>=0.9.6
