@@ -1,0 +1,105 @@
+package_format_version: 1
+id: io.timeplus.invest-insights
+name: Real-time Investment Insights
+version: 1.0.0
+author: Timeplus
+description: >
+  Real-time trading monitoring demo — order management, position tracking,
+  market data, continuous auction participation rate, and live P&L.
+  Data is generated internally via random streams; no external Kafka required.
+db_name: invest_insights
+categories:
+  - finance
+  - analytics
+  - demo
+
+config:
+  - key: order_eps
+    type: integer
+    required: false
+    default: "1200"
+    description: Events per second for the order random stream
+  - key: quote_eps
+    type: integer
+    required: false
+    default: "3000"
+    description: Events per second for the quote (stock price) random stream
+  - key: stream_ttl_hours
+    type: integer
+    required: false
+    default: "4"
+    description: Retention period in hours for exchange_order and execution streams
+
+resources:
+  # ── Data generators ──────────────────────────────────────────────────────────
+  - file: ddl/001_order_random.sql
+    type: stream
+    name: order_random
+  - file: ddl/002_quote_random.sql
+    type: stream
+    name: quote_random
+
+  # ── Target streams ────────────────────────────────────────────────────────────
+  - file: ddl/003_exchange_order.sql
+    type: stream
+    name: exchange_order
+  - file: ddl/004_execution.sql
+    type: stream
+    name: execution
+  - file: ddl/005_position.sql
+    type: mutable_stream
+    name: position
+  - file: ddl/006_stock.sql
+    type: mutable_stream
+    name: stock
+  - file: ddl/007_cfg.sql
+    type: mutable_stream
+    name: cfg
+  - file: ddl/008_pre_value.sql
+    type: mutable_stream
+    name: pre_value
+
+  # ── Config data generator (Python external stream) ────────────────────────────
+  - file: ddl/009_generate_cfg_data.sql
+    type: external_stream
+    name: generate_cfg_data
+
+  # ── ETL: random streams → target streams ─────────────────────────────────────
+  - file: ddl/010_mv_exchange_order.sql
+    type: materialized_view
+    name: mv_exchange_order
+  - file: ddl/011_mv_execution.sql
+    type: materialized_view
+    name: mv_execution
+  - file: ddl/012_mv_position.sql
+    type: materialized_view
+    name: mv_position
+  - file: ddl/013_mv_stock.sql
+    type: materialized_view
+    name: mv_stock
+  - file: ddl/014_mv_cfg.sql
+    type: materialized_view
+    name: mv_cfg
+
+  # ── Periodic pre-value refresh ────────────────────────────────────────────────
+  - file: ddl/015_task_pre_value.sql
+    type: task
+    name: refresh_pre_value
+
+  # ── Analytics UDF ─────────────────────────────────────────────────────────────
+  - file: ddl/016_part_rate.sql
+    type: udf
+    name: part_rate
+
+  # ── Analytics views ───────────────────────────────────────────────────────────
+  - file: ddl/017_rate_v.sql
+    type: view
+    name: rate_v
+  - file: ddl/018_profit_v.sql
+    type: view
+    name: profit_v
+
+dashboards:
+  - file: dashboards/main.json
+    name: Investment Insights Dashboard
+    description: Real-time trading metrics — participation rate and P&L
