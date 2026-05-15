@@ -1,6 +1,6 @@
 CREATE TASK IF NOT EXISTS {{ .DB }}.refresh_pre_value
-SCHEDULE INTERVAL 5 MINUTE
-TIMEOUT INTERVAL 2 MINUTE
+SCHEDULE INTERVAL {{ .Config.pre_value_schedule_hours }} HOUR
+TIMEOUT INTERVAL {{ .Config.pre_value_timeout_minutes }} MINUTE
 INTO {{ .DB }}.pre_value
 AS SELECT
     a.SecurityAccount,

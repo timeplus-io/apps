@@ -13,4 +13,4 @@ CREATE STREAM IF NOT EXISTS {{ .DB }}.execution
 )
 PARTITION BY to_start_of_hour(_tp_time)
 TTL to_datetime(_tp_time) + INTERVAL {{ .Config.stream_ttl_hours }} HOUR
-SETTINGS index_granularity = 8192, logstore_retention_bytes = '107374182', logstore_retention_ms = '300000';
+SETTINGS logstore_retention_bytes = '{{ .Config.logstore_retention_bytes }}', logstore_retention_ms = '{{ .Config.logstore_retention_ms }}';

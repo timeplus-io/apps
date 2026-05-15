@@ -29,6 +29,26 @@ config:
     required: false
     default: "4"
     description: Retention period in hours for exchange_order and execution streams
+  - key: pre_value_schedule_hours
+    type: integer
+    required: false
+    default: "24"
+    description: How often (in hours) the pre_value task recalculates portfolio baseline
+  - key: pre_value_timeout_minutes
+    type: integer
+    required: false
+    default: "2"
+    description: Timeout (in minutes) for each pre_value task run
+  - key: logstore_retention_bytes
+    type: string
+    required: false
+    default: "107374182"
+    description: Logstore retention size in bytes for all streams (default 100 MB)
+  - key: logstore_retention_ms
+    type: string
+    required: false
+    default: "300000"
+    description: Logstore retention duration in milliseconds for all streams (default 5 min)
 
 resources:
   # ── Data generators ──────────────────────────────────────────────────────────
@@ -85,6 +105,11 @@ resources:
   - file: ddl/015_task_pre_value.sql
     type: task
     name: refresh_pre_value
+
+  # ── One-time pre-value seed (runs once at install, then every ~1 year) ────────
+  - file: ddl/019_init_pre_value.sql
+    type: system
+    name: init_pre_value
 
   # ── Analytics UDF ─────────────────────────────────────────────────────────────
   - file: ddl/016_part_rate.sql

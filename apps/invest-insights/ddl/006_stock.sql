@@ -11,4 +11,4 @@ CREATE MUTABLE STREAM IF NOT EXISTS {{ .DB }}.stock
     LowPx      float64
 )
 PRIMARY KEY SecurityID
-SETTINGS logstore_retention_bytes = 107374182, logstore_retention_ms = 300000;
+SETTINGS logstore_retention_bytes = {{ .Config.logstore_retention_bytes }}, logstore_retention_ms = {{ .Config.logstore_retention_ms }};
