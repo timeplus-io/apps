@@ -1,0 +1,170 @@
+[
+  {
+    "id": "a1b2c3d4-0001-0001-0001-000000000001",
+    "title": "Real-time Order Volume",
+    "description": "Total orders ingested",
+    "position": {
+      "h": 4,
+      "w": 6,
+      "x": 0,
+      "y": 0,
+      "nextX": 6,
+      "nextY": 4
+    },
+    "viz_type": "chart",
+    "viz_content": "SELECT count() FROM [[ .DB ]].exchange_order",
+    "viz_config": {
+      "chartType": "singleValue",
+      "config": {
+        "color": "blue",
+        "decreaseColor": "red",
+        "delta": true,
+        "fontSize": 64,
+        "fractionDigits": 0,
+        "increaseColor": "green",
+        "sparkline": true,
+        "sparklineColor": "blue",
+        "unit": {
+          "position": "right",
+          "value": ""
+        },
+        "value": "count()"
+      }
+    }
+  },
+  {
+    "id": "a1b2c3d4-0002-0002-0002-000000000002",
+    "title": "Real-time Execution Volume",
+    "description": "Total trade executions",
+    "position": {
+      "h": 4,
+      "w": 6,
+      "x": 6,
+      "y": 0,
+      "nextX": 12,
+      "nextY": 4
+    },
+    "viz_type": "chart",
+    "viz_content": "SELECT count() FROM [[ .DB ]].execution",
+    "viz_config": {
+      "chartType": "singleValue",
+      "config": {
+        "color": "green",
+        "decreaseColor": "red",
+        "delta": true,
+        "fontSize": 64,
+        "fractionDigits": 0,
+        "increaseColor": "green",
+        "sparkline": true,
+        "sparklineColor": "green",
+        "unit": {
+          "position": "right",
+          "value": ""
+        },
+        "value": "count()"
+      }
+    }
+  },
+  {
+    "id": "a1b2c3d4-0005-0005-0005-000000000005",
+    "title": "Top Securities by Execution Volume (last 10m)",
+    "description": "Most actively traded securities",
+    "position": {
+      "h": 4,
+      "w": 6,
+      "x": 0,
+      "y": 12,
+      "nextX": 6,
+      "nextY": 16
+    },
+    "viz_type": "chart",
+    "viz_content": "SELECT SecurityId, sum(LastQty) AS volume, emit_version() FROM [[ .DB ]].execution WHERE _tp_time > now() - 10m GROUP BY SecurityId ORDER BY volume DESC LIMIT 10 by emit_version()",
+    "viz_config": {
+      "chartType": "bar",
+      "config": {
+        "color": "SecurityId",
+        "colors": [
+          "#ED64A6",
+          "#F0BE3E",
+          "#DA4B36",
+          "#9A1563",
+          "#FF4A71",
+          "#D12D50",
+          "#8934D9",
+          "#D53F8C",
+          "#F7775A",
+          "#6B46C1"
+        ],
+        "dataLabel": true,
+        "fractionDigits": 0,
+        "gridlines": true,
+        "groupType": "stack",
+        "legend": false,
+        "unit": {
+          "position": "left",
+          "value": ""
+        },
+        "updateKey": "emit_version()",
+        "updateMode": "time",
+        "xAxis": "SecurityId",
+        "xFormat": "",
+        "xTickLabel": {
+          "maxChar": 20
+        },
+        "xTitle": "",
+        "yAxis": "volume",
+        "yTickLabel": {
+          "maxChar": 25
+        },
+        "yTitle": "Volume"
+      }
+    }
+  },
+  {
+    "id": "a1b2c3d4-0006-0006-0006-000000000006",
+    "title": "Buy vs Sell Volume (last 10m)",
+    "description": "Order flow direction breakdown",
+    "position": {
+      "h": 4,
+      "w": 6,
+      "x": 6,
+      "y": 12,
+      "nextX": 12,
+      "nextY": 16
+    },
+    "viz_type": "chart",
+    "viz_content": "SELECT EntrustDirection, sum(LastQty) AS volume, emit_version() FROM [[ .DB ]].execution WHERE _tp_time > now() - 10m GROUP BY EntrustDirection LIMIT 2 by emit_version()",
+    "viz_config": {
+      "chartType": "bar",
+      "config": {
+        "color": "EntrustDirection",
+        "colors": [
+          "#48BB78",
+          "#FC8181"
+        ],
+        "dataLabel": true,
+        "fractionDigits": 0,
+        "gridlines": true,
+        "groupType": "stack",
+        "legend": true,
+        "unit": {
+          "position": "left",
+          "value": ""
+        },
+        "updateKey": "emit_version()",
+        "updateMode": "time",
+        "xAxis": "EntrustDirection",
+        "xFormat": "",
+        "xTickLabel": {
+          "maxChar": 20
+        },
+        "xTitle": "Direction (1=Buy, 2=Sell)",
+        "yAxis": "volume",
+        "yTickLabel": {
+          "maxChar": 25
+        },
+        "yTitle": "Volume"
+      }
+    }
+  }
+]
