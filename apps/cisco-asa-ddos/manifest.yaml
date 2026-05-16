@@ -1,0 +1,155 @@
+package_format_version: 1
+id: io.timeplus.cisco-asa-ddos
+name: Cisco ASA DDoS Detection
+version: 1.0.0
+author: Timeplus
+description: >
+  Real-time DDoS detection from simulated Cisco ASA firewall logs.
+  Generates background traffic and a controllable attack stream, parses raw syslog
+  into structured fields, then applies dynamic per-IP baselines (overall and hourly)
+  to detect traffic spikes. Fires a webhook alert when the spike ratio exceeds the
+  configured threshold. Resume and pause the attack MV to control the simulation.
+
+  The attack MV is paused automatically on install. To trigger the simulated attack:
+    SYSTEM RESUME MATERIALIZED VIEW <db>.mv_asa_logs_sim_attack;
+db_name: cisco_asa_ddos
+categories:
+  - security
+  - observability
+  - demo
+
+python_packages:
+  - requests>=2.28.0
+
+config:
+  - key: alert_webhook_url
+    type: string
+    required: false
+    default: "http://localhost/alert"
+    description: >
+      HTTP endpoint that receives DDoS alert POSTs.
+      Payload: {"title": "...", "message": "...", "severity": "high"}.
+  - key: spike_threshold
+    type: integer
+    required: false
+    default: "10"
+    description: >
+      Spike ratio multiplier that triggers an alert.
+      An IP is flagged when its live traffic exceeds this multiple of its baseline.
+  - key: attacker_src_ip
+    type: string
+    required: false
+    default: "203.0.113.67"
+    description: Source IP used by the simulated attacker for baseline and attack traffic.
+  - key: background_eps
+    type: integer
+    required: false
+    default: "100"
+    description: Events per second for the background traffic generator (many random IPs).
+  - key: sim_normal_eps
+    type: integer
+    required: false
+    default: "5"
+    description: Events per second for the attacker IP normal baseline traffic.
+  - key: sim_attack_eps
+    type: integer
+    required: false
+    default: "500"
+    description: Events per second for the attack traffic burst (used when attack MV is resumed).
+  - key: retention_hours
+    type: integer
+    required: false
+    default: "4"
+    description: Stream TTL in hours. Data older than this is automatically dropped.
+  - key: logstore_retention_bytes
+    type: integer
+    required: false
+    default: "107374182"
+    description: Maximum logstore size per stream in bytes (default ~100 MB).
+  - key: logstore_retention_ms
+    type: integer
+    required: false
+    default: "300000"
+    description: Maximum logstore retention in milliseconds (default 5 minutes).
+
+resources:
+  - file: ddl/001_asa_logs_stream.sql
+    type: stream
+    name: asa_logs_stream
+  - file: ddl/002_cisco_asa_background_gen.sql
+    type: stream
+    name: cisco_asa_background_gen
+  - file: ddl/003_cisco_asa_sim_normal.sql
+    type: stream
+    name: cisco_asa_sim_normal
+  - file: ddl/004_cisco_asa_sim_attack.sql
+    type: stream
+    name: cisco_asa_sim_attack
+  - file: ddl/005_mv_asa_logs_background.sql
+    type: materialized_view
+    name: mv_asa_logs_background
+  - file: ddl/006_mv_asa_logs_sim_normal.sql
+    type: materialized_view
+    name: mv_asa_logs_sim_normal
+  - file: ddl/007_mv_asa_logs_sim_attack.sql
+    type: materialized_view
+    name: mv_asa_logs_sim_attack
+  - file: ddl/007b_pause_attack_mv.sql
+    type: system
+    name: pause_attack_mv
+  - file: ddl/008_parsed_asa_logs.sql
+    type: stream
+    name: parsed_asa_logs
+  - file: ddl/009_mv_parse_asa_logs.sql
+    type: materialized_view
+    name: mv_parse_asa_logs
+  - file: ddl/010_flatten_extracted_asa_logs.sql
+    type: stream
+    name: flatten_extracted_asa_logs
+  - file: ddl/011_v_parsed_asa_logs.sql
+    type: view
+    name: v_parsed_asa_logs
+  - file: ddl/012_v_flatten_asa_logs.sql
+    type: view
+    name: v_flatten_asa_logs
+  - file: ddl/013_mv_enhanced_asa_logs.sql
+    type: materialized_view
+    name: mv_enhanced_asa_logs
+  - file: ddl/014_v_asa_logs.sql
+    type: view
+    name: v_asa_logs
+  - file: ddl/015_sig_live_5s_traffic.sql
+    type: stream
+    name: sig_live_5s_traffic
+  - file: ddl/016_mv_live_5s_traffic.sql
+    type: materialized_view
+    name: mv_live_5s_traffic
+  - file: ddl/017_sig_overall_baseline_mut.sql
+    type: mutable_stream
+    name: sig_overall_baseline_mut
+  - file: ddl/018_mv_overall_baseline.sql
+    type: materialized_view
+    name: mv_overall_baseline
+  - file: ddl/019_sig_hourly_baseline_mut.sql
+    type: mutable_stream
+    name: sig_hourly_baseline_mut
+  - file: ddl/020_mv_hourly_baseline.sql
+    type: materialized_view
+    name: mv_hourly_baseline
+  - file: ddl/021_cxt_ddos_stream.sql
+    type: stream
+    name: cxt_ddos_stream
+  - file: ddl/022_mv_cxt_ddos.sql
+    type: materialized_view
+    name: mv_cxt_ddos
+  - file: ddl/023_udf_send_alert.sql
+    type: udf
+    name: send_ddos_alert
+  - file: ddl/024_ddos_alert.sql
+    type: alert
+    name: ddos_alert
+
+dashboards:
+  - file: dashboards/main.json
+    name: Cisco ASA DDoS Detection
+    description: Real-time spike ratio monitoring, baseline tables, and live traffic
