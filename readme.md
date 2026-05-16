@@ -4,11 +4,11 @@ A collection of installable Timeplus apps (`.tpapp` packages). Each app bundles 
 
 ## Apps
 
-| App | Description |
-|-----|-------------|
-| [market-data](apps/market-data/readme.md) | Real-time crypto market data from Coinbase WebSocket — OHLC, RSI, VWAP, and alpha signals |
-| [github](apps/github/) | Real-time GitHub public events pipeline — hot repos, push activity, and live event feed via PyGithub |
-| [cep](apps/cep/) | Complex event processing demo — SQL-based fraud detection and JavaScript UDF pattern matching over simulated event streams |
+| App | Description | Downloads |
+|-----|-------------|-----------|
+| [market-data](apps/market-data/readme.md) | Real-time crypto market data from Coinbase WebSocket — OHLC, RSI, VWAP, and alpha signals | ![Downloads](https://img.shields.io/github/downloads/timeplus-io/apps/total/market-data.tpapp) |
+| [github](apps/github/) | Real-time GitHub public events pipeline — hot repos, push activity, and live event feed via PyGithub | ![Downloads](https://img.shields.io/github/downloads/timeplus-io/apps/total/github.tpapp) |
+| [cep](apps/cep/) | Complex event processing demo — SQL-based fraud detection and JavaScript UDF pattern matching over simulated event streams | ![Downloads](https://img.shields.io/github/downloads/timeplus-io/apps/total/cep.tpapp) |
 
 ## Build & Install
 
