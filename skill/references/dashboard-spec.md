@@ -150,7 +150,7 @@ Use `"chartType": "text_input"` (not `"text"`) for a free-form text field.
 
 ## viz_type: `"markdown"`
 
-Renders static Markdown text. No SQL; `viz_content` holds the markdown source.
+Simple Markdown panel. Markdown source lives in `viz_config.mdString`. Can optionally run a SQL query (`viz_content`) and interpolate the **latest row's** column values using `{{column_name}}` in the template.
 
 ```json
 {
@@ -158,17 +158,72 @@ Renders static Markdown text. No SQL; `viz_content` holds the markdown source.
   "title": "",
   "position": { "h": 2, "w": 12, "x": 0, "y": 0, "nextX": 12, "nextY": 2 },
   "viz_type": "markdown",
-  "viz_content": "## Dashboard Title\n\nThis dashboard shows real-time crypto market data.",
+  "viz_content": "SELECT price FROM tickers LIMIT 1",
+  "viz_config": {
+    "mdString": "## Live Price\n\nCurrent BTC price: **${{price}}**"
+  }
+}
+```
+
+- `viz_config.mdString` — Markdown source with optional `{{column_name}}` placeholders
+- `viz_content` — SQL query; leave `""` if no interpolation needed
+- Interpolation uses only the **last row** of the query result
+
+---
+
+## viz_type: `"chart"` — `chartType: "md"` (Markdown viz)
+
+A more powerful Markdown panel that runs a SQL query and interpolates column values into the template. Use this instead of `viz_type: "markdown"` when you need key-based lookups or streaming update modes.
+
+```json
+{
+  "id": "md-status",
+  "title": "Current Status",
+  "position": { "h": 3, "w": 6, "x": 0, "y": 0, "nextX": 6, "nextY": 3 },
+  "viz_type": "chart",
+  "viz_content": "SELECT product_id, price, volume FROM [[ .DB ]].tickers WHERE _tp_time > now() - 1m",
   "viz_config": {
     "chartType": "md",
     "config": {
+      "content": "## {{product_id}}\n\nPrice: **${{price}}**\nVolume: {{volume}}",
       "updateMode": "all",
-      "updateKey": "",
-      "content": "## Dashboard Title\n\nThis dashboard shows real-time crypto market data."
+      "updateKey": ""
     }
   }
 }
 ```
+
+### Interpolation modes
+
+**Default (`updateMode: "all"` or `"time"`)** — inserts values from the **last row** of the query result:
+```
+Price: **${{price}}**
+```
+
+**Key mode (`updateMode: "key"`)** — look up a specific row by key and field using `{{@keyValue::fieldName}}`:
+```
+BTC Price: **${{@BTC-USD::price}}**
+ETH Price: **${{@ETH-USD::price}}**
+```
+This pulls the `price` value from the row where `updateKey` column equals `BTC-USD` (or `ETH-USD`). Useful for showing multiple values from a mutable stream side by side.
+
+```json
+"viz_content": "SELECT product_id, price FROM table([[ .DB ]].latest_prices)",
+"viz_config": {
+  "chartType": "md",
+  "config": {
+    "content": "| Symbol | Price |\n|---|---|\n| BTC | ${{@BTC-USD::price}} |\n| ETH | ${{@ETH-USD::price}} |",
+    "updateMode": "key",
+    "updateKey": "product_id"
+  }
+}
+```
+
+| Key | Type | Notes |
+|---|---|---|
+| `content` | string | Markdown template with `{{col}}` or `{{@key::col}}` placeholders |
+| `updateMode` | string | `"all"` replace all, `"key"` look up by key, `"time"` append |
+| `updateKey` | string | Column name for key-mode lookups |
 
 ---
 
@@ -184,7 +239,7 @@ All chart panels share:
 }
 ```
 
-Chart types: `line`, `area`, `bar`, `column`, `singleValue`, `table`, `ohlc`, `geo`, `md`.
+Chart types: `line`, `area`, `bar`, `column`, `singleValue`, `table`, `ohlc`, `geo`, `md` (Markdown viz — see dedicated section above).
 
 ---
 
