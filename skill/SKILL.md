@@ -173,6 +173,59 @@ Dashboard JSON is rendered with `[[ ]]` delimiters (to avoid collision with the 
 | `[[ .Config.key ]]` | Config value |
 | `{{filter_*}}` | Left as-is — resolved by the frontend at query time |
 
+**Template processing runs before JSON parsing.** This means template expressions inside JSON string values may contain unescaped `"` characters — the file does not need to be valid JSON before substitution.
+
+## Template Functions (Sprig)
+
+Both DDL (`{{ }}`) and dashboard (`[[ ]]`) templates have the full [Sprig](https://masterminds.github.io/sprig/) function library available — the same library used by Helm. Use these to manipulate config values at install time.
+
+### Working with `list` config values
+
+Config keys of type `list` are stored as a JSON array string (e.g. `["BTC-USD","ETH-USD","SOL-USD"]`). Use `fromJson` to parse them before passing to other functions.
+
+**Render as comma-separated string** (e.g. for dashboard selector `inlineValues`):
+```json
+"inlineValues": "[[ join "," (fromJson .Config.product_ids) ]]"
+```
+→ `"inlineValues": "BTC-USD,ETH-USD,SOL-USD"`
+
+**Embed directly as JSON array** (e.g. in a DDL Python string):
+```sql
+product_ids = '{{ .Config.product_ids }}'
+```
+→ `product_ids = '["BTC-USD","ETH-USD","SOL-USD"]'`
+
+**Get the first element** (e.g. for a selector `defaultValue`):
+```json
+"defaultValue": "[[ index (fromJson .Config.product_ids) 0 ]]"
+```
+→ `"defaultValue": "BTC-USD"`
+
+### Commonly used functions
+
+| Function | Example | Result |
+|---|---|---|
+| `join sep list` | `join "," (fromJson .Config.topics)` | `a,b,c` |
+| `fromJson s` | `fromJson .Config.product_ids` | parsed slice |
+| `default val s` | `default "30" .Config.timeout` | config value or fallback |
+| `upper s` | `upper .Config.env` | `PRODUCTION` |
+| `lower s` | `lower .Config.env` | `production` |
+| `trim s` | `trim .Config.url` | strips whitespace |
+| `replace old new s` | `replace "-" "_" .Config.id` | `BTC_USD` |
+| `splitList sep s` | `splitList "," .Config.tags` | `["a","b","c"]` |
+| `first list` | `first (fromJson .Config.ids)` | first element |
+| `last list` | `last (fromJson .Config.ids)` | last element |
+| `len list` | `len (fromJson .Config.ids)` | count |
+
+Full function reference: https://masterminds.github.io/sprig/
+
+## Timeplus SQL Reference
+
+For writing correct Timeplus streaming SQL in DDL files, refer to the Timeplus SQL skill:
+https://github.com/timeplus-io/AgentSkills/tree/main/timeplus-sql-guide
+
+This covers streaming query syntax, window functions, tumble/hop aggregations, `_tp_time` semantics, and other Timeplus-specific SQL features used in streams, views, and materialized views.
+
 ## File Ordering and Dependencies
 
 Name DDL files with a numeric prefix so they execute in dependency order:
