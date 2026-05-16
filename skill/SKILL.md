@@ -310,6 +310,56 @@ echo "data:image/png;base64,$(base64 -i icon.png | tr -d '\n')"
 echo "data:image/svg+xml;base64,$(base64 -i icon.svg | tr -d '\n')"
 ```
 
+### Designing icons that match the Timeplus UI
+
+The Timeplus frontend (`AppCard.tsx`) renders app icons as rounded squares. When no icon is provided it shows a default: a white outline box on a `#D53F8C → #9F2BC0` diagonal gradient. Custom icons should be consistent with this style.
+
+**SVG is the best format** — small, scalable, no raster artifacts.
+
+**Canonical icon template (48×48 viewBox):**
+
+```svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#D53F8C"/>
+      <stop offset="100%" stop-color="#9F2BC0"/>
+    </linearGradient>
+  </defs>
+  <rect width="48" height="48" rx="11" fill="url(#bg)"/>
+  <!-- white stroke icon centered in the ~12–36 x/y region -->
+</svg>
+```
+
+**Icon style rules:**
+- Background: rounded square `rx="11"` with the pink→purple gradient (`#D53F8C` → `#9F2BC0`), matching the default icon's `bg-gradient-to-br from-[#D53F8C] to-[#9F2BC0]`
+- Icon symbol: white, flat, thin-stroke outline (`stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"`)
+- Icon occupies roughly the inner 24×24 area (coordinates 12–36 on the 48×48 canvas)
+- Use `fill="white"` for solid accent shapes (e.g. a lightning bolt inside a shield)
+
+**Example icons for reference apps:**
+
+| App | Symbol | SVG elements |
+|-----|--------|--------------|
+| Crypto market data | 3-candle OHLC chart | `<line>` wicks + `<rect>` bodies (center candle filled) |
+| GitHub activity | `</>` code brackets | Two `<path>` chevrons + a diagonal slash `<line>` |
+| Complex event processing | 3 nodes in a triangle | Three `<circle>` + connecting `<line>`/`<path>` |
+| News feed | Newspaper | `<rect>` border + `<line>` rows |
+| Trading / P&L | Trending-up chart | `<polyline>` with arrowhead |
+| Security / DDoS | Shield + lightning bolt | Shield `<path>` (stroke) + bolt `<path>` (fill white) |
+| Game analytics | Gamepad | Body `<path>` + D-pad `<line>` cross + button `<circle>` |
+
+**Generating the data URI from an inline SVG string (Python):**
+
+```python
+import base64
+
+svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">...</svg>'
+b64 = base64.b64encode(svg.encode()).decode()
+data_uri = f'data:image/svg+xml;base64,{b64}'
+# paste into manifest.yaml as:  icon: "<data_uri>"
+```
+
 ## Categories
 
 The `categories` field in `manifest.yaml` assigns free-form tags to the app for discovery and filtering in the UI. It is optional — when absent the app has no categories.
