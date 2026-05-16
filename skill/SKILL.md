@@ -219,6 +219,23 @@ product_ids = '{{ .Config.product_ids }}'
 
 Full function reference: https://masterminds.github.io/sprig/
 
+## Dashboard JSON Reference
+
+For the full dashboard panel specification — all chart types, `viz_config` fields, control panels, position grid, update modes, and working examples — see:
+
+**`skill/references/dashboard-spec.md`**
+
+This covers:
+- Panel structure (`id`, `title`, `position`, `viz_type`, `viz_content`, `viz_config`)
+- 12-column position grid and common width/height values
+- Template variables (`[[ .DB ]]` vs `{{filter_*}}`)
+- Control panels: `selector` (dropdown) and `text_input`
+- Chart types: `line`, `area`, `bar`, `column`, `singleValue`, `table`, `ohlc`, `geo`, `md`
+- All `viz_config.config` fields per chart type with defaults
+- `updateMode` (`"all"` / `"key"` / `"time"`) — when to use each
+- Default color palette
+- Common mistakes
+
 ## Timeplus SQL Reference
 
 For writing correct Timeplus streaming SQL in DDL files, refer to the Timeplus SQL skill:
