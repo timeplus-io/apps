@@ -1,0 +1,1 @@
+SYSTEM PAUSE MATERIALIZED VIEW {{ .DB }}.mv_asa_logs_sim_attack

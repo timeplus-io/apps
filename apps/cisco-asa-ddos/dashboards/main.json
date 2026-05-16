@@ -1,0 +1,94 @@
+[
+  {
+    "id": "ddos-control-ip",
+    "title": "Source IP Filter",
+    "description": "",
+    "position": { "h": 1, "w": 4, "x": 0, "y": 0, "nextX": 4, "nextY": 1 },
+    "viz_type": "control",
+    "viz_content": "",
+    "viz_config": {
+      "chartType": "text_input",
+      "defaultValue": "203.0.113.67",
+      "label": "Source IP",
+      "labelWidth": "60",
+      "target": "filter_src_ip"
+    }
+  },
+  {
+    "id": "ddos-control-time",
+    "title": "Time Range",
+    "description": "",
+    "position": { "h": 1, "w": 4, "x": 4, "y": 0, "nextX": 8, "nextY": 1 },
+    "viz_type": "control",
+    "viz_content": "",
+    "viz_config": {
+      "chartType": "selector",
+      "defaultValue": "5m",
+      "inlineValues": "1m,5m,15m,1h,6h",
+      "label": "Time Range",
+      "labelWidth": "60",
+      "target": "filter_time_range"
+    }
+  },
+  {
+    "id": "ddos-spike-ratios",
+    "title": "DDoS Spike Ratios — Live vs Baseline",
+    "description": "Tracks overall and hourly spike ratios per source IP. Ratios above the threshold trigger an alert.",
+    "position": { "h": 4, "w": 6, "x": 0, "y": 1, "nextX": 6, "nextY": 5 },
+    "viz_type": "chart",
+    "viz_content": "SELECT _tp_time, src_ip, round(overall_spike_ratio, 2) AS overall_ratio, round(hourly_spike_ratio, 2) AS hourly_ratio FROM [[ .DB ]].cxt_ddos_stream WHERE src_ip = to_ipv4('{{filter_src_ip}}') AND _tp_time > now() - {{filter_time_range}}",
+    "viz_config": {
+      "chartType": "line",
+      "x": "_tp_time",
+      "y": ["overall_ratio", "hourly_ratio"],
+      "color": "src_ip"
+    }
+  },
+  {
+    "id": "ddos-live-bytes",
+    "title": "Live Traffic (5s window)",
+    "description": "Bytes transferred per source IP in rolling 5-second windows.",
+    "position": { "h": 4, "w": 6, "x": 6, "y": 1, "nextX": 12, "nextY": 5 },
+    "viz_type": "chart",
+    "viz_content": "SELECT _tp_time, src_ip, live_bytes FROM [[ .DB ]].sig_live_5s_traffic WHERE src_ip = to_ipv4('{{filter_src_ip}}') AND _tp_time > now() - {{filter_time_range}}",
+    "viz_config": {
+      "chartType": "area",
+      "x": "_tp_time",
+      "y": ["live_bytes"],
+      "color": "src_ip"
+    }
+  },
+  {
+    "id": "ddos-baseline-table",
+    "title": "Overall Baseline",
+    "description": "Per-IP average baseline bytes (continuously updated).",
+    "position": { "h": 3, "w": 6, "x": 0, "y": 5, "nextX": 6, "nextY": 8 },
+    "viz_type": "chart",
+    "viz_content": "SELECT src_ip, round(avg_baseline_bytes, 0) AS avg_bytes FROM table([[ .DB ]].sig_overall_baseline_mut) WHERE src_ip = to_ipv4('{{filter_src_ip}}')",
+    "viz_config": {
+      "chartType": "table"
+    }
+  },
+  {
+    "id": "ddos-hourly-baseline-table",
+    "title": "Hourly Baseline",
+    "description": "Per-IP per-hour baseline for time-of-day anomaly detection.",
+    "position": { "h": 3, "w": 6, "x": 6, "y": 5, "nextX": 12, "nextY": 8 },
+    "viz_type": "chart",
+    "viz_content": "SELECT src_ip, hour_of_day, round(avg_baseline_bytes, 0) AS avg_bytes FROM table([[ .DB ]].sig_hourly_baseline_mut) WHERE src_ip = to_ipv4('{{filter_src_ip}}') ORDER BY hour_of_day",
+    "viz_config": {
+      "chartType": "table"
+    }
+  },
+  {
+    "id": "ddos-detections",
+    "title": "Active DDoS Detections",
+    "description": "Events where spike ratio exceeds threshold.",
+    "position": { "h": 3, "w": 12, "x": 0, "y": 8, "nextX": 12, "nextY": 11 },
+    "viz_type": "chart",
+    "viz_content": "SELECT _tp_time, src_ip, live_bytes, round(overall_spike_ratio, 2) AS overall_ratio, round(hourly_spike_ratio, 2) AS hourly_ratio FROM [[ .DB ]].cxt_ddos_stream WHERE (overall_spike_ratio > 10 OR hourly_spike_ratio > 10) AND _tp_time > now() - {{filter_time_range}} ORDER BY _tp_time DESC LIMIT 100",
+    "viz_config": {
+      "chartType": "table"
+    }
+  }
+]
