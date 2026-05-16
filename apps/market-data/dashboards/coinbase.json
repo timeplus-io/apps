@@ -16,7 +16,7 @@
     "viz_config": {
       "chartType": "selector",
       "defaultValue": "BTC-USD",
-      "inlineValues": "BTC-USD,ETC-USD,DAI-USD",
+      "inlineValues": "[[ join "," (fromJson .Config.product_ids) ]]",
       "label": "Product",
       "labelWidth": "42",
       "target": "filter_product"
