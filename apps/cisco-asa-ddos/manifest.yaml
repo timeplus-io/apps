@@ -1,6 +1,6 @@
 package_format_version: 1
 id: io.timeplus.cisco-asa-ddos
-name: Cisco ASA DDoS Detection
+name: Cisco ASA DDoS Detection Demo
 version: 1.0.0
 author: Timeplus
 description: >
