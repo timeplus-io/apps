@@ -5,6 +5,7 @@
     "name": "Complex Event Processing Demo",
     "version": "1.0.2",
     "author": "Timeplus",
+    "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJiZyIgeDE9IjAiIHkxPSIwIiB4Mj0iNDgiIHkyPSI0OCIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNENTNGOEMiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiM5RjJCQzAiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHJ4PSIxMSIgZmlsbD0idXJsKCNiZykiLz48Y2lyY2xlIGN4PSIxNCIgY3k9IjI3IiByPSI0IiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjEuNSIgZmlsbD0ibm9uZSIvPjxjaXJjbGUgY3g9IjI0IiBjeT0iMTYiIHI9IjQiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMS41IiBmaWxsPSJub25lIi8+PGNpcmNsZSBjeD0iMzQiIGN5PSIyNyIgcj0iNCIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIxLjUiIGZpbGw9Im5vbmUiLz48bGluZSB4MT0iMTcuNSIgeTE9IjI0IiB4Mj0iMjEuMyIgeTI9IjE5IiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+PGxpbmUgeDE9IjI2LjciIHkxPSIxOSIgeDI9IjMwLjUiIHkyPSIyNCIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjxwYXRoIGQ9Ik0xNy41IDI5LjUgUTI0IDM1IDMwLjUgMjkuNSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgZmlsbD0ibm9uZSIvPjwvc3ZnPg==",
     "description": "Complex event processing demo with SQL-based fraud detection and JavaScript UDF pattern matching over simulated random event streams.",
     "db_name": "cep",
     "categories": [
@@ -56,7 +57,7 @@
         "description": "Real-time complex event processing visualization"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.0/cep.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.1/cep.tpapp"
   },
   {
     "package_format_version": 1,
@@ -64,6 +65,7 @@
     "name": "Cisco ASA DDoS Detection Demo",
     "version": "1.0.0",
     "author": "Timeplus",
+    "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJiZyIgeDE9IjAiIHkxPSIwIiB4Mj0iNDgiIHkyPSI0OCIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNENTNGOEMiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiM5RjJCQzAiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHJ4PSIxMSIgZmlsbD0idXJsKCNiZykiLz48cGF0aCBkPSJNMjQgMTEgTDM1IDE1LjUgVjI0IEMzNSAzMC41IDMwIDM2IDI0IDM4IEMxOCAzNiAxMyAzMC41IDEzIDI0IFYxNS41IFoiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBmaWxsPSJub25lIi8+PHBhdGggZD0iTTI2LjUgMTcgTDIwIDI2IEgyNC41IEwyMS41IDMzIEwyOCAyNCBIMjMuNSBaIiBmaWxsPSJ3aGl0ZSIvPjwvc3ZnPg==",
     "description": "Real-time DDoS detection from simulated Cisco ASA firewall logs. Generates background traffic and a controllable attack stream, parses raw syslog into structured fields, then applies dynamic per-IP baselines (overall and hourly) to detect traffic spikes. Fires a webhook alert when the spike ratio exceeds the configured threshold. Resume and pause the attack MV to control the simulation.\nThe attack MV is paused automatically on install. To trigger the simulated attack:\n  SYSTEM RESUME MATERIALIZED VIEW <db>.mv_asa_logs_sim_attack;\n",
     "db_name": "cisco_asa_ddos",
     "categories": [
@@ -273,7 +275,7 @@
         "description": "Real-time spike ratio monitoring, baseline tables, and live traffic"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.0/cisco-asa-ddos.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.1/cisco-asa-ddos.tpapp"
   },
   {
     "package_format_version": 1,
@@ -281,6 +283,7 @@
     "name": "Real-time Machine Learning Feature Pipeline for Game Analytics Demo",
     "version": "1.0.0",
     "author": "Timeplus",
+    "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJiZyIgeDE9IjAiIHkxPSIwIiB4Mj0iNDgiIHkyPSI0OCIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNENTNGOEMiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiM5RjJCQzAiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHJ4PSIxMSIgZmlsbD0idXJsKCNiZykiLz48cGF0aCBkPSJNMTMgMjQgQzEzIDE5IDE2IDE3IDIwIDE3IEgyOCBDMzIgMTcgMzUgMTkgMzUgMjQgTDM1IDI2IEMzNSAyOSAzMyAzMSAzMCAzMSBMMjggMjkuNSBDMjYuNSAyOC41IDIxLjUgMjguNSAyMCAyOS41IEwxOCAzMSBDMTUgMzEgMTMgMjkgMTMgMjYgWiIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIxLjUiIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz48bGluZSB4MT0iMTgiIHkxPSIyMCIgeDI9IjE4IiB5Mj0iMjYiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48bGluZSB4MT0iMTUiIHkxPSIyMyIgeDI9IjIxIiB5Mj0iMjMiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48Y2lyY2xlIGN4PSIzMCIgY3k9IjIxIiByPSIxLjUiIGZpbGw9IndoaXRlIi8+PGNpcmNsZSBjeD0iMzAiIGN5PSIyNSIgcj0iMS41IiBmaWxsPSJ3aGl0ZSIvPjwvc3ZnPg==",
     "description": "Demo of real-time ML feature pipeline for game analytics \u2014 player action features, transaction features, social engagement features, and composite feature views for player behaviour analysis and spend anomaly detection.\n",
     "db_name": "game",
     "categories": [
@@ -459,7 +462,7 @@
         "name": "spending_alert"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.0/game-feature-pipeline.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.1/game-feature-pipeline.tpapp"
   },
   {
     "package_format_version": 1,
@@ -467,6 +470,7 @@
     "name": "GitHub Activity Monitor",
     "version": "1.0.1",
     "author": "Timeplus",
+    "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJiZyIgeDE9IjAiIHkxPSIwIiB4Mj0iNDgiIHkyPSI0OCIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNENTNGOEMiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiM5RjJCQzAiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHJ4PSIxMSIgZmlsbD0idXJsKCNiZykiLz48cGF0aCBkPSJNMTcgMTcgTDExIDI0IEwxNyAzMSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgZmlsbD0ibm9uZSIvPjxwYXRoIGQ9Ik0zMSAxNyBMMzcgMjQgTDMxIDMxIiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBmaWxsPSJub25lIi8+PGxpbmUgeDE9IjI3IiB5MT0iMTUiIHgyPSIyMSIgeTI9IjMzIiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+PC9zdmc+",
     "description": "Real-time GitHub public events pipeline. Streams public events from the GitHub API into Timeplus for live analytics.",
     "db_name": "github",
     "categories": [
@@ -509,7 +513,7 @@
         "description": "Real-time view of GitHub public events"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.0/github.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.1/github.tpapp"
   },
   {
     "package_format_version": 1,
@@ -517,6 +521,7 @@
     "name": "Hacker News Live Feed",
     "version": "1.0.0",
     "author": "Timeplus",
+    "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJiZyIgeDE9IjAiIHkxPSIwIiB4Mj0iNDgiIHkyPSI0OCIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNENTNGOEMiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiM5RjJCQzAiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHJ4PSIxMSIgZmlsbD0idXJsKCNiZykiLz48cmVjdCB4PSIxMSIgeT0iMTIiIHdpZHRoPSIyNiIgaGVpZ2h0PSIyNCIgcng9IjIiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMS41IiBmaWxsPSJub25lIi8+PGxpbmUgeDE9IjE0IiB5MT0iMTciIHgyPSIzNCIgeTI9IjE3IiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjxsaW5lIHgxPSIxNCIgeTE9IjIxIiB4Mj0iMzQiIHkyPSIyMSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjxsaW5lIHgxPSIxNCIgeTE9IjI1IiB4Mj0iMzQiIHkyPSIyNSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjxsaW5lIHgxPSIxNCIgeTE9IjI5IiB4Mj0iMjYiIHkyPSIyOSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjwvc3ZnPg==",
     "description": "Continuously ingests Hacker News posts and comments via the official Firebase API into a Timeplus stream, ready for real-time analysis of trending stories, active users, and post-type distributions.\n",
     "db_name": "hn",
     "categories": [
@@ -594,7 +599,7 @@
         "name": "get_hn_post"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.0/hacker-news.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.1/hacker-news.tpapp"
   },
   {
     "package_format_version": 1,
@@ -602,6 +607,7 @@
     "name": "Real-time Investment Insights",
     "version": "1.0.0",
     "author": "Timeplus",
+    "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJiZyIgeDE9IjAiIHkxPSIwIiB4Mj0iNDgiIHkyPSI0OCIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNENTNGOEMiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiM5RjJCQzAiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHJ4PSIxMSIgZmlsbD0idXJsKCNiZykiLz48cG9seWxpbmUgcG9pbnRzPSIxMCwzNCAxNiwyNiAyMSwyOCAyNywxOSAzNywxMyIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGZpbGw9Im5vbmUiLz48cG9seWxpbmUgcG9pbnRzPSIzMywxMiAzNywxMyAzNiwxNyIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgZmlsbD0ibm9uZSIvPjwvc3ZnPg==",
     "description": "Real-time trading monitoring demo \u2014 order management, position tracking, market data, continuous auction participation rate, and live P&L. Data is generated internally via random streams; no external Kafka required.\n",
     "db_name": "invest_insights",
     "categories": [
@@ -764,14 +770,15 @@
         "description": "Real-time trading metrics \u2014 participation rate and P&L"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.0/invest-insights.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.1/invest-insights.tpapp"
   },
   {
     "package_format_version": 1,
     "id": "io.timeplus.market-data",
     "name": "Coinbase Crypto Analytics",
-    "version": "1.0.2",
+    "version": "1.1.0",
     "author": "Timeplus",
+    "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJiZyIgeDE9IjAiIHkxPSIwIiB4Mj0iNDgiIHkyPSI0OCIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNENTNGOEMiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiM5RjJCQzAiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHJ4PSIxMSIgZmlsbD0idXJsKCNiZykiLz48bGluZSB4MT0iMTUiIHkxPSIxMyIgeDI9IjE1IiB5Mj0iMzUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48cmVjdCB4PSIxMiIgeT0iMTkiIHdpZHRoPSI2IiBoZWlnaHQ9IjkiIHJ4PSIxIiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjEuNSIgZmlsbD0ibm9uZSIvPjxsaW5lIHgxPSIyNCIgeTE9IjExIiB4Mj0iMjQiIHkyPSIzNyIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjxyZWN0IHg9IjIxIiB5PSIxNSIgd2lkdGg9IjYiIGhlaWdodD0iMTQiIHJ4PSIxIiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjEuNSIgZmlsbD0id2hpdGUiLz48bGluZSB4MT0iMzMiIHkxPSIxNCIgeDI9IjMzIiB5Mj0iMzQiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48cmVjdCB4PSIzMCIgeT0iMjEiIHdpZHRoPSI2IiBoZWlnaHQ9IjgiIHJ4PSIxIiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjEuNSIgZmlsbD0ibm9uZSIvPjwvc3ZnPg==",
     "description": "Real-time crypto market data from Coinbase WebSocket \u2014 OHLC candlesticks, RSI, order book snapshots, VWAP, and quantitative alpha signals.\n",
     "db_name": "market_data",
     "categories": [
@@ -912,6 +919,6 @@
         "description": "Real-time OHLC, returns, and RSI for Coinbase crypto pairs"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.0/market-data.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.1/market-data.tpapp"
   }
 ]
