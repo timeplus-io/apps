@@ -1,0 +1,164 @@
+[
+  {
+    "id": "ctrl-time-range",
+    "title": "",
+    "description": "",
+    "position": { "h": 1, "w": 4, "x": 0, "y": 0, "nextX": 4, "nextY": 1 },
+    "viz_type": "control",
+    "viz_content": "",
+    "viz_config": {
+      "chartType": "selector",
+      "label": "Time Range",
+      "labelWidth": "70",
+      "target": "filter_time_range",
+      "defaultValue": "1h",
+      "inlineValues": "5m,15m,30m,1h,6h,24h"
+    }
+  },
+  {
+    "id": "kpi-total-posts",
+    "title": "Total Posts",
+    "description": "Number of posts in selected time range",
+    "position": { "h": 2, "w": 4, "x": 0, "y": 1, "nextX": 4, "nextY": 3 },
+    "viz_type": "chart",
+    "viz_content": "SELECT count(*) AS total_posts FROM [[ .DB ]].bluesky_posts WHERE _tp_time > now() - {{filter_time_range}}",
+    "viz_config": {
+      "chartType": "singleValue",
+      "config": {
+        "field": "total_posts",
+        "fontSize": 48,
+        "unit": { "position": "right", "value": "" },
+        "fractionDigits": 0,
+        "thresholds": []
+      }
+    }
+  },
+  {
+    "id": "kpi-unique-users",
+    "title": "Unique Posters",
+    "description": "Distinct users who posted in selected time range",
+    "position": { "h": 2, "w": 4, "x": 4, "y": 1, "nextX": 8, "nextY": 3 },
+    "viz_type": "chart",
+    "viz_content": "SELECT count(distinct did) AS unique_users FROM [[ .DB ]].bluesky_posts WHERE _tp_time > now() - {{filter_time_range}}",
+    "viz_config": {
+      "chartType": "singleValue",
+      "config": {
+        "field": "unique_users",
+        "fontSize": 48,
+        "unit": { "position": "right", "value": "" },
+        "fractionDigits": 0,
+        "thresholds": []
+      }
+    }
+  },
+  {
+    "id": "kpi-total-activity",
+    "title": "Total Activity Events",
+    "description": "All commit events (posts, likes, follows, reposts) in selected time range",
+    "position": { "h": 2, "w": 4, "x": 8, "y": 1, "nextX": 12, "nextY": 3 },
+    "viz_type": "chart",
+    "viz_content": "SELECT count(*) AS total_events FROM [[ .DB ]].bluesky_activity WHERE _tp_time > now() - {{filter_time_range}}",
+    "viz_config": {
+      "chartType": "singleValue",
+      "config": {
+        "field": "total_events",
+        "fontSize": 48,
+        "unit": { "position": "right", "value": "" },
+        "fractionDigits": 0,
+        "thresholds": []
+      }
+    }
+  },
+  {
+    "id": "chart-engagement-timeline",
+    "title": "Engagement Timeline (per minute)",
+    "description": "Posts, likes, follows, and reposts over time",
+    "position": { "h": 4, "w": 12, "x": 0, "y": 3, "nextX": 12, "nextY": 7 },
+    "viz_type": "chart",
+    "viz_content": "SELECT window_start AS time, count_if(collection = 'app.bsky.feed.post') AS posts, count_if(collection = 'app.bsky.feed.like') AS likes, count_if(collection = 'app.bsky.graph.follow') AS follows, count_if(collection = 'app.bsky.feed.repost') AS reposts FROM tumble([[ .DB ]].bluesky_activity, 1m) WHERE _tp_time > now() - {{filter_time_range}} GROUP BY window_start",
+    "viz_config": {
+      "chartType": "line",
+      "config": {
+        "xAxis": "time",
+        "yAxis": "posts",
+        "color": "",
+        "xRange": "Infinity",
+        "lineStyle": "curve",
+        "legend": false,
+        "gridlines": true,
+        "yRange": { "min": null, "max": null },
+        "colors": ["#ED64A6", "#F0BE3E", "#DA4B36", "#9A1563"]
+      }
+    }
+  },
+  {
+    "id": "chart-post-volume",
+    "title": "Post Volume (5-second windows)",
+    "description": "Number of posts per 5-second tumbling window",
+    "position": { "h": 4, "w": 6, "x": 0, "y": 7, "nextX": 6, "nextY": 11 },
+    "viz_type": "chart",
+    "viz_content": "SELECT window_start AS time, count(*) AS posts, count(distinct did) AS unique_posters FROM tumble([[ .DB ]].bluesky_posts, 5s) WHERE _tp_time > now() - {{filter_time_range}} GROUP BY window_start",
+    "viz_config": {
+      "chartType": "column",
+      "config": {
+        "xAxis": "time",
+        "yAxis": "posts",
+        "color": "",
+        "xRange": "Infinity",
+        "dataLabel": false,
+        "gridlines": true,
+        "yRange": { "min": null, "max": null },
+        "colors": ["#D53F8C", "#9F2BC0"]
+      }
+    }
+  },
+  {
+    "id": "chart-language-breakdown",
+    "title": "Posts by Language",
+    "description": "Top languages detected in posts",
+    "position": { "h": 4, "w": 6, "x": 6, "y": 7, "nextX": 12, "nextY": 11 },
+    "viz_type": "chart",
+    "viz_content": "SELECT if(lang = '' OR lang IS NULL, 'unknown', lang) AS language, count(*) AS post_count FROM tumble([[ .DB ]].bluesky_posts, 1m) WHERE _tp_time > now() - {{filter_time_range}} GROUP BY window_start, language ORDER BY post_count DESC LIMIT 10",
+    "viz_config": {
+      "chartType": "bar",
+      "config": {
+        "xAxis": "language",
+        "yAxis": "post_count",
+        "color": "",
+        "dataLabel": true,
+        "gridlines": true,
+        "colors": ["#8934D9", "#D53F8C", "#F7775A", "#F0BE3E", "#DA4B36"]
+      }
+    }
+  },
+  {
+    "id": "table-top-posters",
+    "title": "Top Active Posters",
+    "description": "Users with highest post counts in selected time range",
+    "position": { "h": 5, "w": 6, "x": 0, "y": 11, "nextX": 6, "nextY": 16 },
+    "viz_type": "chart",
+    "viz_content": "SELECT window_start AS time, did, count(*) AS post_count FROM tumble([[ .DB ]].bluesky_posts, 5m) WHERE _tp_time > now() - {{filter_time_range}} GROUP BY window_start, did HAVING post_count >= 2 ORDER BY post_count DESC LIMIT 15",
+    "viz_config": {
+      "chartType": "table",
+      "config": {
+        "updateMode": "all",
+        "columns": []
+      }
+    }
+  },
+  {
+    "id": "table-recent-posts",
+    "title": "Live Post Feed",
+    "description": "Most recent posts from the Bluesky firehose",
+    "position": { "h": 5, "w": 6, "x": 6, "y": 11, "nextX": 12, "nextY": 16 },
+    "viz_type": "chart",
+    "viz_content": "SELECT did, if(lang = '' OR lang IS NULL, 'unknown', lang) AS lang, post_type, left(text, 200) AS text, _tp_time FROM [[ .DB ]].bluesky_posts WHERE _tp_time > now() - {{filter_time_range}}",
+    "viz_config": {
+      "chartType": "table",
+      "config": {
+        "updateMode": "time",
+        "columns": []
+      }
+    }
+  }
+]
