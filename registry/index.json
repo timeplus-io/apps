@@ -1,6 +1,104 @@
 [
   {
     "package_format_version": 1,
+    "id": "io.timeplus.bluesky",
+    "name": "Bluesky Social Analytics",
+    "version": "1.0.0",
+    "author": "Timeplus",
+    "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJiZyIgeDE9IjAiIHkxPSIwIiB4Mj0iNDgiIHkyPSI0OCIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNENTNGOEMiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiM5RjJCQzAiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHJ4PSIxMSIgZmlsbD0idXJsKCNiZykiLz48cGF0aCBkPSJNMTMgMTMgaDE1IGEyIDIgMCAwIDEgMiAyIHY5IGEyIDIgMCAwIDEtMiAyIGgtNiBsLTUgNCB2LTQgaC00IGEyIDIgMCAwIDEtMi0yIHYtOSBhMiAyIDAgMCAxIDItMiB6IiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgZmlsbD0ibm9uZSIvPjxwYXRoIGQ9Ik0yNiAyNSBoOCBhMiAyIDAgMCAxIDIgMiB2NiBhMiAyIDAgMCAxLTIgMiBoLTIgdjMgbC0zLTMgaC0zIGEyIDIgMCAwIDEtMi0yIHYtNiBhMiAyIDAgMCAxIDItMiB6IiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgZmlsbD0ibm9uZSIvPjwvc3ZnPg==",
+    "description": "Real-time social media analytics from Bluesky's Jetstream firehose \u2014 post volume, engagement metrics, language breakdown, top posters, and a live activity feed.\n",
+    "db_name": "bluesky",
+    "categories": [
+      "analytics",
+      "social-media"
+    ],
+    "config": [
+      {
+        "key": "jetstream_url",
+        "type": "string",
+        "required": false,
+        "default": "wss://jetstream2.us-west.bsky.network/subscribe",
+        "description": "Bluesky Jetstream WebSocket endpoint URL"
+      },
+      {
+        "key": "wanted_collections",
+        "type": "list",
+        "required": false,
+        "default": "[\"app.bsky.feed.post\",\"app.bsky.feed.like\",\"app.bsky.graph.follow\",\"app.bsky.feed.repost\"]",
+        "description": "AT Protocol collection NSIDs to subscribe to. Examples: app.bsky.feed.post, app.bsky.feed.like, app.bsky.graph.follow, app.bsky.feed.repost\n"
+      }
+    ],
+    "python_packages": [
+      "websocket-client>=1.4.0"
+    ],
+    "resources": [
+      {
+        "file": "ddl/001_bluesky_jetstream.sql",
+        "type": "external_stream",
+        "name": "bluesky_jetstream"
+      },
+      {
+        "file": "ddl/002_bluesky_posts.sql",
+        "type": "stream",
+        "name": "bluesky_posts"
+      },
+      {
+        "file": "ddl/003_bluesky_activity.sql",
+        "type": "stream",
+        "name": "bluesky_activity"
+      },
+      {
+        "file": "ddl/004_mv_posts_extracted.sql",
+        "type": "materialized_view",
+        "name": "mv_posts_extracted"
+      },
+      {
+        "file": "ddl/005_mv_activity_extracted.sql",
+        "type": "materialized_view",
+        "name": "mv_activity_extracted"
+      },
+      {
+        "file": "ddl/006_bluesky_stats_1m.sql",
+        "type": "mutable_stream",
+        "name": "bluesky_stats_1m"
+      },
+      {
+        "file": "ddl/007_mv_stats_1m.sql",
+        "type": "materialized_view",
+        "name": "mv_stats_1m"
+      },
+      {
+        "file": "ddl/008_v_post_volume.sql",
+        "type": "view",
+        "name": "v_post_volume"
+      },
+      {
+        "file": "ddl/009_v_top_posters.sql",
+        "type": "view",
+        "name": "v_top_posters"
+      },
+      {
+        "file": "ddl/010_v_language_breakdown.sql",
+        "type": "view",
+        "name": "v_language_breakdown"
+      },
+      {
+        "file": "ddl/011_v_engagement_timeline.sql",
+        "type": "view",
+        "name": "v_engagement_timeline"
+      }
+    ],
+    "dashboards": [
+      {
+        "file": "dashboards/bluesky.json",
+        "name": "Bluesky Social Analytics",
+        "description": "Real-time post volume, engagement, language breakdown, and live feed"
+      }
+    ],
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.2/bluesky.tpapp"
+  },
+  {
+    "package_format_version": 1,
     "id": "io.timeplus.cep",
     "name": "Complex Event Processing Demo",
     "version": "1.0.2",
@@ -57,7 +155,7 @@
         "description": "Real-time complex event processing visualization"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.1/cep.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.2/cep.tpapp"
   },
   {
     "package_format_version": 1,
@@ -275,7 +373,7 @@
         "description": "Real-time spike ratio monitoring, baseline tables, and live traffic"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.1/cisco-asa-ddos.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.2/cisco-asa-ddos.tpapp"
   },
   {
     "package_format_version": 1,
@@ -462,7 +560,7 @@
         "name": "spending_alert"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.1/game-feature-pipeline.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.2/game-feature-pipeline.tpapp"
   },
   {
     "package_format_version": 1,
@@ -513,7 +611,7 @@
         "description": "Real-time view of GitHub public events"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.1/github.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.2/github.tpapp"
   },
   {
     "package_format_version": 1,
@@ -599,7 +697,7 @@
         "name": "get_hn_post"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.1/hacker-news.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.2/hacker-news.tpapp"
   },
   {
     "package_format_version": 1,
@@ -770,7 +868,7 @@
         "description": "Real-time trading metrics \u2014 participation rate and P&L"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.1/invest-insights.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.2/invest-insights.tpapp"
   },
   {
     "package_format_version": 1,
@@ -919,6 +1017,6 @@
         "description": "Real-time OHLC, returns, and RSI for Coinbase crypto pairs"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.1/market-data.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.2/market-data.tpapp"
   }
 ]
