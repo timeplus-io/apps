@@ -7,6 +7,7 @@
     "author": "Timeplus",
     "description": "Realtime AWS resource usage and cost monitoring. Polls EC2 instances, EBS volumes, and S3 buckets across configured regions, joins live inventory with AWS On-Demand pricing, and breaks down hourly spend by service, region, and creator. Requires an IAM principal with: ec2:DescribeInstances, ec2:DescribeVolumes, s3:ListAllMyBuckets, cloudwatch:GetMetricStatistics, cloudtrail:LookupEvents, pricing:GetProducts.\n",
     "db_name": "aws_cost",
+    "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJiZyIgeDE9IjAiIHkxPSIwIiB4Mj0iNDgiIHkyPSI0OCIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNENTNGOEMiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiM5RjJCQzAiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHJ4PSIxMSIgZmlsbD0idXJsKCNiZykiLz48cGF0aCBkPSJNMTMgMzMgUTggMzMgOCAyOCBROCAyMyAxMyAyMiBRMTQgMTYgMjAgMTYgUTI0IDEyIDI5IDE1IFEzNiAxNSAzNyAyMiBRNDEgMjMgNDEgMjggUTQxIDMzIDM2IDMzIFoiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBmaWxsPSJub25lIi8+PGxpbmUgeDE9IjI0IiB5MT0iMTkiIHgyPSIyNCIgeTI9IjMyIiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+PHBhdGggZD0iTTI4IDIyIFEyNSAyMC41IDIyIDIyIFExOS41IDIzLjUgMjEgMjUuNSBRMjIgMjYuNSAyNSAyNyBRMjggMjcuNSAyOCAyOS41IFEyNyAzMSAyNCAzMSBRMjEgMzEgMjAgMjkuNSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgZmlsbD0ibm9uZSIvPjwvc3ZnPg==",
     "categories": [
       "observability",
       "finops"
@@ -132,7 +133,7 @@
         "description": "Realtime AWS spend by service, region, and creator"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.3/aws-cost.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.4/aws-cost.tpapp"
   },
   {
     "package_format_version": 1,
@@ -230,7 +231,7 @@
         "description": "Real-time post volume, engagement, language breakdown, and live feed"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.3/bluesky.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.4/bluesky.tpapp"
   },
   {
     "package_format_version": 1,
@@ -290,7 +291,7 @@
         "description": "Real-time complex event processing visualization"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.3/cep.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.4/cep.tpapp"
   },
   {
     "package_format_version": 1,
@@ -508,7 +509,7 @@
         "description": "Real-time spike ratio monitoring, baseline tables, and live traffic"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.3/cisco-asa-ddos.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.4/cisco-asa-ddos.tpapp"
   },
   {
     "package_format_version": 1,
@@ -695,7 +696,7 @@
         "name": "spending_alert"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.3/game-feature-pipeline.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.4/game-feature-pipeline.tpapp"
   },
   {
     "package_format_version": 1,
@@ -746,7 +747,7 @@
         "description": "Real-time view of GitHub public events"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.3/github.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.4/github.tpapp"
   },
   {
     "package_format_version": 1,
@@ -832,7 +833,7 @@
         "name": "get_hn_post"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.3/hacker-news.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.4/hacker-news.tpapp"
   },
   {
     "package_format_version": 1,
@@ -1003,7 +1004,7 @@
         "description": "Real-time trading metrics \u2014 participation rate and P&L"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.3/invest-insights.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.4/invest-insights.tpapp"
   },
   {
     "package_format_version": 1,
@@ -1152,6 +1153,6 @@
         "description": "Real-time OHLC, returns, and RSI for Coinbase crypto pairs"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.3/market-data.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.4/market-data.tpapp"
   }
 ]
