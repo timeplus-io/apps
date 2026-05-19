@@ -368,7 +368,10 @@
 </footer>
 
 <script>
-const REGISTRY_URL = "https://github.com/timeplus-io/apps/releases/latest/download/index.json";
+// raw.githubusercontent.com sends CORS headers; release.yaml commits the
+// updated registry/index.json back to main on every release, so this stays
+// in sync automatically.
+const REGISTRY_URL = "https://raw.githubusercontent.com/timeplus-io/apps/main/registry/index.json";
 const PAGE_SIZE = 12;
 
 const state = {
