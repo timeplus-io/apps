@@ -55,6 +55,15 @@ config:
 python_packages:
   - boto3>=1.34.0
 
-resources: []
+resources:
+  - file: ddl/001_aws_resource_poller.sql
+    type: external_stream
+    name: aws_resource_poller
+  - file: ddl/002_aws_resources.sql
+    type: stream
+    name: aws_resources
+  - file: ddl/003_mv_resource_inventory.sql
+    type: materialized_view
+    name: mv_resource_inventory
 
 dashboards: []
