@@ -103,7 +103,7 @@ def _poll_ebs(region, ec2, cloudtrail, cache):
         print(f"[aws-cost] ebs {region} error: {e}")
     return rows
 
-def _poll_s3(s3, cw_us_east_1, cloudtrail, cache):
+def _poll_s3(s3, cw_clients, ct_clients, session_kwargs, cache):
     rows = []
     try:
         buckets = s3.list_buckets().get("Buckets", [])
@@ -118,8 +118,16 @@ def _poll_s3(s3, cw_us_east_1, cloudtrail, cache):
                 tags = _tags_to_dict(tag_resp.get("TagSet"))
             except Exception:
                 tags = {}
+            cw = cw_clients.get(loc)
+            if cw is None:
+                cw = boto3.client("cloudwatch", region_name=loc, **session_kwargs)
+                cw_clients[loc] = cw
+            ct = ct_clients.get(loc)
+            if ct is None:
+                ct = boto3.client("cloudtrail", region_name=loc, **session_kwargs)
+                ct_clients[loc] = ct
             try:
-                m = cw_us_east_1.get_metric_statistics(
+                m = cw.get_metric_statistics(
                     Namespace="AWS/S3",
                     MetricName="BucketSizeBytes",
                     Dimensions=[
@@ -144,7 +152,7 @@ def _poll_s3(s3, cw_us_east_1, cloudtrail, cache):
                 float(bytes_val) / 1e9,
                 "gb-month",
                 json.dumps(tags),
-                _resolve_creator(name, tags, cloudtrail, cache),
+                _resolve_creator(name, tags, ct, cache),
                 datetime.now(timezone.utc),
                 json.dumps(b, default=str),
             ))
@@ -158,22 +166,24 @@ def poll_aws():
         "aws_access_key_id": AWS_ACCESS_KEY_ID,
         "aws_secret_access_key": AWS_SECRET_ACCESS_KEY,
     }
+    ec2_clients = {r: boto3.client("ec2", region_name=r, **session_kwargs) for r in REGIONS}
+    cloudtrail_clients = {r: boto3.client("cloudtrail", region_name=r, **session_kwargs) for r in REGIONS}
+    s3_client = boto3.client("s3", **session_kwargs) if "s3" in SERVICES else None
+    s3_cw_clients = {}
+    s3_ct_clients = dict(cloudtrail_clients)
     while True:
         try:
             for region in REGIONS:
-                ec2 = boto3.client("ec2", region_name=region, **session_kwargs)
-                cloudtrail = boto3.client("cloudtrail", region_name=region, **session_kwargs)
+                ec2 = ec2_clients[region]
+                cloudtrail = cloudtrail_clients[region]
                 if "ec2" in SERVICES:
                     for row in _poll_ec2(region, ec2, cloudtrail, creator_cache):
                         yield row
                 if "ebs" in SERVICES:
                     for row in _poll_ebs(region, ec2, cloudtrail, creator_cache):
                         yield row
-            if "s3" in SERVICES:
-                s3 = boto3.client("s3", **session_kwargs)
-                cw = boto3.client("cloudwatch", region_name="us-east-1", **session_kwargs)
-                ct = boto3.client("cloudtrail", region_name="us-east-1", **session_kwargs)
-                for row in _poll_s3(s3, cw, ct, creator_cache):
+            if "s3" in SERVICES and s3_client is not None:
+                for row in _poll_s3(s3_client, s3_cw_clients, s3_ct_clients, session_kwargs, creator_cache):
                     yield row
         except Exception as e:
             print(f"[aws-cost] outer loop error: {e}")

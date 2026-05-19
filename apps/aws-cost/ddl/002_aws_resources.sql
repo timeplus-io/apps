@@ -10,4 +10,4 @@ CREATE STREAM IF NOT EXISTS {{ .DB }}.aws_resources (
   creator        string,
   snapshot_ts    datetime64(3)
 )
-TTL to_datetime(snapshot_ts) + INTERVAL 7 DAY;
+TTL to_datetime(_tp_time) + INTERVAL 7 DAY;

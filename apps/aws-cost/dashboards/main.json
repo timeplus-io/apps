@@ -41,7 +41,7 @@
     "description": "1-minute samples of total spend rate (USD/hr)",
     "position": { "h": 4, "w": 12, "x": 0, "y": 2, "nextX": 12, "nextY": 6 },
     "viz_type": "chart",
-    "viz_content": "SELECT time, total_hourly_usd FROM [[ .DB ]].aws_cost_1m WHERE _tp_time > now() - 6h",
+    "viz_content": "SELECT time, total_hourly_usd FROM [[ .DB ]].aws_cost_1m WHERE _tp_time > now() - 24h",
     "viz_config": {
       "chartType": "line",
       "config": {

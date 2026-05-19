@@ -44,11 +44,13 @@ EC2_TYPES = [
 EBS_TYPES = ["gp3","gp2","io2","io1","st1","sc1"]
 S3_TIERS  = ["Standard","Standard - Infrequent Access","Glacier"]
 
-def _first_price_usd(price_item):
+def _first_price_usd(price_item, unit_filter=None):
     try:
         terms = (price_item.get("terms") or {}).get("OnDemand") or {}
         for _, term in terms.items():
             for _, pd in (term.get("priceDimensions") or {}).items():
+                if unit_filter is not None and pd.get("unit") != unit_filter:
+                    continue
                 ppu = (pd.get("pricePerUnit") or {}).get("USD")
                 if ppu is not None:
                     return float(ppu)
@@ -73,7 +75,7 @@ def _query_ec2_price(pricing, location, instance_type):
     if not pl:
         return None, ""
     item = json.loads(pl[0])
-    return _first_price_usd(item), pl[0]
+    return _first_price_usd(item, unit_filter="Hrs"), pl[0]
 
 def _query_ebs_price(pricing, location, vol_type):
     resp = pricing.get_products(
@@ -89,7 +91,7 @@ def _query_ebs_price(pricing, location, vol_type):
     if not pl:
         return None, ""
     item = json.loads(pl[0])
-    return _first_price_usd(item), pl[0]
+    return _first_price_usd(item, unit_filter="GB-Mo"), pl[0]
 
 def _query_s3_price(pricing, location, tier):
     resp = pricing.get_products(
@@ -105,7 +107,7 @@ def _query_s3_price(pricing, location, tier):
     if not pl:
         return None, ""
     item = json.loads(pl[0])
-    return _first_price_usd(item), pl[0]
+    return _first_price_usd(item, unit_filter="GB-Mo"), pl[0]
 
 def poll_prices():
     pricing = boto3.client(
