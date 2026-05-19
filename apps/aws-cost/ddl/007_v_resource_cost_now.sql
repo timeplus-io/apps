@@ -1,6 +1,6 @@
 CREATE VIEW IF NOT EXISTS {{ .DB }}.v_resource_cost_now AS
 SELECT
-  r._tp_time                            AS ts,
+  r._tp_time                            AS _tp_time,
   r.service                             AS service,
   r.region                              AS region,
   r.resource_id                         AS resource_id,
