@@ -1,0 +1,111 @@
+[
+  {
+    "id": "kpi-total-rate",
+    "title": "Total Spend Rate",
+    "description": "Current USD per hour across monitored resources",
+    "position": { "h": 2, "w": 6, "x": 0, "y": 0, "nextX": 6, "nextY": 2 },
+    "viz_type": "chart",
+    "viz_content": "SELECT total_hourly_usd FROM table([[ .DB ]].aws_cost_1m) ORDER BY time DESC LIMIT 1",
+    "viz_config": {
+      "chartType": "singleValue",
+      "config": {
+        "field": "total_hourly_usd",
+        "fontSize": 48,
+        "unit": { "position": "left", "value": "$" },
+        "fractionDigits": 2,
+        "thresholds": []
+      }
+    }
+  },
+  {
+    "id": "kpi-monthly-proj",
+    "title": "Monthly Projection",
+    "description": "Current hourly rate × 730 hours",
+    "position": { "h": 2, "w": 6, "x": 6, "y": 0, "nextX": 12, "nextY": 2 },
+    "viz_type": "chart",
+    "viz_content": "SELECT total_hourly_usd * 730 AS monthly_usd FROM table([[ .DB ]].aws_cost_1m) ORDER BY time DESC LIMIT 1",
+    "viz_config": {
+      "chartType": "singleValue",
+      "config": {
+        "field": "monthly_usd",
+        "fontSize": 48,
+        "unit": { "position": "left", "value": "$" },
+        "fractionDigits": 0,
+        "thresholds": []
+      }
+    }
+  },
+  {
+    "id": "chart-cost-time",
+    "title": "Hourly Cost Over Time",
+    "description": "1-minute samples of total spend rate (USD/hr)",
+    "position": { "h": 4, "w": 12, "x": 0, "y": 2, "nextX": 12, "nextY": 6 },
+    "viz_type": "chart",
+    "viz_content": "SELECT time, total_hourly_usd FROM [[ .DB ]].aws_cost_1m WHERE _tp_time > now() - 24h",
+    "viz_config": {
+      "chartType": "line",
+      "config": {
+        "xAxis": "time",
+        "yAxis": "total_hourly_usd",
+        "xRange": "Infinity",
+        "lineStyle": "curve",
+        "legend": false,
+        "gridlines": true,
+        "yRange": { "min": 0, "max": null },
+        "colors": ["#D53F8C"]
+      }
+    }
+  },
+  {
+    "id": "chart-by-service-region",
+    "title": "Cost by Service × Region",
+    "description": "Hourly USD grouped by service and region (latest cycle)",
+    "position": { "h": 4, "w": 6, "x": 0, "y": 6, "nextX": 6, "nextY": 10 },
+    "viz_type": "chart",
+    "viz_content": "SELECT service, region, hourly_usd FROM [[ .DB ]].v_cost_by_service_region",
+    "viz_config": {
+      "chartType": "bar",
+      "config": {
+        "xAxis": "region",
+        "yAxis": "hourly_usd",
+        "color": "service",
+        "dataLabel": false,
+        "gridlines": true,
+        "colors": ["#D53F8C","#9F2BC0","#F7775A","#F0BE3E","#8934D9","#DA4B36"]
+      }
+    }
+  },
+  {
+    "id": "chart-by-creator",
+    "title": "Cost by Creator",
+    "description": "Who is currently spending money (latest cycle)",
+    "position": { "h": 4, "w": 6, "x": 6, "y": 6, "nextX": 12, "nextY": 10 },
+    "viz_type": "chart",
+    "viz_content": "SELECT creator, hourly_usd FROM [[ .DB ]].v_cost_by_creator ORDER BY hourly_usd DESC LIMIT 15",
+    "viz_config": {
+      "chartType": "bar",
+      "config": {
+        "xAxis": "creator",
+        "yAxis": "hourly_usd",
+        "dataLabel": true,
+        "gridlines": true,
+        "colors": ["#9F2BC0"]
+      }
+    }
+  },
+  {
+    "id": "table-top-resources",
+    "title": "Top 20 Expensive Resources",
+    "description": "Resources sorted by hourly cost (latest cycle)",
+    "position": { "h": 6, "w": 12, "x": 0, "y": 10, "nextX": 12, "nextY": 16 },
+    "viz_type": "chart",
+    "viz_content": "SELECT resource_id, service, region, resource_type, creator, hourly_cost_usd, monthly_cost_usd FROM [[ .DB ]].v_top_expensive",
+    "viz_config": {
+      "chartType": "table",
+      "config": {
+        "updateMode": "all",
+        "columns": []
+      }
+    }
+  }
+]

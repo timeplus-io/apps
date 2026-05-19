@@ -1,0 +1,99 @@
+package_format_version: 1
+id: io.timeplus.aws-cost
+name: AWS Resource Cost Monitor
+version: 0.1.0
+author: Timeplus
+description: >
+  Realtime AWS resource usage and cost monitoring. Polls EC2 instances,
+  EBS volumes, and S3 buckets across configured regions, joins live
+  inventory with AWS On-Demand pricing, and breaks down hourly spend by
+  service, region, and creator. Requires an IAM principal with:
+  ec2:DescribeInstances, ec2:DescribeVolumes, s3:ListAllMyBuckets,
+  cloudwatch:GetMetricStatistics, cloudtrail:LookupEvents,
+  pricing:GetProducts.
+db_name: aws_cost
+categories:
+  - observability
+  - finops
+
+config:
+  - key: aws_access_key_id
+    type: string
+    required: true
+    secret: true
+    description: AWS access key ID for the IAM principal used to poll resources.
+  - key: aws_secret_access_key
+    type: string
+    required: true
+    secret: true
+    description: AWS secret access key.
+  - key: regions
+    type: list
+    required: true
+    default: '["us-east-1","us-west-2"]'
+    description: AWS regions to monitor.
+  - key: services
+    type: multi_choice
+    required: false
+    default: '["ec2","ebs","s3"]'
+    options:
+      - ec2
+      - ebs
+      - s3
+    description: Which AWS services to monitor.
+  - key: poll_interval_seconds
+    type: integer
+    required: false
+    default: "60"
+    description: How often to re-scan resources, in seconds.
+  - key: price_refresh_hours
+    type: integer
+    required: false
+    default: "6"
+    description: How often to re-fetch the AWS Pricing API.
+
+python_packages:
+  - boto3>=1.34.0
+
+resources:
+  - file: ddl/001_aws_resource_poller.sql
+    type: external_stream
+    name: aws_resource_poller
+  - file: ddl/002_aws_resources.sql
+    type: stream
+    name: aws_resources
+  - file: ddl/003_mv_resource_inventory.sql
+    type: materialized_view
+    name: mv_resource_inventory
+  - file: ddl/004_aws_price_poller.sql
+    type: external_stream
+    name: aws_price_poller
+  - file: ddl/005_aws_prices.sql
+    type: mutable_stream
+    name: aws_prices
+  - file: ddl/006_mv_prices.sql
+    type: materialized_view
+    name: mv_prices
+  - file: ddl/007_v_resource_cost_now.sql
+    type: view
+    name: v_resource_cost_now
+  - file: ddl/008_v_cost_by_creator.sql
+    type: view
+    name: v_cost_by_creator
+  - file: ddl/009_v_cost_by_service_region.sql
+    type: view
+    name: v_cost_by_service_region
+  - file: ddl/010_v_top_expensive.sql
+    type: view
+    name: v_top_expensive
+  - file: ddl/011_aws_cost_1m.sql
+    type: stream
+    name: aws_cost_1m
+  - file: ddl/012_mv_cost_1m.sql
+    type: materialized_view
+    name: mv_cost_1m
+
+dashboards:
+  - file: dashboards/main.json
+    name: AWS Cost Monitor
+    description: Realtime AWS spend by service, region, and creator
