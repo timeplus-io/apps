@@ -74,5 +74,17 @@ resources:
   - file: ddl/006_mv_prices.sql
     type: materialized_view
     name: mv_prices
+  - file: ddl/007_v_resource_cost_now.sql
+    type: view
+    name: v_resource_cost_now
+  - file: ddl/008_v_cost_by_creator.sql
+    type: view
+    name: v_cost_by_creator
+  - file: ddl/009_v_cost_by_service_region.sql
+    type: view
+    name: v_cost_by_service_region
+  - file: ddl/010_v_top_expensive.sql
+    type: view
+    name: v_top_expensive
 
 dashboards: []
