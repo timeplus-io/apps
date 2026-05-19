@@ -86,5 +86,11 @@ resources:
   - file: ddl/010_v_top_expensive.sql
     type: view
     name: v_top_expensive
+  - file: ddl/011_aws_cost_1m.sql
+    type: stream
+    name: aws_cost_1m
+  - file: ddl/012_mv_cost_1m.sql
+    type: materialized_view
+    name: mv_cost_1m
 
 dashboards: []
