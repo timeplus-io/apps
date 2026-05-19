@@ -93,4 +93,7 @@ resources:
     type: materialized_view
     name: mv_cost_1m
 
-dashboards: []
+dashboards:
+  - file: dashboards/main.json
+    name: AWS Cost Monitor
+    description: Realtime AWS spend by service, region, and creator
