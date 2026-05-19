@@ -62,7 +62,41 @@ The IAM principal needs:
 - `cloudtrail:LookupEvents` (for creator fallback)
 - `pricing:GetProducts`
 
-Read-only access keys are sufficient.
+All actions are read-only. None of them support resource-level constraints in IAM, so `Resource: "*"` is required.
+
+**Inline policy** (paste into IAM → Users → *user* → Add permissions → Create inline policy → JSON):
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AwsCostInventory",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:DescribeInstances",
+        "ec2:DescribeVolumes",
+        "s3:ListAllMyBuckets",
+        "s3:GetBucketLocation",
+        "s3:GetBucketTagging",
+        "cloudwatch:GetMetricStatistics",
+        "cloudtrail:LookupEvents",
+        "pricing:GetProducts"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+```
+
+Or via CLI:
+
+```bash
+aws iam put-user-policy \
+  --user-name <your-user> \
+  --policy-name TimeplusAwsCostMonitor \
+  --policy-document file://policy.json
+```
 
 ## Dashboard
 
