@@ -62,7 +62,7 @@
     "description": "Hourly USD grouped by service and region (latest cycle)",
     "position": { "h": 4, "w": 6, "x": 0, "y": 6, "nextX": 6, "nextY": 10 },
     "viz_type": "chart",
-    "viz_content": "SELECT service, region, hourly_usd FROM [[ .DB ]].v_cost_by_service_region",
+    "viz_content": "SELECT service, region, hourly_usd FROM [[ .DB ]].v_cost_by_service_region SETTINGS seek_to='earliest'",
     "viz_config": {
       "chartType": "bar",
       "config": {
@@ -81,7 +81,7 @@
     "description": "Who is currently spending money (latest cycle)",
     "position": { "h": 4, "w": 6, "x": 6, "y": 6, "nextX": 12, "nextY": 10 },
     "viz_type": "chart",
-    "viz_content": "SELECT creator, hourly_usd FROM [[ .DB ]].v_cost_by_creator ORDER BY hourly_usd DESC LIMIT 15",
+    "viz_content": "SELECT creator, hourly_usd FROM [[ .DB ]].v_cost_by_creator ORDER BY hourly_usd DESC LIMIT 15 SETTINGS seek_to='earliest'",
     "viz_config": {
       "chartType": "bar",
       "config": {
@@ -99,7 +99,7 @@
     "description": "Resources sorted by hourly cost (latest cycle)",
     "position": { "h": 6, "w": 12, "x": 0, "y": 10, "nextX": 12, "nextY": 16 },
     "viz_type": "chart",
-    "viz_content": "SELECT resource_id, service, region, resource_type, creator, hourly_cost_usd, monthly_cost_usd FROM [[ .DB ]].v_top_expensive",
+    "viz_content": "SELECT resource_id, service, region, resource_type, creator, hourly_cost_usd, monthly_cost_usd FROM [[ .DB ]].v_top_expensive SETTINGS seek_to='earliest'",
     "viz_config": {
       "chartType": "table",
       "config": {
