@@ -8,5 +8,4 @@ FROM {{ .DB }}.v_resource_cost_now
 WHERE _tp_time > now() - 2m
   AND state IN ('running','in-use','active')
   AND hourly_cost_usd IS NOT NULL
-GROUP BY creator
-EMIT ON UPDATE WITH DELAY 5s;
+GROUP BY creator;
