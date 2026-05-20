@@ -12,7 +12,7 @@
       "y": 0
     },
     "viz_type": "chart",
-    "viz_content": "SELECT total_hourly_usd FROM table(aws_cost.aws_cost_1m) ORDER BY time DESC LIMIT 1",
+    "viz_content": "SELECT total_hourly_usd FROM aws_cost.aws_cost_1m WHERE _tp_time > now()-1m",
     "viz_config": {
       "chartType": "singleValue",
       "config": {
@@ -40,7 +40,7 @@
       "y": 0
     },
     "viz_type": "chart",
-    "viz_content": "SELECT total_hourly_usd * 730 AS monthly_usd FROM table(aws_cost.aws_cost_1m) ORDER BY time DESC LIMIT 1",
+    "viz_content": "SELECT total_hourly_usd * 730 AS monthly_usd FROM aws_cost.aws_cost_1m WHERE _tp_time > now()-1m",
     "viz_config": {
       "chartType": "singleValue",
       "config": {
