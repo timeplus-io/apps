@@ -1,6 +1,6 @@
 CREATE VIEW IF NOT EXISTS {{ .DB }}.v_top_expensive AS
 SELECT
-  time,
+  now() AS time,
   r.1 AS hourly_cost_usd,
   r.2 AS resource_id,
   r.3 AS service,
@@ -10,13 +10,12 @@ SELECT
   r.7 AS monthly_cost_usd
 FROM (
   SELECT
-    window_start AS time,
     array_join(max_k(
       hourly_cost_usd, 20,
       resource_id, service, region, resource_type, creator, monthly_cost_usd
     )) AS r
-  FROM tumble({{ .DB }}.v_resource_cost_now, _tp_time, 1m)
+  FROM {{ .DB }}.aws_resource_cost_live
   WHERE state IN ('running','in-use','active')
     AND hourly_cost_usd IS NOT NULL
-  GROUP BY window_start
+    AND snapshot_ts > now() - 90s
 );

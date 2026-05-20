@@ -6,30 +6,57 @@ A Timeplus app that polls AWS for live resource inventory and pricing, joins the
 
 - **EC2 instances** — priced per `instance-hour`
 - **EBS volumes** — priced per GB (monthly rate ÷ 730 to normalize hourly)
-- **S3 buckets** — size from CloudWatch `BucketSizeBytes` (daily granularity); priced per GB
+- **S3 buckets** — size summed across all storage classes from CloudWatch `BucketSizeBytes`; priced per GB
 
 Resources, regions, and services are all configurable at install time.
 
 ## How it works
 
 ```
-aws_resource_poller  (Python streaming, boto3)
-   └── mv_resource_inventory ─→ aws_resources  (append-only, 7d TTL)
+aws_resource_poller  (Python streaming, boto3, every 60s)
+   └── mv_resource_inventory ──► aws_resources  (append, 7d TTL)
 
-aws_price_poller     (Python streaming, AWS Pricing API)
-   └── mv_prices ─→ aws_prices  (mutable_stream, PK=service+region+type+unit)
+aws_price_poller     (Python streaming, AWS Pricing API, every 6h)
+   └── mv_prices ──► aws_prices  (mutable, PK = service+region+type+unit)
 
-aws_resources  ⋈  aws_prices  (streaming JOIN)
-   └── v_resource_cost_now      per-resource hourly + monthly cost
-        ├── v_cost_by_creator
-        ├── v_cost_by_service_region
-        ├── v_top_expensive      (1-min tumble window, top 20)
-        └── mv_cost_1m ─→ aws_cost_1m  (1-minute total spend rate, 30d TTL)
+aws_resources
+   │
+   ▼ hop(step=1m, window=5m) + latest() per resource_id
+aws_resource_usage_live  (mutable, PK = resource_id)
+   │
+   ▼ LEFT JOIN aws_prices   (filter: snapshot_ts > now()-90s)
+aws_resource_cost_live   (mutable, PK = resource_id, holds current cost)
+   │
+   ▼ simple single-level GROUP BY  (snapshot_ts > now()-90s)
+v_cost_by_creator
+v_cost_by_service_region
+v_top_expensive
+v_resource_cost_now   (passthrough view of cost_live)
+
+aws_resources
+   └── mv_cost_1m  (hop+latest+JOIN inline, 1m tumble) ──► aws_cost_1m  (time series, 30d TTL)
 ```
 
-The resource poller runs on `poll_interval_seconds` (default 60s). The price poller is slower — every `price_refresh_hours` (default 6h) — since On-Demand prices change rarely.
+### Why two pipelines
 
-**Creator attribution** is best-effort: tag-first (`CreatedBy`, `Owner`, `creator`, `owner`, `created_by`), falling back to CloudTrail `LookupEvents` (cached per resource id). Resources without tags in accounts with no CloudTrail history appear as `unknown`.
+- The **live** pipeline (`usage_live` → `cost_live`) uses mutable streams so rollup views can do simple single-level `GROUP BY` with proper changelog semantics — no double counting, correct counts.
+- The **time-series** pipeline (`mv_cost_1m`) writes to an append stream (`aws_cost_1m`) for the "Hourly Cost Over Time" chart. `tumble()` isn't supported on changelog inputs, so it tumbles directly on `aws_resources` and does the same `hop + latest + JOIN` dedup inline.
+
+### Freshness filter (`snapshot_ts > now() - 90s`)
+
+Mutable streams accumulate one row per resource forever, even after a resource is terminated. The hop window fires every 1 minute, so any resource present in the latest poll has `snapshot_ts` within the last ~1m. Every cost view filters `snapshot_ts > now() - 90s` (1 hop step + 30s margin) to ignore stale entries from disappeared resources.
+
+### Creator attribution
+
+Resolved in this order (first hit wins):
+
+1. **Tags** (case-insensitive): `CreatedBy`, `CreatorName`, `Creator`, `Owner`, `created_by`, `createdby_user`, `ownername`.
+2. **Kubernetes PVC namespace** (EBS only): `kubernetes.io/created-for/pvc/namespace` → `k8s:<namespace>`. Applied *before* CloudTrail so CSI-driver volumes aren't attributed to `eks-*-ebs-csi`.
+3. **CloudTrail `LookupEvents`** — parses the full `userIdentity` block (principalId / arn / sessionContext) to get a human name, not a numeric ID.
+4. **Inherit from attached EC2 instance** (EBS only): root/data volumes auto-created by `RunInstances` show as `<creator> (via i-…)`.
+5. `unknown` — typical for resources older than CloudTrail's 90-day window with no tags. Add a `CreatorName` tag to fix.
+
+The `v_k8s_volumes` view surfaces EBS volumes provisioned by Kubernetes with their cluster, namespace, PVC name, and PV name.
 
 ## Build & install
 
@@ -50,6 +77,8 @@ Or from the repo root: `make build APP=aws-cost`.
 | `services` | multi_choice | `["ec2","ebs","s3"]` | subset of `ec2`, `ebs`, `s3` |
 | `poll_interval_seconds` | integer | `60` | resource re-scan cadence |
 | `price_refresh_hours` | integer | `6` | pricing API refresh cadence |
+
+S3 bucket sizes are refreshed once per hour internally (the daily CloudWatch metric changes at most once a day, so faster polling is wasted CloudWatch calls).
 
 ## IAM permissions required
 
@@ -112,7 +141,8 @@ aws iam put-user-policy \
 ## Known limitations
 
 - **Pricing API cold start**: the price poller queries dozens of (region, type) pairs serially; the first cycle takes several minutes. Until it completes, `hourly_cost_usd` will be NULL for unmatched resources.
-- **EC2 instance-type whitelist**: the price poller iterates a curated set (`t3.*`, `m5.*`, `c5.*`, `r5.*`, `t4g.*`, `m6i.*`, `c6i.*`, `r6i.*`). Resources of other families will show with NULL cost.
-- **S3 size is daily**: `BucketSizeBytes` is a daily CloudWatch metric, so S3 cost lags by up to 24h.
+- **EC2 instance-type whitelist**: the price poller iterates a curated set (`t3.*`, `m5.*`, `c5.*`, `r5.*`, `t4g.*`, `m6i.*`, `c6i.*`, `r6i.*`). Resources of other families (`m6a.*`, `c3.*`, etc.) will show with `hourly_cost_usd = 0` until added to the whitelist.
+- **S3 size is daily**: `BucketSizeBytes` is a daily CloudWatch metric, so S3 cost lags by up to 48h.
 - **On-Demand only**: no Reserved Instance / Savings Plan / Spot pricing in v1.
 - **Single IAM principal**: no cross-account assumption.
+- **Mutable stream growth**: `aws_resource_usage_live` and `aws_resource_cost_live` keep one row per resource_id forever (no auto-cleanup). The `snapshot_ts > now() - 90s` filter hides stale entries from dashboards, but the underlying streams accumulate over time. Negligible for typical accounts.

@@ -10,5 +10,6 @@ AS SELECT
   unit,
   tags_json,
   creator,
-  snapshot_ts
+  snapshot_ts,
+  raw_payload
 FROM {{ .DB }}.aws_resource_poller;

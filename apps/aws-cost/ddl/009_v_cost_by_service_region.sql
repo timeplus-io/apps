@@ -4,8 +4,8 @@ SELECT
   region,
   sum(hourly_cost_usd) AS hourly_usd,
   count()              AS resources
-FROM {{ .DB }}.v_resource_cost_now
-WHERE _tp_time > now() - 2m
-  AND state IN ('running','in-use','active')
+FROM {{ .DB }}.aws_resource_cost_live
+WHERE state IN ('running','in-use','active')
   AND hourly_cost_usd IS NOT NULL
+  AND snapshot_ts > now() - 90s
 GROUP BY service, region;

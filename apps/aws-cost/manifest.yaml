@@ -1,7 +1,7 @@
 package_format_version: 1
 id: io.timeplus.aws-cost
 name: AWS Resource Cost Monitor
-version: 0.1.0
+version: 0.3.0
 author: Timeplus
 description: >
   Realtime AWS resource usage and cost monitoring. Polls EC2 instances,
@@ -75,6 +75,18 @@ resources:
   - file: ddl/006_mv_prices.sql
     type: materialized_view
     name: mv_prices
+  - file: ddl/006a_aws_resource_usage_live.sql
+    type: mutable_stream
+    name: aws_resource_usage_live
+  - file: ddl/006b_mv_resource_usage_live.sql
+    type: materialized_view
+    name: mv_resource_usage_live
+  - file: ddl/006c_aws_resource_cost_live.sql
+    type: mutable_stream
+    name: aws_resource_cost_live
+  - file: ddl/006d_mv_resource_cost_live.sql
+    type: materialized_view
+    name: mv_resource_cost_live
   - file: ddl/007_v_resource_cost_now.sql
     type: view
     name: v_resource_cost_now
@@ -93,6 +105,9 @@ resources:
   - file: ddl/012_mv_cost_1m.sql
     type: materialized_view
     name: mv_cost_1m
+  - file: ddl/013_v_k8s_volumes.sql
+    type: view
+    name: v_k8s_volumes
 
 dashboards:
   - file: dashboards/main.json
