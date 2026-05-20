@@ -181,7 +181,7 @@ FROM ranked
 ARRAY JOIN array_enumerate(sorted_pairs) AS idx;
 ```
 
-The tumble re-bucketizes per-stock per-second features into per-second cross-sectional groups; `array_sort` orders by `ts_argmax`; `ARRAY JOIN array_enumerate(sorted_pairs)` fans the sorted list back into one row per stock with rank index. `alpha_1` ∈ [-0.4, 0.5] for N=10.
+The tumble re-bucketizes per-stock per-second features into per-second cross-sectional groups; `array_sort` orders by `ts_argmax`; `ARRAY JOIN array_enumerate(sorted_pairs)` fans the sorted list back into one row per stock with rank index. `alpha_1` ∈ `{1/N − 0.5, …, N/N − 0.5}` where `N = num_stocks` (default 3 → `{-0.167, 0.167, 0.5}`).
 
 **Risk:** this is the highest-risk syntax in the design. Failure modes to validate against the running Timeplus:
 
@@ -222,10 +222,10 @@ apps/alpha-101/
 - `id: io.timeplus.alpha-101`
 - `name: "Realtime Alpha 101"`
 - `db_name: alpha_101`
-- `description: "Streaming demo of WorldQuant Alpha #1 over a synthetic 10-stock market data feed."`
+- `description: "Streaming demo of WorldQuant Alpha #1 over a synthetic multi-stock market data feed."`
 - `categories: [analytics, finance, demo]`
 - No `python_packages`.
-- `config:` one key — `bucket` — type `choice`, options `["1s","5s","1m"]`, default `"1s"`.
+- `config:` two keys — `bucket` (`choice` over `["1s","5s","1m"]`, default `"1s"`) and `num_stocks` (`integer`, default `"3"`, range 1–10).
 - `resources:` lists all 7 DDL files with `type` in the correct dependency order.
 - `dashboards:` lists `main.json`.
 

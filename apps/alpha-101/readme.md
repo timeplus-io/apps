@@ -1,6 +1,8 @@
 # Realtime Alpha 101
 
-Streaming demo of WorldQuant **Alpha #1** from *101 Formulaic Alphas* (arxiv.org/abs/1601.00991) over a synthetic 10-stock random feed.
+Streaming demo of WorldQuant **Alpha #1** from *101 Formulaic Alphas* (arxiv.org/abs/1601.00991) over a synthetic multi-stock random feed.
+
+Two config knobs: `bucket` (`1s` / `5s` / `1m`, default `1s`) and `num_stocks` (integer 1–10, default `3`).
 
 ```
 rank(Ts_ArgMax(SignedPower((returns < 0 ? stddev(returns, 20) : close), 2.), 5)) - 0.5

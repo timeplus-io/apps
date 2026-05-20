@@ -4,7 +4,7 @@ name: Realtime Alpha 101
 version: 1.0.0
 author: Timeplus
 description: >
-  Streaming demo of WorldQuant Alpha #1 over a synthetic 10-stock random
+  Streaming demo of WorldQuant Alpha #1 over a synthetic multi-stock random
   market feed. Demonstrates tumble-window bars, lag/lags arrays, and
   cross-sectional rank in Timeplus streaming SQL.
 db_name: alpha_101
@@ -26,6 +26,15 @@ config:
       - "1s"
       - "5s"
       - "1m"
+  - key: num_stocks
+    type: integer
+    required: false
+    default: "3"
+    description: >
+      Number of simulated stocks (1–10). Cross-sectional rank divides
+      into this many buckets — alpha_1 ∈ {1/N − 0.5, …, N/N − 0.5}.
+      Default 3 is a good starting point; ceiling is 10 (limited by
+      the built-in per-stock base-price seed array).
 
 resources:
   - file: ddl/001_random_market_data.sql
