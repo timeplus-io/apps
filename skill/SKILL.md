@@ -33,6 +33,17 @@ curl -X POST http://localhost:8000/default/api/v1beta2/apps/install \
   -F "file=@my-app.tpapp"
 ```
 
+Override `config:` values at install time with `config[<key>]=<value>` form fields (multipart) — the neutron handler parses any form field matching `config[*]` into the rendered config map:
+
+```bash
+curl -X POST http://localhost:8000/default/api/v1beta2/apps/install \
+  -F "file=@my-app.tpapp" \
+  -F "config[strategy]=sign" \
+  -F "config[num_stocks]=5"
+```
+
+For JSON-body installs (URL fetch), use `{"url": "...", "config": {"strategy": "sign"}}`.
+
 ## manifest.yaml
 
 ```yaml
