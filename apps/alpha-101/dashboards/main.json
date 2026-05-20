@@ -16,7 +16,7 @@
     "viz_config": {
       "chartType": "line",
       "config": {
-        "color": "",
+        "color": "stock_id",
         "colors": [
           "#ED64A6",
           "#F0BE3E",
@@ -69,13 +69,13 @@
       "y": 4
     },
     "viz_type": "chart",
-    "viz_content": "SELECT time, stock_id, alpha_1 FROM alpha_101.v_alpha_1 WHERE time > now() - 10s",
+    "viz_content": "SELECT time, stock_id, alpha_1 FROM alpha_101.v_alpha_1 settings seek_to = 'earliest'",
     "viz_config": {
       "chartType": "table",
       "config": {
         "rowCount": 20,
         "tableStyles": {
-          "time": {
+          "alpha_1": {
             "conditions": [],
             "decreaseColor": "red",
             "highlightRow": false,
@@ -83,8 +83,8 @@
             "miniChartType": "",
             "name": "",
             "show": true,
-            "trend": false,
-            "width": 210
+            "trend": true,
+            "width": 160
           },
           "stock_id": {
             "conditions": [],
@@ -97,7 +97,7 @@
             "trend": false,
             "width": 140
           },
-          "alpha_1": {
+          "time": {
             "conditions": [],
             "decreaseColor": "red",
             "highlightRow": false,
@@ -105,8 +105,8 @@
             "miniChartType": "",
             "name": "",
             "show": true,
-            "trend": true,
-            "width": 160
+            "trend": false,
+            "width": 210
           }
         },
         "tableWrap": false,
@@ -132,7 +132,7 @@
     "viz_config": {
       "chartType": "line",
       "config": {
-        "color": "",
+        "color": "stock_id",
         "colors": [
           "#ED64A6",
           "#F0BE3E",
