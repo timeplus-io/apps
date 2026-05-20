@@ -1,7 +1,6 @@
 CREATE OR REPLACE VIEW {{ .DB }}.v_features AS
 SELECT
   time, stock_id, close, returns, sigma_ret_20,
-  cond,
   sign(cond) * cond * cond AS signed_power
 FROM (
   SELECT
