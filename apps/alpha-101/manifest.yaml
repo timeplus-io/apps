@@ -27,6 +27,30 @@ config:
       - "5s"
       - "1m"
 
-resources: []
+resources:
+  - file: ddl/001_random_market_data.sql
+    type: stream
+    name: random_market_data
+  - file: ddl/002_market_data.sql
+    type: stream
+    name: market_data
+  - file: ddl/003_mv_market_data.sql
+    type: materialized_view
+    name: mv_market_data
+  - file: ddl/004_v_bars.sql
+    type: view
+    name: v_bars
+  - file: ddl/005_v_features.sql
+    type: view
+    name: v_features
+  - file: ddl/006_v_ts_argmax_5.sql
+    type: view
+    name: v_ts_argmax_5
+  - file: ddl/007_v_alpha_1.sql
+    type: view
+    name: v_alpha_1
 
-dashboards: []
+dashboards:
+  - file: dashboards/main.json
+    name: Realtime Alpha 101
+    description: Live prices and Alpha #1 leaderboard for synthetic stocks
