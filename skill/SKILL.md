@@ -433,6 +433,14 @@ SELECT window_start AS time, product_id, ...
 ### Wrong template delimiter in dashboards
 **Fix:** Use `[[ .DB ]]` in dashboard JSON, not `{{ .DB }}`. The `{{ }}` delimiter is reserved for frontend filter variables like `{{filter_product}}`.
 
+### Multi-series line/area chart renders as a single overlapping line
+**Cause:** `viz_config.config.color` left at `""`. The chart treats the result as one series and draws every point on the same line.
+**Fix:** Set `"color"` to the column that distinguishes series (e.g. `"color": "stock_id"` for `SELECT time, stock_id, close FROM ...`). The reference doc lists this as the required key for multi-series; see `references/dashboard-spec.md` → "line and area".
+
+### Dashboard WHERE filter fails with `Missing columns: '_tp_time'`
+**Cause:** Views that alias `window_start AS time` (typical for tumble bars) do not propagate `_tp_time` to consumers.
+**Fix:** Filter on the exposed `time` column instead — `WHERE time > now() - 5m`.
+
 ## Resource Type Reference
 
 ### stream
