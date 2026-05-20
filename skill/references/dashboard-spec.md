@@ -282,7 +282,7 @@ Time-series charts. Requires a datetime column for X, numeric column for Y.
 | `yAxis` | string | Column name — must be numeric type |
 | `color` | string | **Required for multi-series.** Column name that distinguishes series (e.g. `"stock_id"`, `"region"`). Empty = single-series only. |
 | `xRange` | string | Minutes to show: `"1"`, `"5"`, `"60"`, `"Infinity"` (all) |
-| `xFormat` | string | Moment.js format: `""` auto, `"HH:mm:ss"`, `"LT"`, etc. |
+| `xFormat` | string | Moment.js format. Use `""` (auto) for any panel whose query can span more than one day — including all `seek_to='earliest'` panels. Reserve `"LT"` (time-of-day only) for short-window panels filtered with `WHERE time > now() - Xm`. |
 | `lineStyle` | string | `"curve"` or `"straight"` |
 | `dataLabel` | bool | Show data point labels |
 | `points` | bool | Show dots at each data point |
