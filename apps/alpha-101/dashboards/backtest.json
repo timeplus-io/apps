@@ -163,7 +163,7 @@
   {
     "id": "b1c2d3e4-0003-4000-8000-000000000003",
     "title": "Portfolio PnL per 30s",
-    "description": "Sum of pnl across stocks in each 30s bucket — bars above zero are winning periods",
+    "description": "Sum of pnl across stocks in each 30s bucket — columns above zero are winning periods",
     "position": {
       "h": 4,
       "nextX": 12,
@@ -175,7 +175,7 @@
     "viz_type": "chart",
     "viz_content": "SELECT window_start AS time, sum(pnl) AS portfolio_pnl FROM tumble(alpha_101.v_backtest, time, 30s) WHERE pnl IS NOT NULL GROUP BY window_start SETTINGS seek_to = 'earliest'",
     "viz_config": {
-      "chartType": "bar",
+      "chartType": "column",
       "config": {
         "color": "",
         "colors": [
@@ -184,11 +184,14 @@
         "dataLabel": false,
         "fractionDigits": 4,
         "gridlines": true,
+        "groupType": "stack",
         "legend": false,
         "unit": {
           "position": "left",
           "value": ""
         },
+        "updateKey": "time",
+        "updateMode": "time",
         "xAxis": "time",
         "xFormat": "LT",
         "xTickLabel": {},
