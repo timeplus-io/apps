@@ -1,0 +1,265 @@
+[
+  {
+    "id": "b1c2d3e4-0001-4000-8000-000000000001",
+    "title": "Backtest Summary",
+    "description": "Cumulative PnL, Sharpe and hit rate over the full retained history",
+    "position": {
+      "h": 3,
+      "nextX": 12,
+      "nextY": 3,
+      "w": 12,
+      "x": 0,
+      "y": 0
+    },
+    "viz_type": "chart",
+    "viz_content": "SELECT count() AS n_obs, round(sum(pnl), 6) AS cum_pnl, round(avg(pnl), 8) AS mean_pnl, round(stddev_pop(pnl), 8) AS std_pnl, round(avg(pnl) / nullif(stddev_pop(pnl), 0), 4) AS sharpe_per_obs, round(count_if(pnl > 0) * 100.0 / count(), 2) AS hit_rate_pct FROM alpha_101.v_backtest WHERE pnl IS NOT NULL SETTINGS seek_to = 'earliest'",
+    "viz_config": {
+      "chartType": "table",
+      "config": {
+        "rowCount": 1,
+        "tableStyles": {
+          "n_obs": {
+            "conditions": [],
+            "decreaseColor": "red",
+            "highlightRow": false,
+            "increaseColor": "green",
+            "miniChartType": "",
+            "name": "Observations",
+            "show": true,
+            "trend": false,
+            "width": 120
+          },
+          "cum_pnl": {
+            "conditions": [],
+            "decreaseColor": "red",
+            "highlightRow": false,
+            "increaseColor": "green",
+            "miniChartType": "",
+            "name": "Cumulative PnL",
+            "show": true,
+            "trend": true,
+            "width": 150
+          },
+          "mean_pnl": {
+            "conditions": [],
+            "decreaseColor": "red",
+            "highlightRow": false,
+            "increaseColor": "green",
+            "miniChartType": "",
+            "name": "Mean / obs",
+            "show": true,
+            "trend": false,
+            "width": 140
+          },
+          "std_pnl": {
+            "conditions": [],
+            "decreaseColor": "red",
+            "highlightRow": false,
+            "increaseColor": "green",
+            "miniChartType": "",
+            "name": "Stddev",
+            "show": true,
+            "trend": false,
+            "width": 140
+          },
+          "sharpe_per_obs": {
+            "conditions": [],
+            "decreaseColor": "red",
+            "highlightRow": false,
+            "increaseColor": "green",
+            "miniChartType": "",
+            "name": "Sharpe / obs",
+            "show": true,
+            "trend": true,
+            "width": 140
+          },
+          "hit_rate_pct": {
+            "conditions": [],
+            "decreaseColor": "red",
+            "highlightRow": false,
+            "increaseColor": "green",
+            "miniChartType": "",
+            "name": "Hit rate (%)",
+            "show": true,
+            "trend": true,
+            "width": 140
+          }
+        },
+        "tableWrap": false,
+        "updateMode": "append"
+      }
+    }
+  },
+  {
+    "id": "b1c2d3e4-0002-4000-8000-000000000002",
+    "title": "PnL by Stock",
+    "description": "Cumulative PnL contribution and hit rate per stock",
+    "position": {
+      "h": 4,
+      "nextX": 6,
+      "nextY": 7,
+      "w": 6,
+      "x": 0,
+      "y": 3
+    },
+    "viz_type": "chart",
+    "viz_content": "SELECT stock_id, count() AS n_obs, round(sum(pnl), 6) AS cum_pnl, round(count_if(pnl > 0) * 100.0 / count(), 2) AS hit_rate_pct FROM alpha_101.v_backtest WHERE pnl IS NOT NULL GROUP BY stock_id SETTINGS seek_to = 'earliest'",
+    "viz_config": {
+      "chartType": "table",
+      "config": {
+        "rowCount": 10,
+        "tableStyles": {
+          "stock_id": {
+            "conditions": [],
+            "decreaseColor": "red",
+            "highlightRow": false,
+            "increaseColor": "green",
+            "miniChartType": "",
+            "name": "",
+            "show": true,
+            "trend": false,
+            "width": 140
+          },
+          "n_obs": {
+            "conditions": [],
+            "decreaseColor": "red",
+            "highlightRow": false,
+            "increaseColor": "green",
+            "miniChartType": "",
+            "name": "",
+            "show": true,
+            "trend": false,
+            "width": 120
+          },
+          "cum_pnl": {
+            "conditions": [],
+            "decreaseColor": "red",
+            "highlightRow": false,
+            "increaseColor": "green",
+            "miniChartType": "",
+            "name": "",
+            "show": true,
+            "trend": true,
+            "width": 150
+          },
+          "hit_rate_pct": {
+            "conditions": [],
+            "decreaseColor": "red",
+            "highlightRow": false,
+            "increaseColor": "green",
+            "miniChartType": "",
+            "name": "",
+            "show": true,
+            "trend": true,
+            "width": 140
+          }
+        },
+        "tableWrap": false,
+        "updateKey": "stock_id",
+        "updateMode": "key"
+      }
+    }
+  },
+  {
+    "id": "b1c2d3e4-0003-4000-8000-000000000003",
+    "title": "Portfolio PnL per 30s",
+    "description": "Sum of pnl across stocks in each 30s bucket — bars above zero are winning periods",
+    "position": {
+      "h": 4,
+      "nextX": 12,
+      "nextY": 7,
+      "w": 6,
+      "x": 6,
+      "y": 3
+    },
+    "viz_type": "chart",
+    "viz_content": "SELECT window_start AS time, sum(pnl) AS portfolio_pnl FROM tumble(alpha_101.v_backtest, time, 30s) WHERE pnl IS NOT NULL GROUP BY window_start SETTINGS seek_to = 'earliest'",
+    "viz_config": {
+      "chartType": "bar",
+      "config": {
+        "color": "",
+        "colors": [
+          "#D53F8C"
+        ],
+        "dataLabel": false,
+        "fractionDigits": 4,
+        "gridlines": true,
+        "legend": false,
+        "unit": {
+          "position": "left",
+          "value": ""
+        },
+        "xAxis": "time",
+        "xFormat": "LT",
+        "xTickLabel": {},
+        "xTitle": "",
+        "yAxis": "portfolio_pnl",
+        "yRange": {
+          "max": null,
+          "min": null
+        },
+        "yTickLabel": {
+          "maxChar": 25
+        },
+        "yTitle": "PnL (sum)"
+      }
+    }
+  },
+  {
+    "id": "b1c2d3e4-0004-4000-8000-000000000004",
+    "title": "Per-Stock PnL Over Time",
+    "description": "Per-stock pnl in 30s buckets — one line per stock",
+    "position": {
+      "h": 4,
+      "nextX": 12,
+      "nextY": 11,
+      "w": 12,
+      "x": 0,
+      "y": 7
+    },
+    "viz_type": "chart",
+    "viz_content": "SELECT window_start AS time, stock_id, sum(pnl) AS bucket_pnl FROM tumble(alpha_101.v_backtest, time, 30s) WHERE pnl IS NOT NULL GROUP BY window_start, stock_id SETTINGS seek_to = 'earliest'",
+    "viz_config": {
+      "chartType": "line",
+      "config": {
+        "color": "stock_id",
+        "colors": [
+          "#ED64A6",
+          "#F0BE3E",
+          "#DA4B36",
+          "#9A1563",
+          "#FF4A71",
+          "#D12D50",
+          "#8934D9",
+          "#D53F8C",
+          "#F7775A",
+          "#8934D9"
+        ],
+        "dataLabel": false,
+        "fractionDigits": 4,
+        "gridlines": true,
+        "legend": true,
+        "lineStyle": "curve",
+        "points": false,
+        "showAll": false,
+        "unit": {
+          "position": "left",
+          "value": ""
+        },
+        "xAxis": "time",
+        "xFormat": "LT",
+        "xRange": "Infinity",
+        "xTitle": "",
+        "yAxis": "bucket_pnl",
+        "yRange": {
+          "max": null,
+          "min": null
+        },
+        "yTickLabel": {
+          "maxChar": 25
+        },
+        "yTitle": "PnL"
+      }
+    }
+  }
+]

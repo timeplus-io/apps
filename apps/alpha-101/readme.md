@@ -26,19 +26,56 @@ random_market_data  →  mv_market_data  →  market_data
 make build && make install
 ```
 
+## Dashboards
+
+Two dashboards are installed:
+
+- **Realtime Alpha 101** — live prices, latest leaderboard, alpha over time
+- **Alpha #1 Backtest** — summary metrics, per-stock PnL, portfolio PnL per 30s, per-stock PnL over time
+
 ## Inspect the live signal
 
 ```sql
 SELECT time, stock_id, alpha_1 FROM alpha_101.v_alpha_1 LIMIT 10 BY time;
 ```
 
-## Backtest
+## Backtest report (ad-hoc)
 
-```bash
-make backtest
+The backtest dashboard renders the same numbers continuously, but you can also run a one-shot report against the full retained history:
+
+```sql
+SELECT
+  count()                                                  AS n_obs,
+  uniq(stock_id)                                           AS n_stocks,
+  min(time)                                                AS t_start,
+  max(time)                                                AS t_end,
+  round(sum(pnl), 6)                                       AS cum_pnl,
+  round(avg(pnl), 8)                                       AS mean_pnl_per_obs,
+  round(stddev_pop(pnl), 8)                                AS std_pnl,
+  round(avg(pnl) / nullif(stddev_pop(pnl), 0), 4)          AS sharpe_per_obs,
+  round(count_if(pnl > 0) * 100.0 / count(), 2)            AS hit_rate_pct,
+  round(min(pnl), 6)                                       AS worst_obs,
+  round(max(pnl), 6)                                       AS best_obs
+FROM alpha_101.v_backtest
+WHERE pnl IS NOT NULL
+  AND time < now()
+SETTINGS seek_to = 'earliest', query_mode = 'table'
 ```
 
-Runs `backtest.sql` against the full history of `v_backtest` (`SETTINGS seek_to='earliest', query_mode='table'`) and reports:
+Pipe it through `curl` (the `query_mode = 'table'` setting makes the streaming query terminate after sweeping history, so it returns a single row of results):
+
+```bash
+echo "<sql above>" | \
+  curl -s -u 'proton:proton@t+' --data-binary @- \
+       "http://localhost:8123/?default_format=PrettyCompact"
+```
+
+Tighten the window for a specific period:
+
+```sql
+WHERE pnl IS NOT NULL
+  AND time BETWEEN '2026-05-20 21:00:00' AND '2026-05-20 21:10:00'
+```
 
 | Metric | Meaning |
 |---|---|
@@ -50,16 +87,9 @@ Runs `backtest.sql` against the full history of `v_backtest` (`SETTINGS seek_to=
 | `hit_rate_pct` | % of observations where the alpha-weighted bet was profitable |
 | `worst_obs`, `best_obs` | Most negative / most positive single-observation PnL |
 
-Edit the `WHERE` clause in `backtest.sql` to scope the window:
-
-```sql
-WHERE pnl IS NOT NULL
-  AND time BETWEEN '2026-05-20 21:00:00' AND '2026-05-20 21:10:00'
-```
-
 ### Expected outcome on synthetic data
 
-The data source is independent random ticks with no genuine predictive structure, so Alpha #1 has no edge to exploit. A representative run over ~7 minutes:
+The source is independent random ticks with no genuine predictive structure, so Alpha #1 has no edge to exploit. A representative run over ~2 hours:
 
 | Metric | Value |
 |---|---|
@@ -67,4 +97,4 @@ The data source is independent random ticks with no genuine predictive structure
 | `sharpe_per_obs` | ≈ 0 |
 | `cum_pnl` | small, sign varies run-to-run |
 
-That's the **correct** null result — it confirms the backtest math is sound. To see a real edge, point the pipeline at real market data (replace the random source with an external stream).
+That's the **correct** null result — it confirms the backtest math is sound. To see a real edge, point the pipeline at real market data (replace the random source with an external stream, e.g. the Coinbase WebSocket connector in `apps/market-data`).
