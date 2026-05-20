@@ -41,7 +41,7 @@
           "value": ""
         },
         "xAxis": "time",
-        "xFormat": "LT",
+        "xFormat": "",
         "xRange": "Infinity",
         "xTitle": "",
         "yAxis": "close",
@@ -157,7 +157,7 @@
           "value": ""
         },
         "xAxis": "time",
-        "xFormat": "LT",
+        "xFormat": "",
         "xRange": "Infinity",
         "xTitle": "",
         "yAxis": "alpha_1",

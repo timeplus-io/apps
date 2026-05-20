@@ -193,7 +193,7 @@
         "updateKey": "time",
         "updateMode": "time",
         "xAxis": "time",
-        "xFormat": "LT",
+        "xFormat": "",
         "xTickLabel": {},
         "xTitle": "",
         "yAxis": "portfolio_pnl",
@@ -250,7 +250,7 @@
           "value": ""
         },
         "xAxis": "time",
-        "xFormat": "LT",
+        "xFormat": "",
         "xRange": "Infinity",
         "xTitle": "",
         "yAxis": "bucket_pnl",
