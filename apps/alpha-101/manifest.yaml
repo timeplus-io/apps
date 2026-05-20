@@ -31,10 +31,23 @@ config:
     required: false
     default: "3"
     description: >
-      Number of simulated stocks (1–10). Cross-sectional rank divides
-      into this many buckets — alpha_1 ∈ {1/N − 0.5, …, N/N − 0.5}.
-      Default 3 is a good starting point; ceiling is 10 (limited by
-      the built-in per-stock base-price seed array).
+      Number of simulated stocks (2–10). Cross-sectional rank with
+      `(rank − 1) / (N − 1) − 0.5` produces a mean-zero alpha in
+      [−0.5, +0.5]. Default 3 is a good starting point; ceiling is 10
+      (limited by the built-in per-stock base-price seed array). N=1
+      yields null alpha (no peers to rank against).
+  - key: strategy
+    type: choice
+    required: false
+    default: "linear"
+    description: >
+      How the alpha signal maps to a position weight in the backtest:
+      `linear` uses alpha_prev directly (continuous weighting, magnitude
+      matters); `sign` uses sign(alpha_prev) (equal-magnitude long/short,
+      direction only — robust to alpha-noise outliers).
+    options:
+      - "linear"
+      - "sign"
 
 resources:
   - file: ddl/001_random_market_data.sql

@@ -10,8 +10,8 @@ WITH ranked AS (
 )
 SELECT
   time,
-  sorted_triples[idx].1                       AS stock_id,
-  cast(idx, 'float64') / n - 0.5              AS alpha_1,
-  sorted_triples[idx].3                       AS returns
+  sorted_triples[idx].1                                          AS stock_id,
+  cast(idx - 1, 'float64') / null_if(n - 1, 0) - 0.5              AS alpha_1,
+  sorted_triples[idx].3                                           AS returns
 FROM ranked
 ARRAY JOIN array_enumerate(sorted_triples) AS idx

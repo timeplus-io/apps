@@ -2,7 +2,13 @@
 
 Streaming demo of WorldQuant **Alpha #1** from *101 Formulaic Alphas* (arxiv.org/abs/1601.00991) over a synthetic multi-stock random feed.
 
-Two config knobs: `bucket` (`1s` / `5s` / `1m`, default `1s`) and `num_stocks` (integer 1–10, default `3`).
+Three config knobs:
+
+| Key | Type | Default | Choices / Range | Meaning |
+|---|---|---|---|---|
+| `bucket` | choice | `1s` | `1s` / `5s` / `1m` | Tumble window size for bars |
+| `num_stocks` | integer | `3` | `2`–`10` | Number of simulated stocks (mean-zero alpha needs N ≥ 2) |
+| `strategy` | choice | `linear` | `linear` / `sign` | How alpha maps to a position in the backtest (see below) |
 
 ```
 rank(Ts_ArgMax(SignedPower((returns < 0 ? stddev(returns, 20) : close), 2.), 5)) - 0.5
@@ -17,14 +23,34 @@ random_market_data  →  mv_market_data  →  market_data
    v_bars  →  v_features  →  v_ts_argmax_5  →  v_alpha_1  →  v_backtest
 ```
 
-- `v_alpha_1` — the live signal (cross-sectional rank − 0.5)
-- `v_backtest` — pairs the previous bucket's alpha with the current bucket's return, exposing `alpha_prev * returns` as the per-stock per-period PnL of a dollar-neutral long-short portfolio
+- `v_alpha_1` — the live signal (mean-zero cross-sectional rank: `(rank − 1) / (N − 1) − 0.5`)
+- `v_backtest` — pairs the previous bucket's alpha with the current bucket's return; emits `pnl` shaped by the `strategy` config (see below)
 
 ## Install
 
 ```bash
 make build && make install
 ```
+
+Override config at install time with `config[<key>]=<value>` form fields:
+
+```bash
+make build
+curl -X POST http://localhost:8000/default/api/v1beta2/apps/install \
+  -F "file=@alpha-101.tpapp" \
+  -F "config[strategy]=sign" \
+  -F "config[num_stocks]=5" \
+  -F "config[bucket]=5s"
+```
+
+## Strategy
+
+The `strategy` config controls how each bucket's alpha signal becomes a position weight in `v_backtest`:
+
+- **`linear` (default)** — `pnl = alpha_prev × returns`. Continuous weighting: the magnitude of the rank matters. Mathematically optimal for capturing a linear signal, sensitive to alpha-scaling.
+- **`sign`** — `pnl = sign(alpha_prev) × returns`. Equal-magnitude long/short: only the direction of the alpha matters. More robust to noisy alphas; ignores rank-magnitude information.
+
+The alpha itself is mean-zero by construction (`(rank − 1) / (N − 1) − 0.5`), so both strategies are dollar-neutral on average across stocks per bucket.
 
 ## Dashboards
 
