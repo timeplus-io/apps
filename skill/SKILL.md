@@ -441,6 +441,10 @@ SELECT window_start AS time, product_id, ...
 **Cause:** Views that alias `window_start AS time` (typical for tumble bars) do not propagate `_tp_time` to consumers.
 **Fix:** Filter on the exposed `time` column instead — `WHERE time > now() - 5m`.
 
+### Dashboard / resource name silently truncated at `#`
+**Cause:** YAML treats `#` after whitespace as the start of a comment. `name: Alpha #1 Backtest` is parsed as `name: Alpha`.
+**Fix:** Quote any manifest value that contains `#` — `name: "Alpha #1 Backtest"`, `description: "Live prices and Alpha #1 leaderboard"`. Folded block scalars (`description: > ...`) treat `#` literally and are safe.
+
 ## Resource Type Reference
 
 ### stream
