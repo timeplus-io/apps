@@ -1,0 +1,32 @@
+package_format_version: 1
+id: io.timeplus.alpha-101
+name: Realtime Alpha 101
+version: 1.0.0
+author: Timeplus
+description: >
+  Streaming demo of WorldQuant Alpha #1 over a synthetic 10-stock random
+  market feed. Demonstrates tumble-window bars, lag/lags arrays, and
+  cross-sectional rank in Timeplus streaming SQL.
+db_name: alpha_101
+categories:
+  - analytics
+  - finance
+  - demo
+
+config:
+  - key: bucket
+    type: choice
+    required: false
+    default: "1s"
+    description: >
+      Tumble-window bar interval. Smaller = more real-time but more CPU;
+      larger = smoother bars but slower alpha warm-up
+      (1s → ~25s, 5s → ~125s, 1m → ~25min).
+    options:
+      - "1s"
+      - "5s"
+      - "1m"
+
+resources: []
+
+dashboards: []
