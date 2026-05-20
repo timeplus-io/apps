@@ -12,7 +12,7 @@
       "y": 0
     },
     "viz_type": "chart",
-    "viz_content": "SELECT time, stock_id, close FROM alpha_101.v_bars WHERE _tp_time > now() - 5m",
+    "viz_content": "SELECT time, stock_id, close FROM alpha_101.v_bars WHERE time > now() - 5m",
     "viz_config": {
       "chartType": "line",
       "config": {
@@ -69,7 +69,7 @@
       "y": 4
     },
     "viz_type": "chart",
-    "viz_content": "SELECT time, stock_id, alpha_1 FROM alpha_101.v_alpha_1 WHERE _tp_time > now() - 10s",
+    "viz_content": "SELECT time, stock_id, alpha_1 FROM alpha_101.v_alpha_1 WHERE time > now() - 10s",
     "viz_config": {
       "chartType": "table",
       "config": {
@@ -128,7 +128,7 @@
       "y": 8
     },
     "viz_type": "chart",
-    "viz_content": "SELECT time, stock_id, alpha_1 FROM alpha_101.v_alpha_1 WHERE _tp_time > now() - 5m",
+    "viz_content": "SELECT time, stock_id, alpha_1 FROM alpha_101.v_alpha_1 WHERE time > now() - 5m",
     "viz_config": {
       "chartType": "line",
       "config": {
