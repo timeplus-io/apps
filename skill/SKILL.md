@@ -445,6 +445,10 @@ SELECT window_start AS time, product_id, ...
 **Cause:** YAML treats `#` after whitespace as the start of a comment. `name: Alpha #1 Backtest` is parsed as `name: Alpha`.
 **Fix:** Quote any manifest value that contains `#` — `name: "Alpha #1 Backtest"`, `description: "Live prices and Alpha #1 leaderboard"`. Folded block scalars (`description: > ...`) treat `#` literally and are safe.
 
+### `Unknown function nullif. Maybe you meant: ['null_if','null_in']`
+**Cause:** Timeplus uses snake_case for ClickHouse-derived functions (`array_element`, `count_if`, `null_if`, …). The bare ClickHouse name `nullif` *appears* to work in ad-hoc HTTP `SELECT nullif(...)` queries but is rejected by both the `.tpapp` install validator and the dashboard panel query path.
+**Fix:** Write `null_if(x, y)` in every SQL string — DDL files, dashboard `viz_content`, README snippets. Don't trust a green ad-hoc `curl` test; live-validate via the install path or the dashboard render if the query will live there.
+
 ## Resource Type Reference
 
 ### stream
