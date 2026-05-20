@@ -1,0 +1,175 @@
+[
+  {
+    "id": "a1b2c3d4-0001-4000-8000-000000000001",
+    "title": "Live Prices",
+    "description": "Close price per stock over the last 5 minutes",
+    "position": {
+      "h": 4,
+      "nextX": 12,
+      "nextY": 4,
+      "w": 12,
+      "x": 0,
+      "y": 0
+    },
+    "viz_type": "chart",
+    "viz_content": "SELECT time, stock_id, close FROM alpha_101.v_bars WHERE _tp_time > now() - 5m",
+    "viz_config": {
+      "chartType": "line",
+      "config": {
+        "color": "",
+        "colors": [
+          "#ED64A6",
+          "#F0BE3E",
+          "#DA4B36",
+          "#9A1563",
+          "#FF4A71",
+          "#D12D50",
+          "#8934D9",
+          "#D53F8C",
+          "#F7775A",
+          "#8934D9"
+        ],
+        "dataLabel": false,
+        "fractionDigits": 2,
+        "gridlines": true,
+        "legend": true,
+        "lineStyle": "curve",
+        "points": false,
+        "showAll": false,
+        "unit": {
+          "position": "left",
+          "value": ""
+        },
+        "xAxis": "time",
+        "xFormat": "LT",
+        "xRange": "Infinity",
+        "xTitle": "",
+        "yAxis": "close",
+        "yRange": {
+          "max": null,
+          "min": null
+        },
+        "yTickLabel": {
+          "maxChar": 25
+        },
+        "yTitle": "Price"
+      }
+    }
+  },
+  {
+    "id": "a1b2c3d4-0002-4000-8000-000000000002",
+    "title": "Alpha #1 Leaderboard (Latest)",
+    "description": "Most recent alpha_1 values per stock, ordered by alpha descending",
+    "position": {
+      "h": 4,
+      "nextX": 12,
+      "nextY": 8,
+      "w": 12,
+      "x": 0,
+      "y": 4
+    },
+    "viz_type": "chart",
+    "viz_content": "SELECT time, stock_id, alpha_1 FROM alpha_101.v_alpha_1 WHERE _tp_time > now() - 10s",
+    "viz_config": {
+      "chartType": "table",
+      "config": {
+        "rowCount": 20,
+        "tableStyles": {
+          "time": {
+            "conditions": [],
+            "decreaseColor": "red",
+            "highlightRow": false,
+            "increaseColor": "green",
+            "miniChartType": "",
+            "name": "",
+            "show": true,
+            "trend": false,
+            "width": 210
+          },
+          "stock_id": {
+            "conditions": [],
+            "decreaseColor": "red",
+            "highlightRow": false,
+            "increaseColor": "green",
+            "miniChartType": "",
+            "name": "",
+            "show": true,
+            "trend": false,
+            "width": 140
+          },
+          "alpha_1": {
+            "conditions": [],
+            "decreaseColor": "red",
+            "highlightRow": false,
+            "increaseColor": "green",
+            "miniChartType": "",
+            "name": "",
+            "show": true,
+            "trend": true,
+            "width": 160
+          }
+        },
+        "tableWrap": false,
+        "updateKey": "stock_id",
+        "updateMode": "key"
+      }
+    }
+  },
+  {
+    "id": "a1b2c3d4-0003-4000-8000-000000000003",
+    "title": "Alpha #1 Over Time",
+    "description": "Alpha_1 signal per stock over the last 5 minutes",
+    "position": {
+      "h": 4,
+      "nextX": 12,
+      "nextY": 12,
+      "w": 12,
+      "x": 0,
+      "y": 8
+    },
+    "viz_type": "chart",
+    "viz_content": "SELECT time, stock_id, alpha_1 FROM alpha_101.v_alpha_1 WHERE _tp_time > now() - 5m",
+    "viz_config": {
+      "chartType": "line",
+      "config": {
+        "color": "",
+        "colors": [
+          "#ED64A6",
+          "#F0BE3E",
+          "#DA4B36",
+          "#9A1563",
+          "#FF4A71",
+          "#D12D50",
+          "#8934D9",
+          "#D53F8C",
+          "#F7775A",
+          "#8934D9"
+        ],
+        "dataLabel": false,
+        "fractionDigits": 4,
+        "gridlines": true,
+        "legend": true,
+        "lineStyle": "curve",
+        "points": false,
+        "showAll": false,
+        "unit": {
+          "position": "left",
+          "value": ""
+        },
+        "xAxis": "time",
+        "xFormat": "LT",
+        "xRange": "Infinity",
+        "xTitle": "",
+        "yAxis": "alpha_1",
+        "yRange": {
+          "max": null,
+          "min": null
+        },
+        "yTickLabel": {
+          "maxChar": 25
+        },
+        "yTitle": "Alpha #1"
+      }
+    }
+  }
+]
