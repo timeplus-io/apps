@@ -32,7 +32,7 @@ random_market_data (CREATE RANDOM STREAM, eps=100)
 mv_market_data ─────────► market_data           (append-only stream, 1h TTL)
                                 │
                                 ▼  tumble(1s) GROUP BY window_start, stock_id
-                          v_bars_1s             (time, stock_id, close)
+                          v_bars             (time, stock_id, close)
                                 │
                                 ▼  PARTITION BY stock_id + lags
                           v_features            (returns, sigma_ret_20, signed_power)
@@ -44,7 +44,9 @@ mv_market_data ─────────► market_data           (append-only
                           v_alpha_1             (alpha_1 = rank/N - 0.5)
 ```
 
-**Configuration:** 10 simulated stocks (STOCK_0 .. STOCK_9), 1-second bars, 20-bar rolling stddev, 5-bar argmax window. All hardcoded; no `config` parameters for the demo.
+**Configuration:** 10 simulated stocks (STOCK_0 .. STOCK_9), **user-selectable bar interval** (`1s` / `5s` / `1m`, default `1s`), 20-bar rolling stddev, 5-bar argmax window. The bar interval is wired through one config key — `bucket` — substituted into the tumble calls in `v_bars` and `v_alpha_1` via `{{ .Config.bucket }}`. Rolling-window *counts* (20 bars, 5 bars) stay fixed regardless of bucket; only the wall-clock cadence shifts.
+
+**Warm-up implication:** at `1s` buckets the alpha stabilizes in ~25s, at `5s` in ~125s, at `1m` in ~25min — pick the bucket to match the demo time budget.
 
 ## Components
 
@@ -90,15 +92,15 @@ SELECT time, stock_id, price
 FROM {{ .DB }}.random_market_data;
 ```
 
-### 4. `v_bars_1s` — 1-second OHLC-style tumble (close only)
+### 4. `v_bars` — OHLC-style tumble (close only) at the configured bucket
 
 ```sql
-CREATE OR REPLACE VIEW {{ .DB }}.v_bars_1s AS
+CREATE OR REPLACE VIEW {{ .DB }}.v_bars AS
 SELECT
   window_start AS time,
   stock_id,
   latest(price) AS close
-FROM tumble({{ .DB }}.market_data, 1s)
+FROM tumble({{ .DB }}.market_data, {{ .Config.bucket }})
 GROUP BY window_start, stock_id;
 ```
 
@@ -129,7 +131,7 @@ FROM (
         range(0, 20))
     )                                                              AS sigma_ret_20,
     if(returns < 0, sigma_ret_20, close)                           AS cond
-  FROM {{ .DB }}.v_bars_1s
+  FROM {{ .DB }}.v_bars
   PARTITION BY stock_id
 );
 ```
@@ -168,7 +170,7 @@ WITH ranked AS (
     window_start AS time,
     array_sort(p -> p.2, group_array((stock_id, ts_argmax))) AS sorted_pairs,
     length(group_array(stock_id))                            AS n
-  FROM tumble({{ .DB }}.v_ts_argmax_5, 1s)
+  FROM tumble({{ .DB }}.v_ts_argmax_5, {{ .Config.bucket }})
   GROUP BY window_start
 )
 SELECT
@@ -206,7 +208,7 @@ apps/alpha-101/
 │   ├── 001_random_market_data.sql
 │   ├── 002_market_data.sql
 │   ├── 003_mv_market_data.sql
-│   ├── 004_v_bars_1s.sql
+│   ├── 004_v_bars.sql
 │   ├── 005_v_features.sql
 │   ├── 006_v_ts_argmax_5.sql
 │   └── 007_v_alpha_1.sql
@@ -222,7 +224,8 @@ apps/alpha-101/
 - `db_name: alpha_101`
 - `description: "Streaming demo of WorldQuant Alpha #1 over a synthetic 10-stock market data feed."`
 - `categories: [analytics, finance, demo]`
-- No `python_packages`, no `config`.
+- No `python_packages`.
+- `config:` one key — `bucket` — type `choice`, options `["1s","5s","1m"]`, default `"1s"`.
 - `resources:` lists all 7 DDL files with `type` in the correct dependency order.
 - `dashboards:` lists `main.json`.
 
@@ -230,7 +233,7 @@ apps/alpha-101/
 
 `dashboards/main.json` — three panels:
 
-1. **Live prices** — line chart, `SELECT time, stock_id, close FROM v_bars_1s` (multi-series by stock_id, last 5 minutes).
+1. **Live prices** — line chart, `SELECT time, stock_id, close FROM v_bars` (multi-series by stock_id, last 5 minutes).
 2. **Alpha #1 leaderboard (latest)** — table, `SELECT time, stock_id, alpha_1 FROM v_alpha_1 ORDER BY alpha_1 DESC LIMIT 10 BY time`.
 3. **Alpha #1 over time** — line chart, `SELECT time, stock_id, alpha_1 FROM v_alpha_1` (multi-series, last 5 minutes).
 
