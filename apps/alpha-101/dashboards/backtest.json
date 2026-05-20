@@ -12,7 +12,7 @@
       "y": 0
     },
     "viz_type": "chart",
-    "viz_content": "SELECT count() AS n_obs, round(sum(pnl), 6) AS cum_pnl, round(avg(pnl), 8) AS mean_pnl, round(stddev_pop(pnl), 8) AS std_pnl, round(avg(pnl) / nullif(stddev_pop(pnl), 0), 4) AS sharpe_per_obs, round(count_if(pnl > 0) * 100.0 / count(), 2) AS hit_rate_pct FROM alpha_101.v_backtest WHERE pnl IS NOT NULL SETTINGS seek_to = 'earliest'",
+    "viz_content": "SELECT count() AS n_obs, round(sum(pnl), 6) AS cum_pnl, round(avg(pnl), 8) AS mean_pnl, round(stddev_pop(pnl), 8) AS std_pnl, round(avg(pnl) / null_if(stddev_pop(pnl), 0), 4) AS sharpe_per_obs, round(count_if(pnl > 0) * 100.0 / count(), 2) AS hit_rate_pct FROM alpha_101.v_backtest WHERE pnl IS NOT NULL SETTINGS seek_to = 'earliest'",
     "viz_config": {
       "chartType": "table",
       "config": {

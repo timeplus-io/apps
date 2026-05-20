@@ -52,7 +52,7 @@ SELECT
   round(sum(pnl), 6)                                       AS cum_pnl,
   round(avg(pnl), 8)                                       AS mean_pnl_per_obs,
   round(stddev_pop(pnl), 8)                                AS std_pnl,
-  round(avg(pnl) / nullif(stddev_pop(pnl), 0), 4)          AS sharpe_per_obs,
+  round(avg(pnl) / null_if(stddev_pop(pnl), 0), 4)         AS sharpe_per_obs,
   round(count_if(pnl > 0) * 100.0 / count(), 2)            AS hit_rate_pct,
   round(min(pnl), 6)                                       AS worst_obs,
   round(max(pnl), 6)                                       AS best_obs
