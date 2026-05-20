@@ -10,11 +10,11 @@ FROM (
   FROM (
     SELECT
       time, stock_id, close,
-      (array_element(close21, 1) - array_element(close21, 2)) / nullif(array_element(close21, 2), 0) AS returns,
+      (array_element(close21, 1) - array_element(close21, 2)) / null_if(array_element(close21, 2), 0) AS returns,
       array_reduce(
         'stddev_pop',
         array_map(
-          i -> (array_element(close21, i) - array_element(close21, i + 1)) / nullif(array_element(close21, i + 1), 0),
+          i -> (array_element(close21, i) - array_element(close21, i + 1)) / null_if(array_element(close21, i + 1), 0),
           range(1, 21)
         )
       ) AS sigma_ret_20
