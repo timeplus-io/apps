@@ -58,6 +58,9 @@ resources:
   - file: ddl/007_v_alpha_1.sql
     type: view
     name: v_alpha_1
+  - file: ddl/008_v_backtest.sql
+    type: view
+    name: v_backtest
 
 dashboards:
   - file: dashboards/main.json
