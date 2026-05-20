@@ -101,7 +101,7 @@
       "y": 6
     },
     "viz_type": "chart",
-    "viz_content": "SELECT service, region, hourly_usd FROM aws_cost.v_cost_by_service_region\nSETTINGS\n  seek_to = 'earliest'",
+    "viz_content": "SELECT service, region, hourly_usd FROM aws_cost.v_cost_by_service_region",
     "viz_config": {
       "chartType": "bar",
       "config": {
@@ -142,7 +142,7 @@
       "y": 6
     },
     "viz_type": "chart",
-    "viz_content": "SELECT creator, hourly_usd FROM aws_cost.v_cost_by_creator ORDER BY hourly_usd DESC LIMIT 15\nSETTINGS\n  seek_to = 'earliest'",
+    "viz_content": "SELECT creator, hourly_usd FROM aws_cost.v_cost_by_creator ORDER BY hourly_usd DESC LIMIT 15",
     "viz_config": {
       "chartType": "bar",
       "config": {
@@ -173,7 +173,7 @@
       "y": 10
     },
     "viz_type": "chart",
-    "viz_content": "SELECT time, resource_id, service, region, resource_type, creator, hourly_cost_usd, monthly_cost_usd FROM aws_cost.v_top_expensive\nsettings seek_to = 'earliest'",
+    "viz_content": "SELECT time, resource_id, service, region, resource_type, creator, hourly_cost_usd, monthly_cost_usd FROM aws_cost.v_top_expensive",
     "viz_config": {
       "chartType": "table",
       "config": {
