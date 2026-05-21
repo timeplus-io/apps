@@ -46,16 +46,39 @@
     }
   },
   {
+    "id": "a1b2c3d4-0020-4000-8000-000000000020",
+    "title": "Selected Alpha",
+    "description": "Description and original formula for the currently-selected alpha (from the alpha_catalog mutable stream)",
+    "position": {
+      "h": 2,
+      "nextX": 12,
+      "nextY": 3,
+      "w": 12,
+      "x": 0,
+      "y": 1
+    },
+    "viz_type": "chart",
+    "viz_content": "SELECT alpha_name, description, equation FROM table(alpha_101.alpha_catalog) WHERE alpha_name = 'alpha_{{filter_alpha}}'",
+    "viz_config": {
+      "chartType": "md",
+      "config": {
+        "content": "### {{alpha_name}}\n\n{{description}}\n\n```\n{{equation}}\n```",
+        "updateMode": "all",
+        "updateKey": ""
+      }
+    }
+  },
+  {
     "id": "a1b2c3d4-0001-4000-8000-000000000001",
     "title": "Live Prices",
     "description": "Close price for the selected stock over the last 5 minutes",
     "position": {
       "h": 4,
       "nextX": 6,
-      "nextY": 5,
+      "nextY": 7,
       "w": 6,
       "x": 0,
-      "y": 1
+      "y": 3
     },
     "viz_type": "chart",
     "viz_content": "SELECT time, close FROM alpha_101.v_bars WHERE stock_id = '{{filter_stock_id}}' AND time > now() - 5m SETTINGS seek_to = 'earliest'",
@@ -109,10 +132,10 @@
     "position": {
       "h": 4,
       "nextX": 12,
-      "nextY": 5,
+      "nextY": 7,
       "w": 6,
       "x": 6,
-      "y": 1
+      "y": 3
     },
     "viz_type": "chart",
     "viz_content": "SELECT time, volume FROM alpha_101.v_bars WHERE stock_id = '{{filter_stock_id}}' AND time > now() - 5m SETTINGS seek_to = 'earliest'",
@@ -157,10 +180,10 @@
     "position": {
       "h": 4,
       "nextX": 12,
-      "nextY": 9,
+      "nextY": 11,
       "w": 12,
       "x": 0,
-      "y": 5
+      "y": 7
     },
     "viz_type": "chart",
     "viz_content": "SELECT time, stock_id, alpha_{{filter_alpha}} AS alpha FROM alpha_101.v_alpha_{{filter_alpha}} WHERE alpha_{{filter_alpha}} IS NOT NULL SETTINGS seek_to = 'earliest'",
@@ -216,10 +239,10 @@
     "position": {
       "h": 4,
       "nextX": 12,
-      "nextY": 13,
+      "nextY": 15,
       "w": 12,
       "x": 0,
-      "y": 9
+      "y": 11
     },
     "viz_type": "chart",
     "viz_content": "SELECT time, stock_id, alpha_{{filter_alpha}} AS alpha FROM alpha_101.v_alpha_{{filter_alpha}} WHERE alpha_{{filter_alpha}} IS NOT NULL AND time > now() - 5m",
