@@ -33,6 +33,17 @@ curl -X POST http://localhost:8000/default/api/v1beta2/apps/install \
   -F "file=@my-app.tpapp"
 ```
 
+Override `config:` values at install time with `config[<key>]=<value>` form fields (multipart) — the neutron handler parses any form field matching `config[*]` into the rendered config map:
+
+```bash
+curl -X POST http://localhost:8000/default/api/v1beta2/apps/install \
+  -F "file=@my-app.tpapp" \
+  -F "config[strategy]=sign" \
+  -F "config[num_stocks]=5"
+```
+
+For JSON-body installs (URL fetch), use `{"url": "...", "config": {"strategy": "sign"}}`.
+
 ## manifest.yaml
 
 ```yaml
@@ -432,6 +443,22 @@ SELECT window_start AS time, product_id, ...
 
 ### Wrong template delimiter in dashboards
 **Fix:** Use `[[ .DB ]]` in dashboard JSON, not `{{ .DB }}`. The `{{ }}` delimiter is reserved for frontend filter variables like `{{filter_product}}`.
+
+### Multi-series line/area chart renders as a single overlapping line
+**Cause:** `viz_config.config.color` left at `""`. The chart treats the result as one series and draws every point on the same line.
+**Fix:** Set `"color"` to the column that distinguishes series (e.g. `"color": "stock_id"` for `SELECT time, stock_id, close FROM ...`). The reference doc lists this as the required key for multi-series; see `references/dashboard-spec.md` → "line and area".
+
+### Dashboard WHERE filter fails with `Missing columns: '_tp_time'`
+**Cause:** Views that alias `window_start AS time` (typical for tumble bars) do not propagate `_tp_time` to consumers.
+**Fix:** Filter on the exposed `time` column instead — `WHERE time > now() - 5m`.
+
+### Dashboard / resource name silently truncated at `#`
+**Cause:** YAML treats `#` after whitespace as the start of a comment. `name: Alpha #1 Backtest` is parsed as `name: Alpha`.
+**Fix:** Quote any manifest value that contains `#` — `name: "Alpha #1 Backtest"`, `description: "Live prices and Alpha #1 leaderboard"`. Folded block scalars (`description: > ...`) treat `#` literally and are safe.
+
+### `Unknown function nullif. Maybe you meant: ['null_if','null_in']`
+**Cause:** Timeplus uses snake_case for ClickHouse-derived functions (`array_element`, `count_if`, `null_if`, …). The bare ClickHouse name `nullif` *appears* to work in ad-hoc HTTP `SELECT nullif(...)` queries but is rejected by both the `.tpapp` install validator and the dashboard panel query path.
+**Fix:** Write `null_if(x, y)` in every SQL string — DDL files, dashboard `viz_content`, README snippets. Don't trust a green ad-hoc `curl` test; live-validate via the install path or the dashboard render if the query will live there.
 
 ## Resource Type Reference
 

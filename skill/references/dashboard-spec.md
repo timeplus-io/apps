@@ -247,13 +247,15 @@ Chart types: `line`, `area`, `bar`, `column`, `singleValue`, `table`, `ohlc`, `g
 
 Time-series charts. Requires a datetime column for X, numeric column for Y.
 
+> **Multi-series queries must set `color`.** If your SELECT returns multiple series (e.g. `SELECT time, stock_id, close FROM ...` — one line per `stock_id`), set `"color": "stock_id"` (the series/category column). Leaving it as `""` silently collapses all series into a single overlapping line — the chart renders but is unreadable.
+
 ```json
 "viz_config": {
   "chartType": "line",
   "config": {
     "xAxis": "time",
     "yAxis": "price",
-    "color": "",
+    "color": "stock_id",  // ← series column; required when the query returns >1 series
     "xRange": "Infinity",
     "xFormat": "",
     "xTitle": "",
@@ -278,9 +280,9 @@ Time-series charts. Requires a datetime column for X, numeric column for Y.
 |---|---|---|
 | `xAxis` | string | Column name — must be datetime type |
 | `yAxis` | string | Column name — must be numeric type |
-| `color` | string | Column name for multi-series coloring (non-numeric) |
+| `color` | string | **Required for multi-series.** Column name that distinguishes series (e.g. `"stock_id"`, `"region"`). Empty = single-series only. |
 | `xRange` | string | Minutes to show: `"1"`, `"5"`, `"60"`, `"Infinity"` (all) |
-| `xFormat` | string | Moment.js format: `""` auto, `"HH:mm:ss"`, `"LT"`, etc. |
+| `xFormat` | string | Moment.js format. Use `""` (auto) for any panel whose query can span more than one day — including all `seek_to='earliest'` panels. Reserve `"LT"` (time-of-day only) for short-window panels filtered with `WHERE time > now() - Xm`. |
 | `lineStyle` | string | `"curve"` or `"straight"` |
 | `dataLabel` | bool | Show data point labels |
 | `points` | bool | Show dots at each data point |

@@ -1,0 +1,84 @@
+package_format_version: 1
+id: io.timeplus.alpha-101
+name: Realtime Alpha 101
+version: 1.0.0
+author: Timeplus
+description: >
+  Streaming demo of WorldQuant Alpha #1 over a synthetic multi-stock random
+  market feed. Demonstrates tumble-window bars, lag/lags arrays, and
+  cross-sectional rank in Timeplus streaming SQL.
+db_name: alpha_101
+categories:
+  - analytics
+  - finance
+  - demo
+
+config:
+  - key: bucket
+    type: choice
+    required: false
+    default: "1s"
+    description: >
+      Tumble-window bar interval. Smaller = more real-time but more CPU;
+      larger = smoother bars but slower alpha warm-up
+      (1s → ~25s, 5s → ~125s, 1m → ~25min).
+    options:
+      - "1s"
+      - "5s"
+      - "1m"
+  - key: num_stocks
+    type: integer
+    required: false
+    default: "3"
+    description: >
+      Number of simulated stocks (2–10). Cross-sectional rank with
+      `(rank − 1) / (N − 1) − 0.5` produces a mean-zero alpha in
+      [−0.5, +0.5]. Default 3 is a good starting point; ceiling is 10
+      (limited by the built-in per-stock base-price seed array). N=1
+      yields null alpha (no peers to rank against).
+  - key: strategy
+    type: choice
+    required: false
+    default: "linear"
+    description: >
+      How the alpha signal maps to a position weight in the backtest:
+      `linear` uses alpha_prev directly (continuous weighting, magnitude
+      matters); `sign` uses sign(alpha_prev) (equal-magnitude long/short,
+      direction only — robust to alpha-noise outliers).
+    options:
+      - "linear"
+      - "sign"
+
+resources:
+  - file: ddl/001_random_market_data.sql
+    type: stream
+    name: random_market_data
+  - file: ddl/002_market_data.sql
+    type: stream
+    name: market_data
+  - file: ddl/003_mv_market_data.sql
+    type: materialized_view
+    name: mv_market_data
+  - file: ddl/004_v_bars.sql
+    type: view
+    name: v_bars
+  - file: ddl/005_v_features.sql
+    type: view
+    name: v_features
+  - file: ddl/006_v_ts_argmax_5.sql
+    type: view
+    name: v_ts_argmax_5
+  - file: ddl/007_v_alpha_1.sql
+    type: view
+    name: v_alpha_1
+  - file: ddl/008_v_backtest.sql
+    type: view
+    name: v_backtest
+
+dashboards:
+  - file: dashboards/main.json
+    name: Realtime Alpha 101
+    description: "Live prices and Alpha #1 leaderboard for synthetic stocks"
+  - file: dashboards/backtest.json
+    name: "Alpha #1 Backtest"
+    description: "Cumulative PnL, Sharpe, hit rate and per-stock breakdown"
