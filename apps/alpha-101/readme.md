@@ -176,7 +176,7 @@ Each row in `v_backtest` is one **stock-bucket observation** — alpha at `t−1
 
 ### Expected outcome on synthetic data
 
-The source is independent random ticks with no genuine predictive structure, so Alpha #1 has no edge to exploit. A representative run over ~2 hours:
+The source is independent random ticks with no genuine predictive structure, so no alpha has an edge to exploit. A representative run over ~2 hours:
 
 | Metric | Value |
 |---|---|
@@ -185,3 +185,19 @@ The source is independent random ticks with no genuine predictive structure, so 
 | `cum_pnl` | small, sign varies run-to-run |
 
 That's the **correct** null result — it confirms the backtest math is sound. To see a real edge, point the pipeline at real market data (replace the random source with an external stream, e.g. the Coinbase WebSocket connector in `apps/market-data`).
+
+### Caveat: alphas that operate on raw price levels are degenerate on this data
+
+The random source assigns each stock a fixed price band (`[50, 80, 120, 200, …]` with only ±0.5% tick noise), so per-stock price ranges *never overlap*. STOCK_0's `low` is always lowest, STOCK_2's is always highest, every bucket forever. That breaks **cross-sectional rank of price levels** for:
+
+| Alpha | Why it's degenerate here |
+|---|---|
+| **#3** `corr(rank(open), rank(vol), 10)` | `rank(open)` is a constant per stock → correlation between a constant series and any other series is `0/0` → mostly null `alpha_3` |
+| **#4** `−ts_rank(rank(low), 9)` | `rank(low)` is a constant per stock → `ts_rank` always returns 9/9 in steady state → `alpha_4 = −1.0` always (with a brief transient `−1/9, −2/9, …` during the 9-bucket warmup) |
+| **#6** `−corr(open, volume, 10)` | raw `open` ≈ stock's base price (constant + 0.5% jitter); correlation with random volume ≈ 0 → `alpha_6 ≈ 0` always |
+
+The implementations are **correct** — they're honest about there being no information to extract when the input series is constant. On real market data where similar-cap stocks compete on rank, these alphas produce meaningful varying values.
+
+The alphas that *do* produce meaningful varying signals on this synthetic feed are the ones operating on **returns, deltas, or intra-bar quantities** rather than raw price levels: **#1, #2, #9, #12, #22, #41, #54**. Those are the ones to watch when validating that the pipeline works end-to-end on streaming SQL.
+
+**To make #3/#4/#6 non-degenerate without leaving synthetic data:** change `random_market_data` so all stocks share a single base price (e.g. `100.0 + rand_normal(0.0, 3.0)`) — the cross-sectional ranks then rotate randomly each bucket. This was tried and reverted to preserve the visual differentiation between stocks on the Live Prices chart; the degeneracy is a fair price for that.
