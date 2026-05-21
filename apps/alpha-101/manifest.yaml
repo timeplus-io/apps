@@ -74,6 +74,18 @@ resources:
   - file: ddl/008_v_backtest.sql
     type: view
     name: v_backtest
+  - file: ddl/009_v_features_2.sql
+    type: view
+    name: v_features_2
+  - file: ddl/010_v_ranks_2.sql
+    type: view
+    name: v_ranks_2
+  - file: ddl/011_v_alpha_2.sql
+    type: view
+    name: v_alpha_2
+  - file: ddl/012_v_backtest_2.sql
+    type: view
+    name: v_backtest_2
 
 dashboards:
   - file: dashboards/main.json
@@ -82,3 +94,9 @@ dashboards:
   - file: dashboards/backtest.json
     name: "Alpha #1 Backtest"
     description: "Cumulative PnL, Sharpe, hit rate and per-stock breakdown"
+  - file: dashboards/alpha_2.json
+    name: "Alpha #2 Live"
+    description: "Volume per bucket, alpha_2 leaderboard, alpha_2 over time"
+  - file: dashboards/backtest_2.json
+    name: "Alpha #2 Backtest"
+    description: "Alpha #2 cumulative PnL, Sharpe, hit rate, per-stock breakdown"
