@@ -1,12 +1,40 @@
 [
   {
+    "id": "b1c2d3e4-0000-4000-8000-000000000000",
+    "title": "Edge t-stat",
+    "description": "cum_pnl / (std_pnl × √n_obs). > 2 ≈ real edge (p < 0.05); ~0 = noise; negative = anti-predictive",
+    "position": {
+      "x": 0,
+      "y": 0,
+      "w": 4,
+      "h": 4,
+      "nextX": 4,
+      "nextY": 4
+    },
+    "viz_type": "chart",
+    "viz_content": "SELECT round(avg(pnl) / null_if(stddev_pop(pnl), 0) * sqrt(count()), 3) AS t_stat FROM alpha_101.v_backtest WHERE pnl IS NOT NULL SETTINGS seek_to = 'earliest'",
+    "viz_config": {
+      "chartType": "singleValue",
+      "config": {
+        "field": "t_stat",
+        "fontSize": 64,
+        "fractionDigits": 2,
+        "thresholds": [],
+        "unit": {
+          "position": "left",
+          "value": "t = "
+        }
+      }
+    }
+  },
+  {
     "id": "b1c2d3e4-0001-4000-8000-000000000001",
     "title": "Backtest Summary",
     "description": "Cumulative PnL, Sharpe and hit rate over the full retained history",
     "position": {
-      "x": 0,
+      "x": 4,
       "y": 0,
-      "w": 12,
+      "w": 8,
       "h": 4,
       "nextX": 12,
       "nextY": 4
