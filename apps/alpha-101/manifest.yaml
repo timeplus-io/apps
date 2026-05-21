@@ -156,6 +156,12 @@ resources:
   - file: ddl/035_v_backtest_alpha_54.sql
     type: view
     name: v_backtest_alpha_54
+  - file: ddl/036_alpha_catalog.sql
+    type: mutable_stream
+    name: alpha_catalog
+  - file: ddl/037_alpha_catalog_seed.sql
+    type: system
+    name: alpha_catalog_seed
 
 dashboards:
   - file: dashboards/main.json
