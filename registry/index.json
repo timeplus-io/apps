@@ -1,9 +1,130 @@
 [
   {
     "package_format_version": 1,
+    "id": "io.timeplus.alpha-101",
+    "name": "Realtime Alpha 101",
+    "version": "1.0.0",
+    "author": "Timeplus",
+    "description": "Streaming demo of WorldQuant alphas (#1 and #2) over a synthetic multi-stock random feed. Demonstrates tumble-window bars, lag/lags arrays, cross-sectional rank, and rolling correlation in Timeplus streaming SQL.\n",
+    "db_name": "alpha_101",
+    "categories": [
+      "analytics",
+      "finance",
+      "demo"
+    ],
+    "config": [
+      {
+        "key": "bucket",
+        "type": "choice",
+        "required": false,
+        "default": "1s",
+        "description": "Tumble-window bar interval. Smaller = more real-time but more CPU; larger = smoother bars but slower alpha warm-up (1s \u2192 ~25s, 5s \u2192 ~125s, 1m \u2192 ~25min).\n",
+        "options": [
+          "1s",
+          "5s",
+          "1m"
+        ]
+      },
+      {
+        "key": "num_stocks",
+        "type": "integer",
+        "required": false,
+        "default": "3",
+        "description": "Number of simulated stocks (2\u201310). Cross-sectional rank with `(rank \u2212 1) / (N \u2212 1) \u2212 0.5` produces a mean-zero alpha in [\u22120.5, +0.5]. Default 3 is a good starting point; ceiling is 10 (limited by the built-in per-stock base-price seed array). N=1 yields null alpha (no peers to rank against).\n"
+      },
+      {
+        "key": "strategy",
+        "type": "choice",
+        "required": false,
+        "default": "linear",
+        "description": "How the alpha signal maps to a position weight in the backtest: `linear` uses alpha_prev directly (continuous weighting, magnitude matters); `sign` uses sign(alpha_prev) (equal-magnitude long/short, direction only \u2014 robust to alpha-noise outliers).\n",
+        "options": [
+          "linear",
+          "sign"
+        ]
+      }
+    ],
+    "resources": [
+      {
+        "file": "ddl/001_random_market_data.sql",
+        "type": "stream",
+        "name": "random_market_data"
+      },
+      {
+        "file": "ddl/002_market_data.sql",
+        "type": "stream",
+        "name": "market_data"
+      },
+      {
+        "file": "ddl/003_mv_market_data.sql",
+        "type": "materialized_view",
+        "name": "mv_market_data"
+      },
+      {
+        "file": "ddl/004_v_bars.sql",
+        "type": "view",
+        "name": "v_bars"
+      },
+      {
+        "file": "ddl/005_v_features_alpha_1.sql",
+        "type": "view",
+        "name": "v_features_alpha_1"
+      },
+      {
+        "file": "ddl/006_v_ts_argmax_5_alpha_1.sql",
+        "type": "view",
+        "name": "v_ts_argmax_5_alpha_1"
+      },
+      {
+        "file": "ddl/007_v_alpha_1.sql",
+        "type": "view",
+        "name": "v_alpha_1"
+      },
+      {
+        "file": "ddl/008_v_backtest_alpha_1.sql",
+        "type": "view",
+        "name": "v_backtest_alpha_1"
+      },
+      {
+        "file": "ddl/009_v_features_alpha_2.sql",
+        "type": "view",
+        "name": "v_features_alpha_2"
+      },
+      {
+        "file": "ddl/010_v_ranks_alpha_2.sql",
+        "type": "view",
+        "name": "v_ranks_alpha_2"
+      },
+      {
+        "file": "ddl/011_v_alpha_2.sql",
+        "type": "view",
+        "name": "v_alpha_2"
+      },
+      {
+        "file": "ddl/012_v_backtest_alpha_2.sql",
+        "type": "view",
+        "name": "v_backtest_alpha_2"
+      }
+    ],
+    "dashboards": [
+      {
+        "file": "dashboards/main.json",
+        "name": "Realtime Alpha 101",
+        "description": "Live prices, volume and alpha leaderboard \u2014 pick the alpha via the dropdown"
+      },
+      {
+        "file": "dashboards/backtest.json",
+        "name": "Alpha 101 Backtest",
+        "description": "Cumulative PnL, Sharpe and hit rate \u2014 pick the alpha via the dropdown"
+      }
+    ],
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.5/alpha-101.tpapp"
+  },
+  {
+    "package_format_version": 1,
     "id": "io.timeplus.aws-cost",
     "name": "AWS Resource Cost Monitor",
-    "version": "0.1.0",
+    "version": "0.3.0",
     "author": "Timeplus",
     "description": "Realtime AWS resource usage and cost monitoring. Polls EC2 instances, EBS volumes, and S3 buckets across configured regions, joins live inventory with AWS On-Demand pricing, and breaks down hourly spend by service, region, and creator. Requires an IAM principal with: ec2:DescribeInstances, ec2:DescribeVolumes, s3:ListAllMyBuckets, cloudwatch:GetMetricStatistics, cloudtrail:LookupEvents, pricing:GetProducts.\n",
     "db_name": "aws_cost",
@@ -96,6 +217,26 @@
         "name": "mv_prices"
       },
       {
+        "file": "ddl/006a_aws_resource_usage_live.sql",
+        "type": "mutable_stream",
+        "name": "aws_resource_usage_live"
+      },
+      {
+        "file": "ddl/006b_mv_resource_usage_live.sql",
+        "type": "materialized_view",
+        "name": "mv_resource_usage_live"
+      },
+      {
+        "file": "ddl/006c_aws_resource_cost_live.sql",
+        "type": "mutable_stream",
+        "name": "aws_resource_cost_live"
+      },
+      {
+        "file": "ddl/006d_mv_resource_cost_live.sql",
+        "type": "materialized_view",
+        "name": "mv_resource_cost_live"
+      },
+      {
         "file": "ddl/007_v_resource_cost_now.sql",
         "type": "view",
         "name": "v_resource_cost_now"
@@ -124,6 +265,11 @@
         "file": "ddl/012_mv_cost_1m.sql",
         "type": "materialized_view",
         "name": "mv_cost_1m"
+      },
+      {
+        "file": "ddl/013_v_k8s_volumes.sql",
+        "type": "view",
+        "name": "v_k8s_volumes"
       }
     ],
     "dashboards": [
@@ -133,7 +279,7 @@
         "description": "Realtime AWS spend by service, region, and creator"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.4/aws-cost.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.5/aws-cost.tpapp"
   },
   {
     "package_format_version": 1,
@@ -231,7 +377,7 @@
         "description": "Real-time post volume, engagement, language breakdown, and live feed"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.4/bluesky.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.5/bluesky.tpapp"
   },
   {
     "package_format_version": 1,
@@ -291,7 +437,7 @@
         "description": "Real-time complex event processing visualization"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.4/cep.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.5/cep.tpapp"
   },
   {
     "package_format_version": 1,
@@ -509,7 +655,7 @@
         "description": "Real-time spike ratio monitoring, baseline tables, and live traffic"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.4/cisco-asa-ddos.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.5/cisco-asa-ddos.tpapp"
   },
   {
     "package_format_version": 1,
@@ -696,7 +842,7 @@
         "name": "spending_alert"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.4/game-feature-pipeline.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.5/game-feature-pipeline.tpapp"
   },
   {
     "package_format_version": 1,
@@ -747,7 +893,7 @@
         "description": "Real-time view of GitHub public events"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.4/github.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.5/github.tpapp"
   },
   {
     "package_format_version": 1,
@@ -833,7 +979,7 @@
         "name": "get_hn_post"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.4/hacker-news.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.5/hacker-news.tpapp"
   },
   {
     "package_format_version": 1,
@@ -1004,7 +1150,7 @@
         "description": "Real-time trading metrics \u2014 participation rate and P&L"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.4/invest-insights.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.5/invest-insights.tpapp"
   },
   {
     "package_format_version": 1,
@@ -1153,6 +1299,6 @@
         "description": "Real-time OHLC, returns, and RSI for Coinbase crypto pairs"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.4/market-data.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.5/market-data.tpapp"
   }
 ]
