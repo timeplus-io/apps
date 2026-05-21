@@ -35,7 +35,7 @@
       "y": 1
     },
     "viz_type": "chart",
-    "viz_content": "SELECT time, stock_id, close FROM alpha_101.v_bars WHERE stock_id = '{{filter_stock_id}}' AND time > now() - 5m",
+    "viz_content": "SELECT time, stock_id, close FROM alpha_101.v_bars WHERE stock_id = '{{filter_stock_id}}' AND time > now() - 5m SETTINGS seek_to = 'earliest'",
     "viz_config": {
       "chartType": "line",
       "config": {
