@@ -18,7 +18,7 @@ FROM (
       time, stock_id, returns,
       lags(rank_vol, 0, 5) AS rv_arr,
       lags(rank_ret, 0, 5) AS rr_arr
-    FROM {{ .DB }}.v_ranks_2
+    FROM {{ .DB }}.v_ranks_alpha_2
     PARTITION BY stock_id
   )
 )

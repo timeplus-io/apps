@@ -4,7 +4,7 @@ WITH ranked AS (
     window_start AS time,
     array_sort(p -> p.2, group_array((stock_id, ts_argmax, returns))) AS sorted_triples,
     length(group_array(stock_id))                                     AS n
-  FROM tumble({{ .DB }}.v_ts_argmax_5, time, {{ .Config.bucket }})
+  FROM tumble({{ .DB }}.v_ts_argmax_5_alpha_1, time, {{ .Config.bucket }})
   WHERE ts_argmax IS NOT NULL
   GROUP BY window_start
 )

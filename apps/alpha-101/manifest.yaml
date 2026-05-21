@@ -4,9 +4,10 @@ name: Realtime Alpha 101
 version: 1.0.0
 author: Timeplus
 description: >
-  Streaming demo of WorldQuant Alpha #1 over a synthetic multi-stock random
-  market feed. Demonstrates tumble-window bars, lag/lags arrays, and
-  cross-sectional rank in Timeplus streaming SQL.
+  Streaming demo of WorldQuant alphas (#1 and #2) over a synthetic
+  multi-stock random feed. Demonstrates tumble-window bars, lag/lags
+  arrays, cross-sectional rank, and rolling correlation in Timeplus
+  streaming SQL.
 db_name: alpha_101
 categories:
   - analytics
@@ -62,30 +63,30 @@ resources:
   - file: ddl/004_v_bars.sql
     type: view
     name: v_bars
-  - file: ddl/005_v_features.sql
+  - file: ddl/005_v_features_alpha_1.sql
     type: view
-    name: v_features
-  - file: ddl/006_v_ts_argmax_5.sql
+    name: v_features_alpha_1
+  - file: ddl/006_v_ts_argmax_5_alpha_1.sql
     type: view
-    name: v_ts_argmax_5
+    name: v_ts_argmax_5_alpha_1
   - file: ddl/007_v_alpha_1.sql
     type: view
     name: v_alpha_1
-  - file: ddl/008_v_backtest.sql
+  - file: ddl/008_v_backtest_alpha_1.sql
     type: view
-    name: v_backtest
-  - file: ddl/009_v_features_2.sql
+    name: v_backtest_alpha_1
+  - file: ddl/009_v_features_alpha_2.sql
     type: view
-    name: v_features_2
-  - file: ddl/010_v_ranks_2.sql
+    name: v_features_alpha_2
+  - file: ddl/010_v_ranks_alpha_2.sql
     type: view
-    name: v_ranks_2
+    name: v_ranks_alpha_2
   - file: ddl/011_v_alpha_2.sql
     type: view
     name: v_alpha_2
-  - file: ddl/012_v_backtest_2.sql
+  - file: ddl/012_v_backtest_alpha_2.sql
     type: view
-    name: v_backtest_2
+    name: v_backtest_alpha_2
 
 dashboards:
   - file: dashboards/main.json

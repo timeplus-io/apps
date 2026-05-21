@@ -1,4 +1,4 @@
-CREATE OR REPLACE VIEW {{ .DB }}.v_ranks_2 AS
+CREATE OR REPLACE VIEW {{ .DB }}.v_ranks_alpha_2 AS
 WITH bucketed AS (
   SELECT
     window_start                                                                              AS time,
@@ -6,7 +6,7 @@ WITH bucketed AS (
     array_sort(t -> t.2, group_array((stock_id, intraday_ret, log_vol_delta_2, returns)))     AS sorted_by_ret,
     array_sort(t -> t.3, group_array((stock_id, intraday_ret, log_vol_delta_2, returns)))     AS sorted_by_vol,
     length(group_array(stock_id))                                                             AS n
-  FROM tumble({{ .DB }}.v_features_2, time, {{ .Config.bucket }})
+  FROM tumble({{ .DB }}.v_features_alpha_2, time, {{ .Config.bucket }})
   WHERE intraday_ret IS NOT NULL AND log_vol_delta_2 IS NOT NULL
   GROUP BY window_start
 )
