@@ -111,7 +111,7 @@
         },
         "xAxis": "time",
         "xFormat": "",
-        "xRange": "Infinity",
+        "xRange": "5",
         "xTitle": "",
         "yAxis": "close",
         "yRange": {
