@@ -3,46 +3,78 @@
     "id": "a1b2c3d4-0000-4000-8000-000000000000",
     "title": "",
     "description": "",
-    "position": {"h": 1, "w": 4, "x": 0, "y": 0, "nextX": 4, "nextY": 1},
+    "position": {
+      "h": 1,
+      "nextX": 4,
+      "nextY": 1,
+      "w": 4,
+      "x": 0,
+      "y": 0
+    },
     "viz_type": "control",
     "viz_content": "",
     "viz_config": {
       "chartType": "selector",
+      "defaultValue": "STOCK_0",
+      "inlineValues": "[[ range $i, $_ := until (int .Config.num_stocks) ]][[ if $i ]],[[ end ]]STOCK_[[ $i ]][[ end ]]",
       "label": "Stock",
       "labelWidth": "60",
-      "target": "filter_stock_id",
-      "defaultValue": "STOCK_0",
-      "inlineValues": "[[ range $i, $_ := until (int .Config.num_stocks) ]][[ if $i ]],[[ end ]]STOCK_[[ $i ]][[ end ]]"
+      "target": "filter_stock_id"
     }
   },
   {
     "id": "a1b2c3d4-0010-4000-8000-000000000010",
     "title": "",
     "description": "",
-    "position": {"h": 1, "w": 4, "x": 4, "y": 0, "nextX": 8, "nextY": 1},
+    "position": {
+      "h": 1,
+      "nextX": 8,
+      "nextY": 1,
+      "w": 4,
+      "x": 4,
+      "y": 0
+    },
     "viz_type": "control",
     "viz_content": "",
     "viz_config": {
       "chartType": "selector",
+      "defaultValue": "1",
+      "inlineValues": "1,2",
       "label": "Alpha",
       "labelWidth": "60",
-      "target": "filter_alpha",
-      "defaultValue": "1",
-      "inlineValues": "1,2"
+      "target": "filter_alpha"
     }
   },
   {
     "id": "a1b2c3d4-0001-4000-8000-000000000001",
     "title": "Live Prices",
     "description": "Close price for the selected stock over the last 5 minutes",
-    "position": {"h": 4, "w": 6, "x": 0, "y": 1, "nextX": 6, "nextY": 5},
+    "position": {
+      "h": 4,
+      "nextX": 6,
+      "nextY": 5,
+      "w": 6,
+      "x": 0,
+      "y": 1
+    },
     "viz_type": "chart",
     "viz_content": "SELECT time, close FROM alpha_101.v_bars WHERE stock_id = '{{filter_stock_id}}' AND time > now() - 5m SETTINGS seek_to = 'earliest'",
     "viz_config": {
       "chartType": "line",
       "config": {
         "color": "",
-        "colors": ["#ED64A6", "#F0BE3E", "#DA4B36", "#9A1563", "#FF4A71", "#D12D50", "#8934D9", "#D53F8C", "#F7775A", "#8934D9"],
+        "colors": [
+          "#ED64A6",
+          "#F0BE3E",
+          "#DA4B36",
+          "#9A1563",
+          "#FF4A71",
+          "#D12D50",
+          "#8934D9",
+          "#D53F8C",
+          "#F7775A",
+          "#8934D9"
+        ],
         "dataLabel": false,
         "fractionDigits": 2,
         "gridlines": true,
@@ -50,14 +82,22 @@
         "lineStyle": "curve",
         "points": false,
         "showAll": false,
-        "unit": {"position": "left", "value": ""},
+        "unit": {
+          "position": "left",
+          "value": ""
+        },
         "xAxis": "time",
         "xFormat": "",
         "xRange": "Infinity",
         "xTitle": "",
         "yAxis": "close",
-        "yRange": {"max": null, "min": null},
-        "yTickLabel": {"maxChar": 25},
+        "yRange": {
+          "max": null,
+          "min": null
+        },
+        "yTickLabel": {
+          "maxChar": 25
+        },
         "yTitle": "Price"
       }
     }
@@ -66,29 +106,46 @@
     "id": "a1b2c3d4-0004-4000-8000-000000000004",
     "title": "Live Volume",
     "description": "Per-bucket aggregate volume for the selected stock (drives Alpha #2)",
-    "position": {"h": 4, "w": 6, "x": 6, "y": 1, "nextX": 12, "nextY": 5},
+    "position": {
+      "h": 4,
+      "nextX": 12,
+      "nextY": 5,
+      "w": 6,
+      "x": 6,
+      "y": 1
+    },
     "viz_type": "chart",
     "viz_content": "SELECT time, volume FROM alpha_101.v_bars WHERE stock_id = '{{filter_stock_id}}' AND time > now() - 5m SETTINGS seek_to = 'earliest'",
     "viz_config": {
       "chartType": "column",
       "config": {
         "color": "",
-        "colors": ["#F0BE3E"],
+        "colors": [
+          "#F0BE3E"
+        ],
         "dataLabel": false,
         "fractionDigits": 0,
         "gridlines": true,
         "groupType": "stack",
         "legend": false,
-        "unit": {"position": "left", "value": ""},
-        "updateKey": "time",
-        "updateMode": "time",
+        "unit": {
+          "position": "left",
+          "value": ""
+        },
+        "updateKey": "all",
+        "updateMode": "all",
         "xAxis": "time",
         "xFormat": "",
         "xTickLabel": {},
         "xTitle": "",
         "yAxis": "volume",
-        "yRange": {"max": null, "min": 0},
-        "yTickLabel": {"maxChar": 25},
+        "yRange": {
+          "max": null,
+          "min": 0
+        },
+        "yTickLabel": {
+          "maxChar": 25
+        },
         "yTitle": "Volume"
       }
     }
@@ -97,7 +154,14 @@
     "id": "a1b2c3d4-0002-4000-8000-000000000002",
     "title": "Alpha Leaderboard (Latest)",
     "description": "Most recent alpha values per stock for the selected alpha",
-    "position": {"h": 4, "w": 12, "x": 0, "y": 5, "nextX": 12, "nextY": 9},
+    "position": {
+      "h": 4,
+      "nextX": 12,
+      "nextY": 9,
+      "w": 12,
+      "x": 0,
+      "y": 5
+    },
     "viz_type": "chart",
     "viz_content": "SELECT time, stock_id, alpha_{{filter_alpha}} AS alpha FROM alpha_101.v_alpha_{{filter_alpha}} WHERE alpha_{{filter_alpha}} IS NOT NULL SETTINGS seek_to = 'earliest'",
     "viz_config": {
@@ -105,9 +169,39 @@
       "config": {
         "rowCount": 20,
         "tableStyles": {
-          "alpha": {"conditions": [], "decreaseColor": "red", "highlightRow": false, "increaseColor": "green", "miniChartType": "", "name": "", "show": true, "trend": true, "width": 160},
-          "stock_id": {"conditions": [], "decreaseColor": "red", "highlightRow": false, "increaseColor": "green", "miniChartType": "", "name": "", "show": true, "trend": false, "width": 140},
-          "time": {"conditions": [], "decreaseColor": "red", "highlightRow": false, "increaseColor": "green", "miniChartType": "", "name": "", "show": true, "trend": false, "width": 210}
+          "alpha": {
+            "conditions": [],
+            "decreaseColor": "red",
+            "highlightRow": false,
+            "increaseColor": "green",
+            "miniChartType": "",
+            "name": "",
+            "show": true,
+            "trend": true,
+            "width": 160
+          },
+          "stock_id": {
+            "conditions": [],
+            "decreaseColor": "red",
+            "highlightRow": false,
+            "increaseColor": "green",
+            "miniChartType": "",
+            "name": "",
+            "show": true,
+            "trend": false,
+            "width": 140
+          },
+          "time": {
+            "conditions": [],
+            "decreaseColor": "red",
+            "highlightRow": false,
+            "increaseColor": "green",
+            "miniChartType": "",
+            "name": "",
+            "show": true,
+            "trend": false,
+            "width": 210
+          }
         },
         "tableWrap": false,
         "updateKey": "stock_id",
@@ -119,14 +213,32 @@
     "id": "a1b2c3d4-0003-4000-8000-000000000003",
     "title": "Alpha Over Time",
     "description": "Per-stock alpha signal over the last 5 minutes for the selected alpha",
-    "position": {"h": 4, "w": 12, "x": 0, "y": 9, "nextX": 12, "nextY": 13},
+    "position": {
+      "h": 4,
+      "nextX": 12,
+      "nextY": 13,
+      "w": 12,
+      "x": 0,
+      "y": 9
+    },
     "viz_type": "chart",
     "viz_content": "SELECT time, stock_id, alpha_{{filter_alpha}} AS alpha FROM alpha_101.v_alpha_{{filter_alpha}} WHERE alpha_{{filter_alpha}} IS NOT NULL AND time > now() - 5m",
     "viz_config": {
       "chartType": "line",
       "config": {
         "color": "stock_id",
-        "colors": ["#ED64A6", "#F0BE3E", "#DA4B36", "#9A1563", "#FF4A71", "#D12D50", "#8934D9", "#D53F8C", "#F7775A", "#8934D9"],
+        "colors": [
+          "#ED64A6",
+          "#F0BE3E",
+          "#DA4B36",
+          "#9A1563",
+          "#FF4A71",
+          "#D12D50",
+          "#8934D9",
+          "#D53F8C",
+          "#F7775A",
+          "#8934D9"
+        ],
         "dataLabel": false,
         "fractionDigits": 4,
         "gridlines": true,
@@ -134,14 +246,22 @@
         "lineStyle": "curve",
         "points": false,
         "showAll": false,
-        "unit": {"position": "left", "value": ""},
+        "unit": {
+          "position": "left",
+          "value": ""
+        },
         "xAxis": "time",
         "xFormat": "",
         "xRange": "Infinity",
         "xTitle": "",
         "yAxis": "alpha",
-        "yRange": {"max": null, "min": null},
-        "yTickLabel": {"maxChar": 25},
+        "yRange": {
+          "max": null,
+          "min": null
+        },
+        "yTickLabel": {
+          "maxChar": 25
+        },
         "yTitle": "Alpha"
       }
     }
