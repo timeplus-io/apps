@@ -1,18 +1,27 @@
 [
   {
+    "id": "b1c2d3e4-0010-4000-8000-000000000010",
+    "title": "",
+    "description": "",
+    "position": {"h": 1, "w": 4, "x": 0, "y": 0, "nextX": 4, "nextY": 1},
+    "viz_type": "control",
+    "viz_content": "",
+    "viz_config": {
+      "chartType": "selector",
+      "label": "Alpha",
+      "labelWidth": "60",
+      "target": "filter_alpha",
+      "defaultValue": "1",
+      "inlineValues": "1,2"
+    }
+  },
+  {
     "id": "b1c2d3e4-0000-4000-8000-000000000000",
     "title": "Edge t-stat",
     "description": "cum_pnl / (std_pnl × √n_obs). > 2 ≈ real edge (p < 0.05); ~0 = noise; negative = anti-predictive",
-    "position": {
-      "x": 0,
-      "y": 0,
-      "w": 4,
-      "h": 4,
-      "nextX": 4,
-      "nextY": 4
-    },
+    "position": {"x": 0, "y": 1, "w": 4, "h": 4, "nextX": 4, "nextY": 5},
     "viz_type": "chart",
-    "viz_content": "SELECT round(avg(pnl) / null_if(stddev_pop(pnl), 0) * sqrt(count()), 3) AS t_stat FROM alpha_101.v_backtest_alpha_1 WHERE pnl IS NOT NULL SETTINGS seek_to = 'earliest'",
+    "viz_content": "SELECT round(avg(pnl) / null_if(stddev_pop(pnl), 0) * sqrt(count()), 3) AS t_stat FROM alpha_101.v_backtest_alpha_{{filter_alpha}} WHERE pnl IS NOT NULL SETTINGS seek_to = 'earliest'",
     "viz_config": {
       "chartType": "singleValue",
       "config": {
@@ -20,98 +29,28 @@
         "fontSize": 64,
         "fractionDigits": 2,
         "thresholds": [],
-        "unit": {
-          "position": "left",
-          "value": "t = "
-        }
+        "unit": {"position": "left", "value": "t = "}
       }
     }
   },
   {
     "id": "b1c2d3e4-0001-4000-8000-000000000001",
     "title": "Backtest Summary",
-    "description": "Cumulative PnL, Sharpe and hit rate over the full retained history",
-    "position": {
-      "x": 4,
-      "y": 0,
-      "w": 8,
-      "h": 4,
-      "nextX": 12,
-      "nextY": 4
-    },
+    "description": "Cumulative PnL, Sharpe, and hit rate over the full retained history",
+    "position": {"x": 4, "y": 1, "w": 8, "h": 4, "nextX": 12, "nextY": 5},
     "viz_type": "chart",
-    "viz_content": "SELECT count() AS n_obs, round(sum(pnl), 6) AS cum_pnl, round(avg(pnl), 8) AS mean_pnl, round(stddev_pop(pnl), 8) AS std_pnl, round(avg(pnl) / null_if(stddev_pop(pnl), 0), 4) AS sharpe_per_obs, round(count_if(pnl > 0) * 100.0 / count(), 2) AS hit_rate_pct FROM alpha_101.v_backtest_alpha_1 WHERE pnl IS NOT NULL SETTINGS seek_to = 'earliest'",
+    "viz_content": "SELECT count() AS n_obs, round(sum(pnl), 6) AS cum_pnl, round(avg(pnl), 8) AS mean_pnl, round(stddev_pop(pnl), 8) AS std_pnl, round(avg(pnl) / null_if(stddev_pop(pnl), 0), 4) AS sharpe_per_obs, round(count_if(pnl > 0) * 100.0 / count(), 2) AS hit_rate_pct FROM alpha_101.v_backtest_alpha_{{filter_alpha}} WHERE pnl IS NOT NULL SETTINGS seek_to = 'earliest'",
     "viz_config": {
       "chartType": "table",
       "config": {
         "rowCount": 5,
         "tableStyles": {
-          "cum_pnl": {
-            "conditions": [],
-            "decreaseColor": "red",
-            "highlightRow": false,
-            "increaseColor": "green",
-            "miniChartType": "",
-            "name": "Cumulative PnL",
-            "show": true,
-            "trend": true,
-            "width": 150
-          },
-          "hit_rate_pct": {
-            "conditions": [],
-            "decreaseColor": "red",
-            "highlightRow": false,
-            "increaseColor": "green",
-            "miniChartType": "",
-            "name": "Hit rate (%)",
-            "show": true,
-            "trend": true,
-            "width": 140
-          },
-          "mean_pnl": {
-            "conditions": [],
-            "decreaseColor": "red",
-            "highlightRow": false,
-            "increaseColor": "green",
-            "miniChartType": "",
-            "name": "Mean / obs",
-            "show": true,
-            "trend": false,
-            "width": 140
-          },
-          "n_obs": {
-            "conditions": [],
-            "decreaseColor": "red",
-            "highlightRow": false,
-            "increaseColor": "green",
-            "miniChartType": "",
-            "name": "Observations",
-            "show": true,
-            "trend": false,
-            "width": 120
-          },
-          "sharpe_per_obs": {
-            "conditions": [],
-            "decreaseColor": "red",
-            "highlightRow": false,
-            "increaseColor": "green",
-            "miniChartType": "",
-            "name": "Sharpe / obs",
-            "show": true,
-            "trend": true,
-            "width": 140
-          },
-          "std_pnl": {
-            "conditions": [],
-            "decreaseColor": "red",
-            "highlightRow": false,
-            "increaseColor": "green",
-            "miniChartType": "",
-            "name": "Stddev",
-            "show": true,
-            "trend": false,
-            "width": 140
-          }
+          "cum_pnl": {"conditions": [], "decreaseColor": "red", "highlightRow": false, "increaseColor": "green", "miniChartType": "", "name": "Cumulative PnL", "show": true, "trend": true, "width": 150},
+          "hit_rate_pct": {"conditions": [], "decreaseColor": "red", "highlightRow": false, "increaseColor": "green", "miniChartType": "", "name": "Hit rate (%)", "show": true, "trend": true, "width": 140},
+          "mean_pnl": {"conditions": [], "decreaseColor": "red", "highlightRow": false, "increaseColor": "green", "miniChartType": "", "name": "Mean / obs", "show": true, "trend": false, "width": 140},
+          "n_obs": {"conditions": [], "decreaseColor": "red", "highlightRow": false, "increaseColor": "green", "miniChartType": "", "name": "Observations", "show": true, "trend": false, "width": 120},
+          "sharpe_per_obs": {"conditions": [], "decreaseColor": "red", "highlightRow": false, "increaseColor": "green", "miniChartType": "", "name": "Sharpe / obs", "show": true, "trend": true, "width": 140},
+          "std_pnl": {"conditions": [], "decreaseColor": "red", "highlightRow": false, "increaseColor": "green", "miniChartType": "", "name": "Stddev", "show": true, "trend": false, "width": 140}
         },
         "tableWrap": false,
         "updateMode": "all",
@@ -123,65 +62,18 @@
     "id": "b1c2d3e4-0002-4000-8000-000000000002",
     "title": "PnL by Stock",
     "description": "Cumulative PnL contribution and hit rate per stock",
-    "position": {
-      "x": 0,
-      "y": 4,
-      "w": 6,
-      "h": 4,
-      "nextX": 6,
-      "nextY": 8
-    },
+    "position": {"h": 4, "w": 6, "x": 0, "y": 5, "nextX": 6, "nextY": 9},
     "viz_type": "chart",
-    "viz_content": "SELECT stock_id, count() AS n_obs, round(sum(pnl), 6) AS cum_pnl, round(count_if(pnl > 0) * 100.0 / count(), 2) AS hit_rate_pct FROM alpha_101.v_backtest_alpha_1 WHERE pnl IS NOT NULL GROUP BY stock_id SETTINGS seek_to = 'earliest'",
+    "viz_content": "SELECT stock_id, count() AS n_obs, round(sum(pnl), 6) AS cum_pnl, round(count_if(pnl > 0) * 100.0 / count(), 2) AS hit_rate_pct FROM alpha_101.v_backtest_alpha_{{filter_alpha}} WHERE pnl IS NOT NULL GROUP BY stock_id SETTINGS seek_to = 'earliest'",
     "viz_config": {
       "chartType": "table",
       "config": {
         "rowCount": 10,
         "tableStyles": {
-          "cum_pnl": {
-            "conditions": [],
-            "decreaseColor": "red",
-            "highlightRow": false,
-            "increaseColor": "green",
-            "miniChartType": "",
-            "name": "",
-            "show": true,
-            "trend": true,
-            "width": 150
-          },
-          "hit_rate_pct": {
-            "conditions": [],
-            "decreaseColor": "red",
-            "highlightRow": false,
-            "increaseColor": "green",
-            "miniChartType": "",
-            "name": "",
-            "show": true,
-            "trend": true,
-            "width": 140
-          },
-          "n_obs": {
-            "conditions": [],
-            "decreaseColor": "red",
-            "highlightRow": false,
-            "increaseColor": "green",
-            "miniChartType": "",
-            "name": "",
-            "show": true,
-            "trend": false,
-            "width": 120
-          },
-          "stock_id": {
-            "conditions": [],
-            "decreaseColor": "red",
-            "highlightRow": false,
-            "increaseColor": "green",
-            "miniChartType": "",
-            "name": "",
-            "show": true,
-            "trend": false,
-            "width": 140
-          }
+          "cum_pnl": {"conditions": [], "decreaseColor": "red", "highlightRow": false, "increaseColor": "green", "miniChartType": "", "name": "", "show": true, "trend": true, "width": 150},
+          "hit_rate_pct": {"conditions": [], "decreaseColor": "red", "highlightRow": false, "increaseColor": "green", "miniChartType": "", "name": "", "show": true, "trend": true, "width": 140},
+          "n_obs": {"conditions": [], "decreaseColor": "red", "highlightRow": false, "increaseColor": "green", "miniChartType": "", "name": "", "show": true, "trend": false, "width": 120},
+          "stock_id": {"conditions": [], "decreaseColor": "red", "highlightRow": false, "increaseColor": "green", "miniChartType": "", "name": "", "show": true, "trend": false, "width": 140}
         },
         "tableWrap": false,
         "updateKey": "stock_id",
@@ -193,46 +85,29 @@
     "id": "b1c2d3e4-0003-4000-8000-000000000003",
     "title": "Portfolio PnL per 30s",
     "description": "Sum of pnl across stocks in each 30s bucket — columns above zero are winning periods",
-    "position": {
-      "x": 6,
-      "y": 4,
-      "w": 6,
-      "h": 4,
-      "nextX": 12,
-      "nextY": 8
-    },
+    "position": {"h": 4, "w": 6, "x": 6, "y": 5, "nextX": 12, "nextY": 9},
     "viz_type": "chart",
-    "viz_content": "SELECT window_start AS time, sum(pnl) AS portfolio_pnl FROM tumble(alpha_101.v_backtest_alpha_1, time, 30s) WHERE pnl IS NOT NULL GROUP BY window_start  \nsettings seek_to = 'earliest'",
+    "viz_content": "SELECT window_start AS time, sum(pnl) AS portfolio_pnl FROM tumble(alpha_101.v_backtest_alpha_{{filter_alpha}}, time, 30s) WHERE pnl IS NOT NULL GROUP BY window_start SETTINGS seek_to = 'earliest'",
     "viz_config": {
       "chartType": "column",
       "config": {
         "color": "",
-        "colors": [
-          "#D53F8C"
-        ],
+        "colors": ["#D53F8C"],
         "dataLabel": false,
         "fractionDigits": 4,
         "gridlines": true,
         "groupType": "stack",
         "legend": false,
-        "unit": {
-          "position": "left",
-          "value": ""
-        },
-        "updateKey": "all",
-        "updateMode": "all",
+        "unit": {"position": "left", "value": ""},
+        "updateKey": "time",
+        "updateMode": "time",
         "xAxis": "time",
-        "xFormat": "LT",
+        "xFormat": "",
         "xTickLabel": {},
         "xTitle": "",
         "yAxis": "portfolio_pnl",
-        "yRange": {
-          "max": null,
-          "min": null
-        },
-        "yTickLabel": {
-          "maxChar": 25
-        },
+        "yRange": {"max": null, "min": null},
+        "yTickLabel": {"maxChar": 25},
         "yTitle": "PnL (sum)"
       }
     }
@@ -241,32 +116,14 @@
     "id": "b1c2d3e4-0004-4000-8000-000000000004",
     "title": "Per-Stock PnL Over Time",
     "description": "Per-stock pnl in 30s buckets — one line per stock",
-    "position": {
-      "x": 0,
-      "y": 8,
-      "w": 12,
-      "h": 4,
-      "nextX": 12,
-      "nextY": 12
-    },
+    "position": {"h": 4, "w": 12, "x": 0, "y": 9, "nextX": 12, "nextY": 13},
     "viz_type": "chart",
-    "viz_content": "SELECT window_start AS time, stock_id, sum(pnl) AS bucket_pnl FROM tumble(alpha_101.v_backtest_alpha_1, time, 30s) WHERE pnl IS NOT NULL GROUP BY window_start, stock_id SETTINGS seek_to = 'earliest'",
+    "viz_content": "SELECT window_start AS time, stock_id, sum(pnl) AS bucket_pnl FROM tumble(alpha_101.v_backtest_alpha_{{filter_alpha}}, time, 30s) WHERE pnl IS NOT NULL GROUP BY window_start, stock_id SETTINGS seek_to = 'earliest'",
     "viz_config": {
       "chartType": "line",
       "config": {
         "color": "stock_id",
-        "colors": [
-          "#ED64A6",
-          "#F0BE3E",
-          "#DA4B36",
-          "#9A1563",
-          "#FF4A71",
-          "#D12D50",
-          "#8934D9",
-          "#D53F8C",
-          "#F7775A",
-          "#8934D9"
-        ],
+        "colors": ["#ED64A6", "#F0BE3E", "#DA4B36", "#9A1563", "#FF4A71", "#D12D50", "#8934D9", "#D53F8C", "#F7775A", "#8934D9"],
         "dataLabel": false,
         "fractionDigits": 4,
         "gridlines": true,
@@ -274,22 +131,14 @@
         "lineStyle": "curve",
         "points": false,
         "showAll": false,
-        "unit": {
-          "position": "left",
-          "value": ""
-        },
+        "unit": {"position": "left", "value": ""},
         "xAxis": "time",
         "xFormat": "",
         "xRange": "Infinity",
         "xTitle": "",
         "yAxis": "bucket_pnl",
-        "yRange": {
-          "max": null,
-          "min": null
-        },
-        "yTickLabel": {
-          "maxChar": 25
-        },
+        "yRange": {"max": null, "min": null},
+        "yTickLabel": {"maxChar": 25},
         "yTitle": "PnL"
       }
     }

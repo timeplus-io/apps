@@ -72,12 +72,12 @@ The alpha itself is mean-zero by construction (`(rank − 1) / (N − 1) − 0.5
 
 ## Dashboards
 
-Four dashboards are installed:
+Two dashboards are installed; each has an **Alpha** dropdown so a single dashboard serves all configured alphas (currently `1` and `2`):
 
-- **Realtime Alpha 101** — Alpha #1 live: stock-filtered price chart, latest leaderboard, alpha over time
-- **Alpha #1 Backtest** — Alpha #1: t-stat tile, summary metrics, per-stock PnL, portfolio PnL per 30s, per-stock PnL over time
-- **Alpha #2 Live** — Alpha #2 live: stock-filtered volume chart, alpha_2 leaderboard, alpha_2 over time
-- **Alpha #2 Backtest** — Alpha #2: t-stat tile, summary metrics, per-stock PnL, portfolio PnL per 30s, per-stock PnL over time
+- **Realtime Alpha 101** — live prices + volume (filtered by selected stock), alpha leaderboard + alpha over time (filtered by selected alpha)
+- **Alpha 101 Backtest** — t-stat tile, summary metrics, per-stock PnL, portfolio PnL per 30s, per-stock PnL over time (filtered by selected alpha)
+
+The Alpha dropdown writes the `{{filter_alpha}}` variable, which the panel queries interpolate into the view name — e.g. `FROM alpha_101.v_alpha_{{filter_alpha}}` resolves to `v_alpha_1` or `v_alpha_2` depending on the dropdown selection. Adding Alpha #N to this app just means appending `N` to the dropdown's `inlineValues`.
 
 ## Inspect the live signal
 

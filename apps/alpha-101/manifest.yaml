@@ -91,13 +91,7 @@ resources:
 dashboards:
   - file: dashboards/main.json
     name: Realtime Alpha 101
-    description: "Live prices and Alpha #1 leaderboard for synthetic stocks"
+    description: "Live prices, volume and alpha leaderboard — pick the alpha via the dropdown"
   - file: dashboards/backtest.json
-    name: "Alpha #1 Backtest"
-    description: "Cumulative PnL, Sharpe, hit rate and per-stock breakdown"
-  - file: dashboards/alpha_2.json
-    name: "Alpha #2 Live"
-    description: "Volume per bucket, alpha_2 leaderboard, alpha_2 over time"
-  - file: dashboards/backtest_2.json
-    name: "Alpha #2 Backtest"
-    description: "Alpha #2 cumulative PnL, Sharpe, hit rate, per-stock breakdown"
+    name: Alpha 101 Backtest
+    description: "Cumulative PnL, Sharpe and hit rate — pick the alpha via the dropdown"
