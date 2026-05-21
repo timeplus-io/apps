@@ -1,22 +1,45 @@
 [
   {
-    "id": "a1b2c3d4-0001-4000-8000-000000000001",
-    "title": "Live Prices",
-    "description": "Close price per stock over the last 5 minutes",
+    "id": "a1b2c3d4-0000-4000-8000-000000000000",
+    "title": "",
+    "description": "",
     "position": {
-      "h": 4,
-      "nextX": 12,
-      "nextY": 4,
-      "w": 12,
+      "h": 1,
+      "nextX": 4,
+      "nextY": 1,
+      "w": 4,
       "x": 0,
       "y": 0
     },
+    "viz_type": "control",
+    "viz_content": "",
+    "viz_config": {
+      "chartType": "selector",
+      "label": "Stock",
+      "labelWidth": "60",
+      "target": "filter_stock_id",
+      "defaultValue": "STOCK_0",
+      "inlineValues": "[[ range $i, $_ := until (int .Config.num_stocks) ]][[ if $i ]],[[ end ]]STOCK_[[ $i ]][[ end ]]"
+    }
+  },
+  {
+    "id": "a1b2c3d4-0001-4000-8000-000000000001",
+    "title": "Live Prices",
+    "description": "Close price for the selected stock over the last 5 minutes",
+    "position": {
+      "h": 4,
+      "nextX": 12,
+      "nextY": 5,
+      "w": 12,
+      "x": 0,
+      "y": 1
+    },
     "viz_type": "chart",
-    "viz_content": "SELECT time, stock_id, close FROM alpha_101.v_bars WHERE time > now() - 5m",
+    "viz_content": "SELECT time, stock_id, close FROM alpha_101.v_bars WHERE stock_id = '{{filter_stock_id}}' AND time > now() - 5m",
     "viz_config": {
       "chartType": "line",
       "config": {
-        "color": "stock_id",
+        "color": "",
         "colors": [
           "#ED64A6",
           "#F0BE3E",
@@ -63,10 +86,10 @@
     "position": {
       "h": 4,
       "nextX": 12,
-      "nextY": 8,
+      "nextY": 9,
       "w": 12,
       "x": 0,
-      "y": 4
+      "y": 5
     },
     "viz_type": "chart",
     "viz_content": "SELECT time, stock_id, alpha_1 FROM alpha_101.v_alpha_1 settings seek_to = 'earliest'",
@@ -122,10 +145,10 @@
     "position": {
       "h": 4,
       "nextX": 12,
-      "nextY": 12,
+      "nextY": 13,
       "w": 12,
       "x": 0,
-      "y": 8
+      "y": 9
     },
     "viz_type": "chart",
     "viz_content": "SELECT time, stock_id, alpha_1 FROM alpha_101.v_alpha_1 WHERE time > now() - 5m",
