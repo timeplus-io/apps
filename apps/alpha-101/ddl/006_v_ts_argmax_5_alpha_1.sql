@@ -1,4 +1,4 @@
-CREATE OR REPLACE VIEW {{ .DB }}.v_ts_argmax_5 AS
+CREATE OR REPLACE VIEW {{ .DB }}.v_ts_argmax_5_alpha_1 AS
 SELECT
   time,
   stock_id,
@@ -13,6 +13,6 @@ FROM (
     signed_power,
     returns,
     lags(if_null(signed_power, 0), 0, 4) AS sp5
-  FROM {{ .DB }}.v_features
+  FROM {{ .DB }}.v_features_alpha_1
   PARTITION BY stock_id
 )

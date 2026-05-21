@@ -460,6 +460,10 @@ SELECT window_start AS time, product_id, ...
 **Cause:** Timeplus uses snake_case for ClickHouse-derived functions (`array_element`, `count_if`, `null_if`, …). The bare ClickHouse name `nullif` *appears* to work in ad-hoc HTTP `SELECT nullif(...)` queries but is rejected by both the `.tpapp` install validator and the dashboard panel query path.
 **Fix:** Write `null_if(x, y)` in every SQL string — DDL files, dashboard `viz_content`, README snippets. Don't trust a green ad-hoc `curl` test; live-validate via the install path or the dashboard render if the query will live there.
 
+### Sprig template in dashboard JSON gets replaced by its rendered value after a UI edit
+**Cause:** The Timeplus dashboard UI loads dashboards in their *resolved* form (e.g. `inlineValues: "STOCK_0,STOCK_1,STOCK_2"`), and when the user saves a layout tweak the UI writes back the resolved string — overwriting the source template (e.g. `inlineValues: "[[ range $i, $_ := until (int .Config.num_stocks) ]]…[[ end ]]"`). Auto-scaling behavior tied to `.Config.*` then silently breaks on next reinstall with a different config value.
+**Fix:** After any user-side UI edit to a dashboard, diff the file against HEAD before committing. If any `[[ ]]` Sprig expressions disappeared, restore them. Other formatting changes (sorted keys, per-line objects, layout `x`/`y` tweaks) are usually fine to keep.
+
 ## Resource Type Reference
 
 ### stream

@@ -1,18 +1,41 @@
 [
   {
+    "id": "b1c2d3e4-0010-4000-8000-000000000010",
+    "title": "",
+    "description": "",
+    "position": {
+      "x": 2,
+      "y": 0,
+      "w": 4,
+      "h": 1,
+      "nextX": 6,
+      "nextY": 1
+    },
+    "viz_type": "control",
+    "viz_content": "",
+    "viz_config": {
+      "chartType": "selector",
+      "defaultValue": "1",
+      "inlineValues": "1,2",
+      "label": "Alpha",
+      "labelWidth": "60",
+      "target": "filter_alpha"
+    }
+  },
+  {
     "id": "b1c2d3e4-0000-4000-8000-000000000000",
     "title": "Edge t-stat",
     "description": "cum_pnl / (std_pnl × √n_obs). > 2 ≈ real edge (p < 0.05); ~0 = noise; negative = anti-predictive",
     "position": {
-      "x": 0,
-      "y": 0,
-      "w": 4,
       "h": 4,
       "nextX": 4,
-      "nextY": 4
+      "nextY": 5,
+      "w": 4,
+      "x": 0,
+      "y": 1
     },
     "viz_type": "chart",
-    "viz_content": "SELECT round(avg(pnl) / null_if(stddev_pop(pnl), 0) * sqrt(count()), 3) AS t_stat FROM alpha_101.v_backtest WHERE pnl IS NOT NULL SETTINGS seek_to = 'earliest'",
+    "viz_content": "SELECT round(avg(pnl) / null_if(stddev_pop(pnl), 0) * sqrt(count()), 3) AS t_stat FROM alpha_101.v_backtest_alpha_{{filter_alpha}} WHERE pnl IS NOT NULL SETTINGS seek_to = 'earliest'",
     "viz_config": {
       "chartType": "singleValue",
       "config": {
@@ -30,17 +53,17 @@
   {
     "id": "b1c2d3e4-0001-4000-8000-000000000001",
     "title": "Backtest Summary",
-    "description": "Cumulative PnL, Sharpe and hit rate over the full retained history",
+    "description": "Cumulative PnL, Sharpe, and hit rate over the full retained history",
     "position": {
-      "x": 4,
-      "y": 0,
-      "w": 8,
       "h": 4,
       "nextX": 12,
-      "nextY": 4
+      "nextY": 5,
+      "w": 8,
+      "x": 4,
+      "y": 1
     },
     "viz_type": "chart",
-    "viz_content": "SELECT count() AS n_obs, round(sum(pnl), 6) AS cum_pnl, round(avg(pnl), 8) AS mean_pnl, round(stddev_pop(pnl), 8) AS std_pnl, round(avg(pnl) / null_if(stddev_pop(pnl), 0), 4) AS sharpe_per_obs, round(count_if(pnl > 0) * 100.0 / count(), 2) AS hit_rate_pct FROM alpha_101.v_backtest WHERE pnl IS NOT NULL SETTINGS seek_to = 'earliest'",
+    "viz_content": "SELECT count() AS n_obs, round(sum(pnl), 6) AS cum_pnl, round(avg(pnl), 8) AS mean_pnl, round(stddev_pop(pnl), 8) AS std_pnl, round(avg(pnl) / null_if(stddev_pop(pnl), 0), 4) AS sharpe_per_obs, round(count_if(pnl > 0) * 100.0 / count(), 2) AS hit_rate_pct FROM alpha_101.v_backtest_alpha_{{filter_alpha}} WHERE pnl IS NOT NULL SETTINGS seek_to = 'earliest'",
     "viz_config": {
       "chartType": "table",
       "config": {
@@ -114,8 +137,8 @@
           }
         },
         "tableWrap": false,
-        "updateMode": "all",
-        "updateKey": "all"
+        "updateKey": "all",
+        "updateMode": "all"
       }
     }
   },
@@ -124,15 +147,15 @@
     "title": "PnL by Stock",
     "description": "Cumulative PnL contribution and hit rate per stock",
     "position": {
-      "x": 0,
-      "y": 4,
-      "w": 6,
       "h": 4,
       "nextX": 6,
-      "nextY": 8
+      "nextY": 9,
+      "w": 6,
+      "x": 0,
+      "y": 5
     },
     "viz_type": "chart",
-    "viz_content": "SELECT stock_id, count() AS n_obs, round(sum(pnl), 6) AS cum_pnl, round(count_if(pnl > 0) * 100.0 / count(), 2) AS hit_rate_pct FROM alpha_101.v_backtest WHERE pnl IS NOT NULL GROUP BY stock_id SETTINGS seek_to = 'earliest'",
+    "viz_content": "SELECT stock_id, count() AS n_obs, round(sum(pnl), 6) AS cum_pnl, round(count_if(pnl > 0) * 100.0 / count(), 2) AS hit_rate_pct FROM alpha_101.v_backtest_alpha_{{filter_alpha}} WHERE pnl IS NOT NULL GROUP BY stock_id SETTINGS seek_to = 'earliest'",
     "viz_config": {
       "chartType": "table",
       "config": {
@@ -194,15 +217,15 @@
     "title": "Portfolio PnL per 30s",
     "description": "Sum of pnl across stocks in each 30s bucket — columns above zero are winning periods",
     "position": {
-      "x": 6,
-      "y": 4,
-      "w": 6,
       "h": 4,
       "nextX": 12,
-      "nextY": 8
+      "nextY": 9,
+      "w": 6,
+      "x": 6,
+      "y": 5
     },
     "viz_type": "chart",
-    "viz_content": "SELECT window_start AS time, sum(pnl) AS portfolio_pnl FROM tumble(alpha_101.v_backtest, time, 30s) WHERE pnl IS NOT NULL GROUP BY window_start  \nsettings seek_to = 'earliest'",
+    "viz_content": "SELECT window_start AS time, sum(pnl) AS portfolio_pnl FROM tumble(alpha_101.v_backtest_alpha_{{filter_alpha}}, time, 30s) WHERE pnl IS NOT NULL GROUP BY window_start SETTINGS seek_to = 'earliest'",
     "viz_config": {
       "chartType": "column",
       "config": {
@@ -222,7 +245,7 @@
         "updateKey": "all",
         "updateMode": "all",
         "xAxis": "time",
-        "xFormat": "LT",
+        "xFormat": "",
         "xTickLabel": {},
         "xTitle": "",
         "yAxis": "portfolio_pnl",
@@ -242,15 +265,15 @@
     "title": "Per-Stock PnL Over Time",
     "description": "Per-stock pnl in 30s buckets — one line per stock",
     "position": {
-      "x": 0,
-      "y": 8,
-      "w": 12,
       "h": 4,
       "nextX": 12,
-      "nextY": 12
+      "nextY": 13,
+      "w": 12,
+      "x": 0,
+      "y": 9
     },
     "viz_type": "chart",
-    "viz_content": "SELECT window_start AS time, stock_id, sum(pnl) AS bucket_pnl FROM tumble(alpha_101.v_backtest, time, 30s) WHERE pnl IS NOT NULL GROUP BY window_start, stock_id SETTINGS seek_to = 'earliest'",
+    "viz_content": "SELECT window_start AS time, stock_id, sum(pnl) AS bucket_pnl FROM tumble(alpha_101.v_backtest_alpha_{{filter_alpha}}, time, 30s) WHERE pnl IS NOT NULL GROUP BY window_start, stock_id SETTINGS seek_to = 'earliest'",
     "viz_config": {
       "chartType": "line",
       "config": {

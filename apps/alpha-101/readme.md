@@ -1,6 +1,6 @@
 # Realtime Alpha 101
 
-Streaming demo of WorldQuant **Alpha #1** from *101 Formulaic Alphas* (arxiv.org/abs/1601.00991) over a synthetic multi-stock random feed.
+Streaming demo of WorldQuant alphas from *101 Formulaic Alphas* (arxiv.org/abs/1601.00991) over a synthetic multi-stock random feed. Currently implements **Alpha #1** and **Alpha #2**, sharing the upstream data pipeline.
 
 Three config knobs:
 
@@ -10,21 +10,39 @@ Three config knobs:
 | `num_stocks` | integer | `3` | `2`–`10` | Number of simulated stocks (mean-zero alpha needs N ≥ 2) |
 | `strategy` | choice | `linear` | `linear` / `sign` | How alpha maps to a position in the backtest (see below) |
 
+## Alpha formulas
+
+**Alpha #1**
+
 ```
 rank(Ts_ArgMax(SignedPower((returns < 0 ? stddev(returns, 20) : close), 2.), 5)) - 0.5
 ```
 
+**Alpha #2**
+
+```
+-1 * correlation(rank(delta(log(volume), 2)), rank((close - open) / open), 6)
+```
+
 ## Pipeline
 
+Shared upstream: `random_market_data → mv_market_data → market_data → v_bars` (with `open`, `close`, `volume`).
+
+**Alpha #1 branch:**
+
 ```
-random_market_data  →  mv_market_data  →  market_data
-       │
-       ▼  tumble({{bucket}})
-   v_bars  →  v_features  →  v_ts_argmax_5  →  v_alpha_1  →  v_backtest
+v_bars  →  v_features  →  v_ts_argmax_5  →  v_alpha_1  →  v_backtest
 ```
 
-- `v_alpha_1` — the live signal (mean-zero cross-sectional rank: `(rank − 1) / (N − 1) − 0.5`)
-- `v_backtest` — pairs the previous bucket's alpha with the current bucket's return; emits `pnl` shaped by the `strategy` config (see below)
+**Alpha #2 branch:**
+
+```
+v_bars  →  v_features_2  →  v_ranks_2  →  v_alpha_2  →  v_backtest_2
+```
+
+- `v_alpha_1` — mean-zero cross-sectional rank: `(rank − 1) / (N − 1) − 0.5`
+- `v_alpha_2` — Pearson correlation between rank(log volume change) and rank(intraday return) over a 6-bucket rolling window, negated. Range `[−1, 1]`.
+- `v_backtest_*` — pairs the previous bucket's alpha with the current bucket's close-to-close return; emits `pnl` shaped by the `strategy` config
 
 ## Install
 
@@ -54,10 +72,12 @@ The alpha itself is mean-zero by construction (`(rank − 1) / (N − 1) − 0.5
 
 ## Dashboards
 
-Two dashboards are installed:
+Two dashboards are installed; each has an **Alpha** dropdown so a single dashboard serves all configured alphas (currently `1` and `2`):
 
-- **Realtime Alpha 101** — live prices, latest leaderboard, alpha over time
-- **Alpha #1 Backtest** — summary metrics, per-stock PnL, portfolio PnL per 30s, per-stock PnL over time
+- **Realtime Alpha 101** — live prices + volume (filtered by selected stock), alpha leaderboard + alpha over time (filtered by selected alpha)
+- **Alpha 101 Backtest** — t-stat tile, summary metrics, per-stock PnL, portfolio PnL per 30s, per-stock PnL over time (filtered by selected alpha)
+
+The Alpha dropdown writes the `{{filter_alpha}}` variable, which the panel queries interpolate into the view name — e.g. `FROM alpha_101.v_alpha_{{filter_alpha}}` resolves to `v_alpha_1` or `v_alpha_2` depending on the dropdown selection. Adding Alpha #N to this app just means appending `N` to the dropdown's `inlineValues`.
 
 ## Inspect the live signal
 
