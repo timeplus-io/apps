@@ -103,15 +103,45 @@ WHERE pnl IS NOT NULL
   AND time BETWEEN '2026-05-20 21:00:00' AND '2026-05-20 21:10:00'
 ```
 
-| Metric | Meaning |
-|---|---|
-| `n_obs`, `n_stocks` | Sample size |
-| `t_start`, `t_end` | Backtest window |
-| `cum_pnl` | Σ `alpha_prev * returns` across all stocks & buckets |
-| `mean_pnl_per_obs`, `std_pnl` | Per-observation mean and stddev |
-| `sharpe_per_obs` | `mean / std` (per-period; multiply by `√(periods/year)` to annualize) |
-| `hit_rate_pct` | % of observations where the alpha-weighted bet was profitable |
-| `worst_obs`, `best_obs` | Most negative / most positive single-observation PnL |
+### What each metric means
+
+Each row in `v_backtest` is one **stock-bucket observation** — alpha at `t−1` paired with the return from `t−1` to `t`, multiplied to give `pnl = alpha_prev × returns`. With N stocks at the configured bucket size over T seconds, you get ≈ `N × T / bucket` observations (after the first row per stock, where `lag(alpha)` is null, is dropped by `WHERE pnl IS NOT NULL`). Every aggregate below is computed across those observations.
+
+#### Sample size
+
+- **`n_obs`** — number of stock-bucket observations included. `n_obs ≈ n_stocks × n_buckets`. Drives the statistical confidence of every other metric: at `n_obs = 100` the Sharpe is noise; at `n_obs = 100 000` it's an estimate worth reading.
+- **`n_stocks`** — distinct `stock_id` values seen. Should match the `num_stocks` config.
+- **`t_start`, `t_end`** — the earliest and latest event time included. The window's wall-clock span is `t_end − t_start`; total *bucket* count is that span divided by the configured `bucket`.
+
+#### PnL aggregates
+
+- **`cum_pnl = Σ pnl`** — total P&L summed across every stock-bucket. Dimensionless by default; reads as dollars if you interpret `alpha_prev` as dollars allocated per stock per bucket. This is what the dashboard's running totals report. Scale linearly to a real book size — `cum_pnl = 0.10` on alpha units means $100 on a $1 000-per-alpha-unit book.
+- **`mean_pnl_per_obs = avg(pnl)`** — expected P&L *per stock-bucket*, i.e. `cum_pnl / n_obs`. The "average bet" return. On a tradable alpha this is positive and meaningfully larger than 0; on random data it sits within `±std_pnl / √n_obs` of 0.
+- **`std_pnl = stddev_pop(pnl)`** — standard deviation of the per-observation P&L: how noisy each individual bet is. Roughly `|alpha| × |return|` in magnitude. Useful as the denominator for the Sharpe and as a quick "is the bet size sane" check.
+- **`worst_obs`, `best_obs`** — the most negative and most positive single-observation P&L over the window. Sanity check for tail behavior: on this synthetic feed they should be ~`±1%` (`±0.5 × ±2%` per-bucket return); much larger values suggest data spikes or an upstream computation error.
+
+#### Skill metrics
+
+- **`sharpe_per_obs = mean_pnl / std_pnl`** — per-observation Sharpe ratio, **not annualized**. Multiply by `√(periods_per_year)` to compare with industry-quoted Sharpes:
+  - 1s buckets, 24/7 trading: `× √(365 × 86 400) ≈ × 5 580`
+  - 5s buckets, 24/7: `× √(365 × 17 280) ≈ × 2 500`
+  - 1m buckets, 24/7: `× √(365 × 1 440) ≈ × 720`
+  - 1m buckets, equity trading hours (~6.5 h/day, 252 days): `× √(252 × 6.5 × 60) ≈ × 313`
+
+  This is the **per-observation** Sharpe — it treats each `(stock, time)` as independent. For a true **portfolio Sharpe** (one number for the whole book over time, accounting for stock-correlation within the same bucket), aggregate to per-bucket P&L first:
+  ```sql
+  SELECT avg(bucket_pnl) / null_if(stddev_pop(bucket_pnl), 0) AS portfolio_sharpe_per_bucket
+  FROM (
+    SELECT time, sum(pnl) AS bucket_pnl
+    FROM alpha_101.v_backtest WHERE pnl IS NOT NULL
+    GROUP BY time
+  ) SETTINGS seek_to='earliest', query_mode='table'
+  ```
+  Portfolio Sharpe is the more standard reporting metric on a real desk; `sharpe_per_obs` is a finer-grained per-bet diagnostic.
+
+- **`hit_rate_pct = count(pnl > 0) / count() × 100`** — % of observations where the alpha-weighted bet was profitable. Read alongside `mean_pnl`:
+  - 50% on noise; >50% suggests directional skill; <50% means you should flip the sign of the alpha.
+  - **Ignores magnitude**, so a 51% hit rate that misses big can still lose money. A 49% rate with skewed wins can still print positive `cum_pnl`. Always pair with mean / Sharpe; never read alone.
 
 ### Expected outcome on synthetic data
 
