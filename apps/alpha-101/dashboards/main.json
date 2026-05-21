@@ -39,7 +39,7 @@
     "viz_config": {
       "chartType": "selector",
       "defaultValue": "1",
-      "inlineValues": "1,2",
+      "inlineValues": "1,2,3,4,6,9,12,22,41,54",
       "label": "Alpha",
       "labelWidth": "60",
       "target": "filter_alpha"
