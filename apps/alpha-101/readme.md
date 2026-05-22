@@ -1,6 +1,6 @@
 # Realtime Alpha 101
 
-Streaming demo of WorldQuant alphas from *101 Formulaic Alphas* (arxiv.org/abs/1601.00991) over a synthetic multi-stock random feed. Currently implements **Alpha #1** and **Alpha #2**, sharing the upstream data pipeline.
+Streaming demo of WorldQuant alphas from *101 Formulaic Alphas* (arxiv.org/abs/1601.00991) over a synthetic multi-stock random feed. Currently implements **10 alphas** (#1, #2, #3, #4, #6, #9, #12, #22, #41, #54), chosen to span different streaming-SQL patterns. All share the same upstream data pipeline.
 
 Three config knobs:
 
@@ -10,39 +10,45 @@ Three config knobs:
 | `num_stocks` | integer | `3` | `2`–`10` | Number of simulated stocks (mean-zero alpha needs N ≥ 2) |
 | `strategy` | choice | `linear` | `linear` / `sign` | How alpha maps to a position in the backtest (see below) |
 
-## Alpha formulas
+## Alphas implemented
 
-**Alpha #1**
+Each row links the formula to the streaming-SQL pattern it demonstrates.
 
-```
-rank(Ts_ArgMax(SignedPower((returns < 0 ? stddev(returns, 20) : close), 2.), 5)) - 0.5
-```
-
-**Alpha #2**
-
-```
--1 * correlation(rank(delta(log(volume), 2)), rank((close - open) / open), 6)
-```
+| # | Formula | Streaming-SQL pattern showcased |
+|---|---------|----------------------------------|
+| **1** | `rank(ts_argmax(signed_power(returns<0 ? stddev(returns,20) : close, 2.), 5)) - 0.5` | `lags` window + `signed_power` + `array_first_index` for ts_argmax + cross-sectional rank via `group_array + array_sort + ARRAY JOIN array_enumerate` |
+| **2** | `-1 * correlation(rank(delta(log(volume), 2)), rank((close-open)/open), 6)` | Cross-sectional rank of two derived features per bucket, then per-stock 6-bucket Pearson correlation via `array_reduce('avg', array_map(...))` |
+| **3** | `-1 * correlation(rank(open), rank(volume), 10)` | Same cross-sectional-rank-then-correlation pattern as #2 but with **raw OHLC inputs** and a 10-bucket window |
+| **4** | `-1 * ts_rank(rank(low), 9)` | **Time-series rank within a rolling window** — `array_count(x -> x <= current, lags(_, 0, 8))` |
+| **6** | `-1 * correlation(open, volume, 10)` | **Raw-value** rolling Pearson correlation (no rank step) — contrast with #2 and #3 |
+| **9** | nested-if(`ts_min(Δclose, 5) > 0`, Δclose, if(`ts_max(Δclose, 5) < 0`, Δclose, −Δclose)) | **Rolling min/max** via `array_min`/`array_max` over `lags(_, 0, 4)` + `multi_if` for nested conditionals |
+| **12** | `sign(Δvolume) × −Δclose` | **Minimal alpha** — single-step deltas via `lags(_, 1, 1)`, `sign()`, multiplication; tiny SQL footprint |
+| **22** | `-1 * delta(correlation(high, volume, 5), 5) * rank(stddev(close, 20))` | **Chained derived series:** rolling correlation → `delta` of correlation × cross-sectional rank of rolling stddev |
+| **41** | `√(high × low) − vwap` | **VWAP derivation** in `v_bars` (`sum(price * volume) / sum(volume)`) + intra-bar nonlinear |
+| **54** | `-1 × (low - close) × open⁵ / ((low - high) × close⁵)` | **Pure intra-bar nonlinear OHLC** — no lags, no aggregation, all instantaneous |
 
 ## Pipeline
 
-Shared upstream: `random_market_data → mv_market_data → market_data → v_bars` (with `open`, `close`, `volume`).
-
-**Alpha #1 branch:**
+Shared upstream:
 
 ```
-v_bars  →  v_features  →  v_ts_argmax_5  →  v_alpha_1  →  v_backtest
+random_market_data  →  mv_market_data  →  market_data  →  v_bars
+                                                    (time, stock_id,
+                                                     open, close, high, low,
+                                                     volume, vwap)
 ```
 
-**Alpha #2 branch:**
+Per-alpha branches all follow the same shape:
 
 ```
-v_bars  →  v_features_2  →  v_ranks_2  →  v_alpha_2  →  v_backtest_2
+v_bars
+  →  v_features_alpha_N    (per-stock features + close-to-close returns)
+  →  [v_ranks_alpha_N]     (optional: cross-sectional ranks per bucket)
+  →  v_alpha_N             (the signal itself)
+  →  v_backtest_alpha_N    (pairs lag(alpha) × returns, branched on strategy)
 ```
 
-- `v_alpha_1` — mean-zero cross-sectional rank: `(rank − 1) / (N − 1) − 0.5`
-- `v_alpha_2` — Pearson correlation between rank(log volume change) and rank(intraday return) over a 6-bucket rolling window, negated. Range `[−1, 1]`.
-- `v_backtest_*` — pairs the previous bucket's alpha with the current bucket's close-to-close return; emits `pnl` shaped by the `strategy` config
+Simpler alphas (#12, #41, #54) skip the features and ranks layers — they compute everything in a single view from `v_bars`.
 
 ## Install
 
@@ -72,12 +78,17 @@ The alpha itself is mean-zero by construction (`(rank − 1) / (N − 1) − 0.5
 
 ## Dashboards
 
-Two dashboards are installed; each has an **Alpha** dropdown so a single dashboard serves all configured alphas (currently `1` and `2`):
+Two dashboards are installed; each has an **Alpha** dropdown so a single dashboard serves all 10 alphas (`1, 2, 3, 4, 6, 9, 12, 22, 41, 54`):
 
 - **Realtime Alpha 101** — live prices + volume (filtered by selected stock), alpha leaderboard + alpha over time (filtered by selected alpha)
 - **Alpha 101 Backtest** — t-stat tile, summary metrics, per-stock PnL, portfolio PnL per 30s, per-stock PnL over time (filtered by selected alpha)
 
-The Alpha dropdown writes the `{{filter_alpha}}` variable, which the panel queries interpolate into the view name — e.g. `FROM alpha_101.v_alpha_{{filter_alpha}}` resolves to `v_alpha_1` or `v_alpha_2` depending on the dropdown selection. Adding Alpha #N to this app just means appending `N` to the dropdown's `inlineValues`.
+The Alpha dropdown writes the `{{filter_alpha}}` variable, which the panel queries interpolate into the view name — e.g. `FROM alpha_101.v_alpha_{{filter_alpha}}` resolves to `v_alpha_1` … `v_alpha_54` depending on the dropdown selection. Adding Alpha #N to this app means:
+1. dropping a new DDL chain into `ddl/0XX_v_features_alpha_N.sql`, optionally `0XX_v_ranks_alpha_N.sql`, `0XX_v_alpha_N.sql`, `0XX_v_backtest_alpha_N.sql`;
+2. registering them in `manifest.yaml`;
+3. appending `,N` to each dropdown's `inlineValues`.
+
+No new dashboard files needed — both existing dashboards pick up the new alpha automatically.
 
 ## Inspect the live signal
 
@@ -180,7 +191,7 @@ Each row in `v_backtest` is one **stock-bucket observation** — alpha at `t−1
 
 ### Expected outcome on synthetic data
 
-The source is independent random ticks with no genuine predictive structure, so Alpha #1 has no edge to exploit. A representative run over ~2 hours:
+The source is independent random ticks with no genuine predictive structure, so no alpha has an edge to exploit. A representative run over ~2 hours:
 
 | Metric | Value |
 |---|---|
@@ -190,3 +201,19 @@ The source is independent random ticks with no genuine predictive structure, so 
 | `cum_pnl` | small, sign varies run-to-run |
 
 That's the **correct** null result — it confirms the backtest math is sound. To see a real edge, point the pipeline at real market data (replace the random source with an external stream, e.g. the Coinbase WebSocket connector in `apps/market-data`).
+
+### Caveat: alphas that operate on raw price levels are degenerate on this data
+
+The random source assigns each stock a fixed price band (`[50, 80, 120, 200, …]` with only ±0.5% tick noise), so per-stock price ranges *never overlap*. STOCK_0's `low` is always lowest, STOCK_2's is always highest, every bucket forever. That breaks **cross-sectional rank of price levels** for:
+
+| Alpha | Why it's degenerate here |
+|---|---|
+| **#3** `corr(rank(open), rank(vol), 10)` | `rank(open)` is a constant per stock → correlation between a constant series and any other series is `0/0` → mostly null `alpha_3` |
+| **#4** `−ts_rank(rank(low), 9)` | `rank(low)` is a constant per stock → `ts_rank` always returns 9/9 in steady state → `alpha_4 = −1.0` always (with a brief transient `−1/9, −2/9, …` during the 9-bucket warmup) |
+| **#6** `−corr(open, volume, 10)` | raw `open` ≈ stock's base price (constant + 0.5% jitter); correlation with random volume ≈ 0 → `alpha_6 ≈ 0` always |
+
+The implementations are **correct** — they're honest about there being no information to extract when the input series is constant. On real market data where similar-cap stocks compete on rank, these alphas produce meaningful varying values.
+
+The alphas that *do* produce meaningful varying signals on this synthetic feed are the ones operating on **returns, deltas, or intra-bar quantities** rather than raw price levels: **#1, #2, #9, #12, #22, #41, #54**. Those are the ones to watch when validating that the pipeline works end-to-end on streaming SQL.
+
+**To make #3/#4/#6 non-degenerate without leaving synthetic data:** change `random_market_data` so all stocks share a single base price (e.g. `100.0 + rand_normal(0.0, 3.0)`) — the cross-sectional ranks then rotate randomly each bucket. This was tried and reverted to preserve the visual differentiation between stocks on the Live Prices chart; the degeneracy is a fair price for that.
