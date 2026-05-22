@@ -104,6 +104,131 @@
         "file": "ddl/012_v_backtest_alpha_2.sql",
         "type": "view",
         "name": "v_backtest_alpha_2"
+      },
+      {
+        "file": "ddl/013_v_features_alpha_3.sql",
+        "type": "view",
+        "name": "v_features_alpha_3"
+      },
+      {
+        "file": "ddl/014_v_ranks_alpha_3.sql",
+        "type": "view",
+        "name": "v_ranks_alpha_3"
+      },
+      {
+        "file": "ddl/015_v_alpha_3.sql",
+        "type": "view",
+        "name": "v_alpha_3"
+      },
+      {
+        "file": "ddl/016_v_backtest_alpha_3.sql",
+        "type": "view",
+        "name": "v_backtest_alpha_3"
+      },
+      {
+        "file": "ddl/017_v_features_alpha_4.sql",
+        "type": "view",
+        "name": "v_features_alpha_4"
+      },
+      {
+        "file": "ddl/018_v_ranks_alpha_4.sql",
+        "type": "view",
+        "name": "v_ranks_alpha_4"
+      },
+      {
+        "file": "ddl/019_v_alpha_4.sql",
+        "type": "view",
+        "name": "v_alpha_4"
+      },
+      {
+        "file": "ddl/020_v_backtest_alpha_4.sql",
+        "type": "view",
+        "name": "v_backtest_alpha_4"
+      },
+      {
+        "file": "ddl/021_v_features_alpha_6.sql",
+        "type": "view",
+        "name": "v_features_alpha_6"
+      },
+      {
+        "file": "ddl/022_v_alpha_6.sql",
+        "type": "view",
+        "name": "v_alpha_6"
+      },
+      {
+        "file": "ddl/023_v_backtest_alpha_6.sql",
+        "type": "view",
+        "name": "v_backtest_alpha_6"
+      },
+      {
+        "file": "ddl/024_v_features_alpha_9.sql",
+        "type": "view",
+        "name": "v_features_alpha_9"
+      },
+      {
+        "file": "ddl/025_v_alpha_9.sql",
+        "type": "view",
+        "name": "v_alpha_9"
+      },
+      {
+        "file": "ddl/026_v_backtest_alpha_9.sql",
+        "type": "view",
+        "name": "v_backtest_alpha_9"
+      },
+      {
+        "file": "ddl/027_v_alpha_12.sql",
+        "type": "view",
+        "name": "v_alpha_12"
+      },
+      {
+        "file": "ddl/028_v_backtest_alpha_12.sql",
+        "type": "view",
+        "name": "v_backtest_alpha_12"
+      },
+      {
+        "file": "ddl/029_v_features_alpha_22.sql",
+        "type": "view",
+        "name": "v_features_alpha_22"
+      },
+      {
+        "file": "ddl/030_v_alpha_22.sql",
+        "type": "view",
+        "name": "v_alpha_22"
+      },
+      {
+        "file": "ddl/031_v_backtest_alpha_22.sql",
+        "type": "view",
+        "name": "v_backtest_alpha_22"
+      },
+      {
+        "file": "ddl/032_v_alpha_41.sql",
+        "type": "view",
+        "name": "v_alpha_41"
+      },
+      {
+        "file": "ddl/033_v_backtest_alpha_41.sql",
+        "type": "view",
+        "name": "v_backtest_alpha_41"
+      },
+      {
+        "file": "ddl/034_v_alpha_54.sql",
+        "type": "view",
+        "name": "v_alpha_54"
+      },
+      {
+        "file": "ddl/035_v_backtest_alpha_54.sql",
+        "type": "view",
+        "name": "v_backtest_alpha_54"
+      },
+      {
+        "file": "ddl/036_alpha_catalog.sql",
+        "type": "mutable_stream",
+        "name": "alpha_catalog"
+      },
+      {
+        "file": "ddl/037_alpha_catalog_seed.sql",
+        "type": "system",
+        "name": "alpha_catalog_seed"
       }
     ],
     "dashboards": [
@@ -118,7 +243,7 @@
         "description": "Cumulative PnL, Sharpe and hit rate \u2014 pick the alpha via the dropdown"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.5/alpha-101.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.6/alpha-101.tpapp"
   },
   {
     "package_format_version": 1,
@@ -279,7 +404,7 @@
         "description": "Realtime AWS spend by service, region, and creator"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.5/aws-cost.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.6/aws-cost.tpapp"
   },
   {
     "package_format_version": 1,
@@ -377,7 +502,7 @@
         "description": "Real-time post volume, engagement, language breakdown, and live feed"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.5/bluesky.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.6/bluesky.tpapp"
   },
   {
     "package_format_version": 1,
@@ -437,7 +562,7 @@
         "description": "Real-time complex event processing visualization"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.5/cep.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.6/cep.tpapp"
   },
   {
     "package_format_version": 1,
@@ -655,7 +780,7 @@
         "description": "Real-time spike ratio monitoring, baseline tables, and live traffic"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.5/cisco-asa-ddos.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.6/cisco-asa-ddos.tpapp"
   },
   {
     "package_format_version": 1,
@@ -842,7 +967,7 @@
         "name": "spending_alert"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.5/game-feature-pipeline.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.6/game-feature-pipeline.tpapp"
   },
   {
     "package_format_version": 1,
@@ -893,7 +1018,7 @@
         "description": "Real-time view of GitHub public events"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.5/github.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.6/github.tpapp"
   },
   {
     "package_format_version": 1,
@@ -979,7 +1104,7 @@
         "name": "get_hn_post"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.5/hacker-news.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.6/hacker-news.tpapp"
   },
   {
     "package_format_version": 1,
@@ -1150,7 +1275,7 @@
         "description": "Real-time trading metrics \u2014 participation rate and P&L"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.5/invest-insights.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.6/invest-insights.tpapp"
   },
   {
     "package_format_version": 1,
@@ -1299,6 +1424,6 @@
         "description": "Real-time OHLC, returns, and RSI for Coinbase crypto pairs"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.5/market-data.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.6/market-data.tpapp"
   }
 ]
