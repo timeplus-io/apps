@@ -243,7 +243,7 @@
         "description": "Cumulative PnL, Sharpe and hit rate \u2014 pick the alpha via the dropdown"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.6/alpha-101.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.7/alpha-101.tpapp"
   },
   {
     "package_format_version": 1,
@@ -404,7 +404,7 @@
         "description": "Realtime AWS spend by service, region, and creator"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.6/aws-cost.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.7/aws-cost.tpapp"
   },
   {
     "package_format_version": 1,
@@ -502,7 +502,7 @@
         "description": "Real-time post volume, engagement, language breakdown, and live feed"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.6/bluesky.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.7/bluesky.tpapp"
   },
   {
     "package_format_version": 1,
@@ -562,13 +562,13 @@
         "description": "Real-time complex event processing visualization"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.6/cep.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.7/cep.tpapp"
   },
   {
     "package_format_version": 1,
     "id": "io.timeplus.cisco-asa-ddos",
     "name": "Cisco ASA DDoS Detection Demo",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "author": "Timeplus",
     "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJiZyIgeDE9IjAiIHkxPSIwIiB4Mj0iNDgiIHkyPSI0OCIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNENTNGOEMiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiM5RjJCQzAiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHJ4PSIxMSIgZmlsbD0idXJsKCNiZykiLz48cGF0aCBkPSJNMjQgMTEgTDM1IDE1LjUgVjI0IEMzNSAzMC41IDMwIDM2IDI0IDM4IEMxOCAzNiAxMyAzMC41IDEzIDI0IFYxNS41IFoiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBmaWxsPSJub25lIi8+PHBhdGggZD0iTTI2LjUgMTcgTDIwIDI2IEgyNC41IEwyMS41IDMzIEwyOCAyNCBIMjMuNSBaIiBmaWxsPSJ3aGl0ZSIvPjwvc3ZnPg==",
     "description": "Real-time DDoS detection from simulated Cisco ASA firewall logs. Generates background traffic and a controllable attack stream, parses raw syslog into structured fields, then applies dynamic per-IP baselines (overall and hourly) to detect traffic spikes. Fires a webhook alert when the spike ratio exceeds the configured threshold. Resume and pause the attack MV to control the simulation.\nThe attack MV is paused automatically on install. To trigger the simulated attack:\n  SYSTEM RESUME MATERIALIZED VIEW <db>.mv_asa_logs_sim_attack;\n",
@@ -780,7 +780,7 @@
         "description": "Real-time spike ratio monitoring, baseline tables, and live traffic"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.6/cisco-asa-ddos.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.7/cisco-asa-ddos.tpapp"
   },
   {
     "package_format_version": 1,
@@ -967,7 +967,7 @@
         "name": "spending_alert"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.6/game-feature-pipeline.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.7/game-feature-pipeline.tpapp"
   },
   {
     "package_format_version": 1,
@@ -1018,7 +1018,7 @@
         "description": "Real-time view of GitHub public events"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.6/github.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.7/github.tpapp"
   },
   {
     "package_format_version": 1,
@@ -1104,7 +1104,7 @@
         "name": "get_hn_post"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.6/hacker-news.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.7/hacker-news.tpapp"
   },
   {
     "package_format_version": 1,
@@ -1275,7 +1275,7 @@
         "description": "Real-time trading metrics \u2014 participation rate and P&L"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.6/invest-insights.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.7/invest-insights.tpapp"
   },
   {
     "package_format_version": 1,
@@ -1424,6 +1424,6 @@
         "description": "Real-time OHLC, returns, and RSI for Coinbase crypto pairs"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.6/market-data.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.7/market-data.tpapp"
   }
 ]
