@@ -17,11 +17,19 @@ import json
 import time
 from datetime import datetime, timezone, timedelta
 
-AWS_ACCESS_KEY_ID = "{{ .Config.aws_access_key_id }}"
-AWS_SECRET_ACCESS_KEY = "{{ .Config.aws_secret_access_key }}"
+# Credentials are populated by _tp_init() from the named collection.
+# Leaving them empty here keeps secrets out of `SHOW CREATE EXTERNAL STREAM`.
+AWS_ACCESS_KEY_ID = ""
+AWS_SECRET_ACCESS_KEY = ""
 REGIONS = {{ .Config.regions }}
 SERVICES = {{ .Config.services }}
 POLL_INTERVAL = {{ .Config.poll_interval_seconds }}
+
+def _tp_init(params):
+    global AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
+    cfg = json.loads(params)
+    AWS_ACCESS_KEY_ID = cfg["access_key_id"]
+    AWS_SECRET_ACCESS_KEY = cfg["secret_access_key"]
 
 TAG_KEYS = ("createdby", "creatorname", "creator", "owner", "created_by", "createdby_user", "ownername")
 
@@ -278,4 +286,5 @@ def poll_aws():
             print(f"[aws-cost] outer loop error: {e}")
         time.sleep(POLL_INTERVAL)
 $$
-SETTINGS type='python', mode='streaming', read_function_name='poll_aws';
+SETTINGS type='python', mode='streaming', read_function_name='poll_aws',
+         init_function_name='_tp_init', named_collection='aws_cost_creds';

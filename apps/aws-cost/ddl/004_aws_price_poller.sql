@@ -13,11 +13,19 @@ import json
 import time
 from datetime import datetime, timezone
 
-AWS_ACCESS_KEY_ID = "{{ .Config.aws_access_key_id }}"
-AWS_SECRET_ACCESS_KEY = "{{ .Config.aws_secret_access_key }}"
+# Credentials are populated by _tp_init() from the named collection.
+# Leaving them empty here keeps secrets out of `SHOW CREATE EXTERNAL STREAM`.
+AWS_ACCESS_KEY_ID = ""
+AWS_SECRET_ACCESS_KEY = ""
 REGIONS = {{ .Config.regions }}
 SERVICES = {{ .Config.services }}
 REFRESH_HOURS = {{ .Config.price_refresh_hours }}
+
+def _tp_init(params):
+    global AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
+    cfg = json.loads(params)
+    AWS_ACCESS_KEY_ID = cfg["access_key_id"]
+    AWS_SECRET_ACCESS_KEY = cfg["secret_access_key"]
 
 REGION_LOCATION = {
     "us-east-1": "US East (N. Virginia)",
@@ -141,4 +149,5 @@ def poll_prices():
             print(f"[aws-cost] price poller error: {e}")
         time.sleep(REFRESH_HOURS * 3600)
 $$
-SETTINGS type='python', mode='streaming', read_function_name='poll_prices';
+SETTINGS type='python', mode='streaming', read_function_name='poll_prices',
+         init_function_name='_tp_init', named_collection='aws_cost_creds';
