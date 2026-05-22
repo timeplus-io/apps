@@ -163,6 +163,21 @@ Each row in `v_backtest` is one **stock-bucket observation** — alpha at `t−1
   - 50% on noise; >50% suggests directional skill; <50% means you should flip the sign of the alpha.
   - **Ignores magnitude**, so a 51% hit rate that misses big can still lose money. A 49% rate with skewed wins can still print positive `cum_pnl`. Always pair with mean / Sharpe; never read alone.
 
+- **`t_stat = avg(pnl) / stddev_pop(pnl) × √n_obs`** — t-statistic on the per-observation mean P&L, i.e. the dashboard's *Edge t-stat* tile. Tests "is the mean bet return distinguishable from zero?" Algebraically equal to `sharpe_per_obs × √n_obs`. Standard reading-the-tea-leaves thresholds:
+
+  | \|t\| | Interpretation |
+  |---|---|
+  | < 2 | Indistinguishable from noise |
+  | **2** | Traditional 5% significance — "interesting" |
+  | **3** | WorldQuant / Alphathon bar — commonly cited threshold for a "real" alpha |
+  | **3.5 – 4** | Bar after multiple-testing correction when you've tried ~100 alphas (Bailey & López de Prado *deflated Sharpe*). The *101 Formulaic Alphas* paper tested 101 candidates, so the honest threshold for any single one of them lives here, not at 2. |
+  | > 5 | Very strong — or a bug. Audit for look-ahead, label leakage, or survivorship before believing it. |
+
+  Two caveats specific to this app:
+
+  1. **Bar autocorrelation inflates `t_stat`.** The `√n_obs` factor assumes IID observations. On 1s / 5s bars the price (and so the alpha-weighted return) is heavily autocorrelated across consecutive buckets, so the *effective* sample size is much smaller than `n_obs`. The naïve t-stat above will look impressive while meaning very little. For an honest figure, either aggregate to non-overlapping daily P&L before computing t, or use a Newey-West / block-bootstrap standard error.
+  2. **Synthetic data has no true alpha.** `random_market_data` is an independent random walk, so the population t-stat is zero by construction. Any large \|t\| you see on this feed is sampling noise. To actually evaluate the threshold, repoint the pipeline at real market data (e.g. the Coinbase external stream from `apps/market-data`).
+
 ### Expected outcome on synthetic data
 
 The source is independent random ticks with no genuine predictive structure, so Alpha #1 has no edge to exploit. A representative run over ~2 hours:
@@ -171,6 +186,7 @@ The source is independent random ticks with no genuine predictive structure, so 
 |---|---|
 | `hit_rate_pct` | ≈ 50% |
 | `sharpe_per_obs` | ≈ 0 |
+| `t_stat` | within ±2 most of the time (it's noise — \|t\| > 3 on this feed is a flag, not a finding) |
 | `cum_pnl` | small, sign varies run-to-run |
 
 That's the **correct** null result — it confirms the backtest math is sound. To see a real edge, point the pipeline at real market data (replace the random source with an external stream, e.g. the Coinbase WebSocket connector in `apps/market-data`).
