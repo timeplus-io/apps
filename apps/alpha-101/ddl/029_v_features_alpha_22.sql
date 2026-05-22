@@ -3,7 +3,7 @@
 --   stddev20   = rolling 20-bucket pop stddev of close
 --   delta_corr5= corr5 − corr5 from 5 buckets ago
 -- Plus close-to-close returns for the backtest layer.
-CREATE OR REPLACE VIEW {{ .DB }}.v_features_alpha_22 AS
+CREATE VIEW IF NOT EXISTS {{ .DB }}.v_features_alpha_22 AS
 SELECT
   time, stock_id, returns,
   corr5,

@@ -1,4 +1,4 @@
-CREATE OR REPLACE VIEW {{ .DB }}.v_alpha_1 AS
+CREATE VIEW IF NOT EXISTS {{ .DB }}.v_alpha_1 AS
 WITH ranked AS (
   SELECT
     window_start AS time,

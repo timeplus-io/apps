@@ -1,4 +1,4 @@
-CREATE OR REPLACE VIEW {{ .DB }}.v_alpha_mean_reversion AS
+CREATE VIEW IF NOT EXISTS {{ .DB }}.v_alpha_mean_reversion AS
 SELECT
   product_id,
   time,

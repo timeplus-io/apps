@@ -1,4 +1,4 @@
-CREATE OR REPLACE VIEW {{ .DB }}.v_features_alpha_1 AS
+CREATE VIEW IF NOT EXISTS {{ .DB }}.v_features_alpha_1 AS
 SELECT
   time, stock_id, close, returns, sigma_ret_20,
   sign(cond) * cond * cond AS signed_power

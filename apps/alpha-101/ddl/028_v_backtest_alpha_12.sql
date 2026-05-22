@@ -1,4 +1,4 @@
-CREATE OR REPLACE VIEW {{ .DB }}.v_backtest_alpha_12 AS
+CREATE VIEW IF NOT EXISTS {{ .DB }}.v_backtest_alpha_12 AS
 SELECT
   time, stock_id, alpha_12, returns, alpha_prev,
 {{- if eq .Config.strategy "sign" }}

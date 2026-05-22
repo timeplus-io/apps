@@ -1,4 +1,4 @@
-CREATE OR REPLACE VIEW {{ .DB }}.v_alpha_spread_pressure AS
+CREATE VIEW IF NOT EXISTS {{ .DB }}.v_alpha_spread_pressure AS
 SELECT
   product_id,
   time,

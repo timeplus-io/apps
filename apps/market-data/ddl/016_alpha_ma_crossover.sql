@@ -1,4 +1,4 @@
-CREATE OR REPLACE VIEW {{ .DB }}.v_alpha_ma_crossover AS
+CREATE VIEW IF NOT EXISTS {{ .DB }}.v_alpha_ma_crossover AS
 SELECT
   product_id,
   time,
