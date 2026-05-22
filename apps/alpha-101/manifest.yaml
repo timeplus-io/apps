@@ -1,12 +1,14 @@
 package_format_version: 1
 id: io.timeplus.alpha-101
 name: Realtime Alpha 101
-version: 1.0.0
+version: 1.0.1
 author: Timeplus
+icon: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJiZyIgeDE9IjAiIHkxPSIwIiB4Mj0iNDgiIHkyPSI0OCIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNENTNGOEMiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiM5RjJCQzAiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHJ4PSIxMSIgZmlsbD0idXJsKCNiZykiLz48cGF0aCBkPSJNIDI4IDIwIEMgMjggMTggMjYgMTYgMjIgMTYgQyAxNiAxNiAxMiAyMSAxMiAyNiBDIDEyIDMxIDE2IDM1IDIyIDM1IEMgMjYgMzUgMjggMzMgMjggMzEgTCAyOCAyMCBMIDM0IDM0IiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjIuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBmaWxsPSJub25lIi8+PC9zdmc+"
 description: >
-  Streaming demo of WorldQuant alphas (#1 and #2) over a synthetic
-  multi-stock random feed. Demonstrates tumble-window bars, lag/lags
-  arrays, cross-sectional rank, and rolling correlation in Timeplus
+  Streaming implementation of ten WorldQuant alphas (#1, #2, #3, #4, #6,
+  #9, #12, #22, #41, #54) over a synthetic multi-stock random feed.
+  Demonstrates tumble-window bars, lag/lags arrays, cross-sectional
+  rank, rolling correlation, and per-alpha backtest views in Timeplus
   streaming SQL.
 db_name: alpha_101
 categories:

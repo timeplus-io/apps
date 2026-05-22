@@ -124,21 +124,21 @@ dashboards:
 
 ### Resource types
 
-| type | DDL verb | rolled back with |
-|---|---|---|
-| `stream` | `CREATE STREAM` | `DROP STREAM` |
-| `external_stream` | `CREATE EXTERNAL STREAM` | `DROP STREAM` |
-| `mutable_stream` | `CREATE MUTABLE STREAM` | `DROP STREAM` |
-| `materialized_view` | `CREATE MATERIALIZED VIEW` | `DROP VIEW` |
-| `view` | `CREATE VIEW` | `DROP VIEW` |
-| `external_table` | `CREATE TABLE` | `DROP TABLE` |
-| `udf` | `CREATE FUNCTION` | `DROP FUNCTION` |
-| `task` | `CREATE TASK` | `DROP TASK` |
-| `alert` | `CREATE ALERT` | `DROP ALERT` |
-| `input` | `CREATE INPUT` | `DROP INPUT` |
-| `dictionary` | `CREATE DICTIONARY` | `DROP DICTIONARY` |
-| `format_schema` | `CREATE FORMAT SCHEMA` | `DROP FORMAT SCHEMA` |
-| `named_collection` | `CREATE NAMED COLLECTION` | `DROP NAMED COLLECTION` |
+| type | DDL verb | idempotent form | rolled back with |
+|---|---|---|---|
+| `stream` | `CREATE STREAM` | `CREATE STREAM IF NOT EXISTS` | `DROP STREAM` |
+| `external_stream` | `CREATE EXTERNAL STREAM` | `CREATE EXTERNAL STREAM IF NOT EXISTS` | `DROP STREAM` |
+| `mutable_stream` | `CREATE MUTABLE STREAM` | `CREATE MUTABLE STREAM IF NOT EXISTS` | `DROP STREAM` |
+| `materialized_view` | `CREATE MATERIALIZED VIEW` | `CREATE MATERIALIZED VIEW IF NOT EXISTS` | `DROP VIEW` |
+| `view` | `CREATE VIEW` | `CREATE VIEW IF NOT EXISTS` | `DROP VIEW` |
+| `external_table` | `CREATE TABLE` | `CREATE TABLE IF NOT EXISTS` | `DROP TABLE` |
+| `udf` | `CREATE FUNCTION` | `CREATE OR REPLACE FUNCTION` (see below) | `DROP FUNCTION` |
+| `task` | `CREATE TASK` | `CREATE TASK IF NOT EXISTS` | `DROP TASK` |
+| `alert` | `CREATE ALERT` | `CREATE ALERT IF NOT EXISTS` | `DROP ALERT` |
+| `input` | `CREATE INPUT` | `CREATE INPUT IF NOT EXISTS` | `DROP INPUT` |
+| `dictionary` | `CREATE DICTIONARY` | `CREATE DICTIONARY IF NOT EXISTS` | `DROP DICTIONARY` |
+| `format_schema` | `CREATE FORMAT SCHEMA` | `CREATE FORMAT SCHEMA IF NOT EXISTS` | `DROP FORMAT SCHEMA` |
+| `named_collection` | `CREATE NAMED COLLECTION` | `CREATE NAMED COLLECTION IF NOT EXISTS` | `DROP NAMED COLLECTION` |
 
 ## DDL Template Variables
 
@@ -166,7 +166,21 @@ CREATE EXTERNAL STREAM IF NOT EXISTS {{ .DB }}.raw_feed (msg string)
 SETTINGS url='{{ .Config.websocket_url }}', type='websocket';
 ```
 
-**Use `IF NOT EXISTS` on every `CREATE`** — makes resources idempotent and safe for upgrade.
+## Idempotency: every `CREATE` must be re-runnable
+
+App upgrades re-run every DDL file against the existing database — the installer does **not** drop resources first. A `CREATE` that fails on the second run breaks upgrade. Every DDL file in `apps/*/ddl/` must use one of the following forms:
+
+| Resource | Required form | Why |
+|---|---|---|
+| Everything except `udf` | `CREATE … IF NOT EXISTS <name>` | Re-running is a no-op. Existing rows, downstream consumers, and the resource UUID are preserved — critical for `view` and `materialized_view`, which are referenced by name from other resources and from dashboards. |
+| `udf` | `CREATE OR REPLACE FUNCTION <name>` | UDFs are global (no database qualifier — see [udf](#udf)) and their body is typically what changes in an upgrade. `OR REPLACE` hot-swaps the implementation; `IF NOT EXISTS` would silently keep the old code on upgrade. |
+
+**Do not use `CREATE OR REPLACE VIEW`.** A view is a dependency for downstream MVs, queries, and dashboards. `OR REPLACE` would drop and recreate it, breaking anything referencing the view during the brief recreation window and on schema changes. Use `CREATE VIEW IF NOT EXISTS` — if the view definition needs to change, bump the app version and treat it as a migration (drop + recreate explicitly, or version the view name).
+
+**Forms that do NOT accept `IF NOT EXISTS`:**
+
+- `SYSTEM INSTALL PYTHON PACKAGE` — parser rejects `IF NOT EXISTS`. Don't put this in DDL; declare packages in `manifest.yaml` under `python_packages` (see [Python packages](#python-packages-not-available-at-ddl-time)).
+- `CREATE FUNCTION IF NOT EXISTS db.fn` and `CREATE FORMAT SCHEMA IF NOT EXISTS db.fs` — both reject the `db.` prefix. UDFs and format schemas live in a global namespace; never qualify them with `{{ .DB }}.`.
 
 ## Dashboard Template Variables
 
@@ -425,6 +439,10 @@ TTL to_datetime(_tp_time) + INTERVAL {{ .Config.retention_hours }} HOUR
 
 ## Common Mistakes
 
+### `CREATE` without `IF NOT EXISTS` (breaks upgrade)
+**Cause:** App upgrades re-run every DDL file. A `CREATE STREAM …` (no guard) succeeds on first install and fails on every upgrade with `Code: 57 ... already exists`.
+**Fix:** Use `CREATE … IF NOT EXISTS` on every resource type except `udf`. For UDFs, use `CREATE OR REPLACE FUNCTION` (the body is what typically changes on upgrade). For views specifically: **never use `CREATE OR REPLACE VIEW`** — drop+recreate breaks dependents (downstream MVs, dashboards, other views). See [Idempotency](#idempotency-every-create-must-be-re-runnable).
+
 ### Multi-statement SQL files
 **Error:** `Syntax error: Multi-statements are not allowed`  
 **Fix:** One SQL statement per file.
@@ -566,6 +584,8 @@ A `view` is a saved streaming query with no storage of its own. Every query agai
 CREATE VIEW IF NOT EXISTS {{ .DB }}.v_btc
 AS SELECT * FROM {{ .DB }}.events WHERE product = 'BTC-USD';
 ```
+
+**Never use `CREATE OR REPLACE VIEW`.** A view is a stable dependency for downstream MVs, dashboards, and other views. `OR REPLACE` drops and recreates the view, breaking dependents — use `IF NOT EXISTS` and treat definition changes as explicit migrations (bump app version, drop and recreate, or version the view name).
 
 Manifest entry:
 ```yaml

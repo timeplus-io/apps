@@ -1,4 +1,4 @@
-CREATE OR REPLACE VIEW {{ .DB }}.v_alpha_trade_flow AS
+CREATE VIEW IF NOT EXISTS {{ .DB }}.v_alpha_trade_flow AS
 SELECT
   product_id,
   time,

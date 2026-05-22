@@ -1,4 +1,4 @@
-CREATE RANDOM STREAM {{ .DB }}.cisco_asa_sim_normal (
+CREATE RANDOM STREAM IF NOT EXISTS {{ .DB }}.cisco_asa_sim_normal (
     timestamp datetime64(3) DEFAULT now64(3),
     device_name string DEFAULT 'asa-fw01',
     src_ip string DEFAULT '{{ .Config.attacker_src_ip }}',

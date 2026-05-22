@@ -1,4 +1,4 @@
-CREATE OR REPLACE VIEW {{ .DB }}.v_alpha_3 AS
+CREATE VIEW IF NOT EXISTS {{ .DB }}.v_alpha_3 AS
 SELECT
   time,
   stock_id,

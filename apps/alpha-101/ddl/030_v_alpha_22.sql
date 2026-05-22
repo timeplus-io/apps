@@ -1,4 +1,4 @@
-CREATE OR REPLACE VIEW {{ .DB }}.v_alpha_22 AS
+CREATE VIEW IF NOT EXISTS {{ .DB }}.v_alpha_22 AS
 WITH bucketed AS (
   SELECT
     window_start                                                                AS time,

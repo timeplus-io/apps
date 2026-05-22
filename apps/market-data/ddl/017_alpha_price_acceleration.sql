@@ -1,4 +1,4 @@
-CREATE OR REPLACE VIEW {{ .DB }}.v_alpha_price_acceleration AS
+CREATE VIEW IF NOT EXISTS {{ .DB }}.v_alpha_price_acceleration AS
 SELECT
   product_id,
   time,

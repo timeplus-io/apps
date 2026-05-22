@@ -1,4 +1,4 @@
-CREATE RANDOM STREAM {{ .DB }}.cisco_asa_background_gen (
+CREATE RANDOM STREAM IF NOT EXISTS {{ .DB }}.cisco_asa_background_gen (
     timestamp datetime64(3) DEFAULT now64(3),
     device_name string DEFAULT concat('asa-fw', lpad(to_string((rand(1) % 26) + 1), 2, '0')),
     message_id string DEFAULT array_element([
