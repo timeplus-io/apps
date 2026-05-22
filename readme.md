@@ -2,11 +2,14 @@
 
 A collection of installable Timeplus apps (`.tpapp` packages). Each app bundles a streaming data pipeline — DDL SQL resources and dashboards — into a single zip archive.
 
+**Browse the catalog:** **<https://timeplus-io.github.io/apps/>** — searchable index of every app with descriptions, screenshots, and direct download links.
+
 ## Apps
 
 | App | Description | Downloads |
 |-----|-------------|-----------|
 | [market-data](apps/market-data/README.md) | Real-time crypto market data from Coinbase WebSocket — OHLC candlesticks, RSI, VWAP, and alpha signals | ![Downloads](https://img.shields.io/github/downloads/timeplus-io/apps/latest/market-data.tpapp?label=downloads) |
+| [alpha-101](apps/alpha-101/readme.md) | Streaming demo of WorldQuant Alpha #1 and Alpha #2 over a synthetic multi-stock random feed — cross-sectional rank, lag arrays, rolling correlation, with live + backtest dashboards | ![Downloads](https://img.shields.io/github/downloads/timeplus-io/apps/latest/alpha-101.tpapp?label=downloads) |
 | [github](apps/github/) | Real-time GitHub public events pipeline — hot repos, push activity, and live event feed via PyGithub | ![Downloads](https://img.shields.io/github/downloads/timeplus-io/apps/latest/github.tpapp?label=downloads) |
 | [cep](apps/cep/) | Complex event processing demo — SQL-based fraud detection and JavaScript UDF pattern matching over simulated event streams | ![Downloads](https://img.shields.io/github/downloads/timeplus-io/apps/latest/cep.tpapp?label=downloads) |
 | [hacker-news](apps/hacker-news/) | Continuously ingests Hacker News posts and comments via the Firebase API — trending stories, active users, and post-type distributions | ![Downloads](https://img.shields.io/github/downloads/timeplus-io/apps/latest/hacker-news.tpapp?label=downloads) |
