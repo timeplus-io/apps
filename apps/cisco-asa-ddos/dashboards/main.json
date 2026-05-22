@@ -39,9 +39,26 @@
     "viz_content": "SELECT _tp_time, src_ip, round(overall_spike_ratio, 2) AS overall_ratio, round(hourly_spike_ratio, 2) AS hourly_ratio FROM [[ .DB ]].cxt_ddos_stream WHERE src_ip = to_ipv4('{{filter_src_ip}}') AND _tp_time > now() - {{filter_time_range}}",
     "viz_config": {
       "chartType": "line",
-      "x": "_tp_time",
-      "y": ["overall_ratio", "hourly_ratio"],
-      "color": "src_ip"
+      "config": {
+        "xAxis": "_tp_time",
+        "yAxis": ["overall_ratio", "hourly_ratio"],
+        "color": "src_ip",
+        "xRange": "Infinity",
+        "xFormat": "",
+        "xTitle": "",
+        "yTitle": "",
+        "yRange": { "min": null, "max": null },
+        "lineStyle": "curve",
+        "dataLabel": false,
+        "showAll": false,
+        "legend": true,
+        "points": false,
+        "gridlines": true,
+        "unit": { "position": "left", "value": "" },
+        "fractionDigits": 2,
+        "colors": ["#ED64A6", "#F0BE3E", "#DA4B36", "#9A1563", "#FF4A71", "#D12D50", "#8934D9", "#D53F8C", "#F7775A", "#8934D9"],
+        "yTickLabel": { "maxChar": 25 }
+      }
     }
   },
   {
@@ -53,9 +70,26 @@
     "viz_content": "SELECT _tp_time, src_ip, live_bytes FROM [[ .DB ]].sig_live_5s_traffic WHERE src_ip = to_ipv4('{{filter_src_ip}}') AND _tp_time > now() - {{filter_time_range}}",
     "viz_config": {
       "chartType": "area",
-      "x": "_tp_time",
-      "y": ["live_bytes"],
-      "color": "src_ip"
+      "config": {
+        "xAxis": "_tp_time",
+        "yAxis": "live_bytes",
+        "color": "src_ip",
+        "xRange": "Infinity",
+        "xFormat": "",
+        "xTitle": "",
+        "yTitle": "",
+        "yRange": { "min": null, "max": null },
+        "lineStyle": "curve",
+        "dataLabel": false,
+        "showAll": false,
+        "legend": true,
+        "points": false,
+        "gridlines": true,
+        "unit": { "position": "left", "value": "" },
+        "fractionDigits": 0,
+        "colors": ["#ED64A6", "#F0BE3E", "#DA4B36", "#9A1563", "#FF4A71", "#D12D50", "#8934D9", "#D53F8C", "#F7775A", "#8934D9"],
+        "yTickLabel": { "maxChar": 25 }
+      }
     }
   },
   {

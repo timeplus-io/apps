@@ -608,6 +608,7 @@ GROUP BY repo ORDER BY cnt DESC LIMIT 5 BY emit_version()
 | Mistake | Fix |
 |---|---|
 | Using `{{ .DB }}` in dashboard JSON | Use `[[ .DB ]]` — dashboard uses `[[ ]]` delimiters |
+| Flat chart config like `{ "chartType": "line", "x": "...", "y": [...] }` | Wrap fields under `config` and use `xAxis` / `yAxis` (not `x` / `y`). The renderer throws `VizConfigError: Missing or invalid config field: xAxis` for flat shapes. |
 | OHLC query doesn't have column named `time` | Alias: `window_start AS time` |
 | Selector control writes wrong filter name | `target` must match `{{filter_*}}` in SQL exactly |
 | Table shows no data | Check `updateMode` — use `"key"` for mutable streams |
