@@ -239,7 +239,7 @@ All chart panels share:
 }
 ```
 
-Chart types: `line`, `area`, `bar`, `column`, `singleValue`, `table`, `ohlc`, `geo`, `md` (Markdown viz — see dedicated section above).
+Chart types: `line`, `area`, `bar`, `column`, `singleValue`, `table`, `ohlc`, `geo`, `md` (Markdown viz — see dedicated section above), `grammar` (3.2+ — generic Vistral grammar; use when no fixed type fits).
 
 ---
 
@@ -513,6 +513,142 @@ Map scatter chart. Requires two numeric columns for longitude and latitude.
 | `size.key` | string | Column to scale dot size by (empty = fixed size) |
 | `size.value` | number | Fixed dot size (when `size.key` is empty) |
 | `size.range` | [min, max] | Min/max dot size when `size.key` is set |
+
+---
+
+### `grammar` (Timeplus 3.2+)
+
+A generic, spec-driven chart type backed by the [Vistral](https://github.com/timeplus-io/vistral) grammar engine. Use when no fixed `chartType` covers what you need — scatter (point mark with numeric x), layered marks, categorical band-axis bars with band scale + key-based update, stacked area via the `stackY` transform, log-scale lines, etc.
+
+**For the underlying grammar — full `VistralSpec` shape, every mark type, transform, scale, encode channel, and streaming option — see the Vistral skill:**
+[`vistral/agentskill/SKILL.md`](https://github.com/timeplus-io/vistral/blob/main/agentskill/SKILL.md)
+
+Everything you write in `advancedSpec` (and what the form-builder fields map to) is documented there. This section below covers only the dashboard-side `viz_config.config` wrapper that exposes the grammar through a form.
+
+```json
+"viz_config": {
+  "chartType": "grammar",
+  "config": {
+    "renderInterval": 500,
+    "updateMode": "all",
+    "updateKey": "",
+
+    "markType": "line",
+    "xField": "_tp_time",
+    "yField": ["value"],
+    "colorField": "",
+    "sizeField": "",
+
+    "xScaleType": "time",
+    "yScaleType": "linear",
+
+    "temporalMode": "axis",
+    "temporalRange": 1,
+
+    "streamMaxItems": 600,
+    "streamMode": "append",
+    "throttleMs": 100,
+
+    "xAxisTitle": "",
+    "yAxisTitle": "Value",
+    "legendPosition": "top",
+
+    "advancedSpec": ""
+  }
+}
+```
+
+| Key | Type | Notes |
+|---|---|---|
+| `markType` | `'line' \| 'area' \| 'interval' \| 'point' \| 'rect'` | Mark to draw. `interval` is a bar; `point` is a scatter mark. |
+| `xField` | string | Column for x encoding. |
+| `yField` | string \| string[] | Column(s) for y. Single-element arrays are unwrapped to a scalar; arrays with >1 entry are passed through for multi-series marks. |
+| `colorField` | string | Optional column for color encoding (groups marks by category). |
+| `sizeField` | string | Optional column for size encoding (point/interval). |
+| `xScaleType` | `'time' \| 'linear' \| 'band' \| 'ordinal' \| 'log'` \| `''` | x-axis scale. Use `band` for categorical x on `interval` marks. Empty = auto. |
+| `yScaleType` | `'linear' \| 'log'` \| `''` | y-axis scale. Empty = auto. |
+| `temporalMode` | `'' \| 'axis' \| 'frame' \| 'key'` | Streaming behavior. `axis` = sliding window on x-axis; `frame` = replace on each tick; `key` = update by key column. Empty = none. |
+| `temporalRange` | number\|null | **Minutes** (not ms) for the sliding window when `temporalMode === 'axis'`. |
+| `streamMaxItems` | number\|null | Cap on rows kept in the chart buffer. |
+| `streamMode` | `'append' \| 'replace'` \| `''` | Append new rows or replace the buffer on each tick. |
+| `throttleMs` | number\|null | Throttle window for rerenders, in milliseconds. |
+| `xAxisTitle` / `yAxisTitle` | string | Axis titles (empty = no title). |
+| `legendPosition` | `'top' \| 'bottom' \| 'left' \| 'right' \| 'hidden'` | Legend placement. Use `'hidden'` (not `'none'`) to suppress. |
+| `advancedSpec` | string (JSON) | Optional raw `VistralSpec` deep-merged on top of the form-derived spec. **Arrays are replaced atomically** by `mergeDeepRight`, so providing `marks` here overrides the entire mark array including the form-built encode — declare every mark you want explicitly when you use it. |
+
+**Common patterns**
+
+Scatter with color + size encoding:
+```json
+{
+  "markType": "point",
+  "xField": "sepal_length",
+  "yField": ["sepal_width"],
+  "colorField": "species",
+  "sizeField": "petal_length",
+  "xScaleType": "linear",
+  "yScaleType": "linear",
+  "temporalMode": ""
+}
+```
+
+Streaming line with a 1-minute sliding window:
+```json
+{
+  "markType": "line",
+  "xField": "_tp_time",
+  "yField": ["value"],
+  "xScaleType": "time",
+  "temporalMode": "axis",
+  "temporalRange": 1,
+  "streamMaxItems": 600,
+  "streamMode": "append",
+  "throttleMs": 100
+}
+```
+
+Categorical bar by group, key-based update (one row per category):
+```json
+{
+  "markType": "interval",
+  "xField": "category",
+  "yField": ["value"],
+  "colorField": "category",
+  "xScaleType": "band",
+  "updateMode": "key",
+  "updateKey": "category",
+  "streamMode": "replace"
+}
+```
+
+Layered line + points (advancedSpec, atomic mark replacement):
+```json
+{
+  "markType": "line",
+  "xField": "_tp_time",
+  "yField": ["value"],
+  "advancedSpec": "{\"marks\":[{\"type\":\"line\",\"encode\":{\"x\":\"_tp_time\",\"y\":\"value\"},\"style\":{\"strokeWidth\":2}},{\"type\":\"point\",\"encode\":{\"x\":\"_tp_time\",\"y\":\"value\"},\"style\":{\"fillOpacity\":0.6}}]}"
+}
+```
+
+Stacked area (transform via advancedSpec):
+```json
+{
+  "markType": "area",
+  "xField": "_tp_time",
+  "yField": ["value"],
+  "colorField": "series",
+  "advancedSpec": "{\"transforms\":[{\"type\":\"stackY\"}]}"
+}
+```
+
+**Gotchas**
+- `temporalRange` is **minutes**, not milliseconds. Setting it to `60000` gives you a 60000-minute (~41-day) window and your sliding chart will appear empty until ~41 days pass.
+- `legendPosition: 'hidden'` not `'none'`. The Selector engine reserves `'none'` for its placeholder item and silently coerces it to `''`.
+- The form's y-field picker is multi-select, but Vistral's grammar wants a scalar `y` for single-series marks. The translator handles this by unwrapping length-1 arrays — so `yField: ["value"]` and `yField: "value"` both render correctly.
+- `xField` and `colorField` UI pickers filter to non-numeric columns by default. To use a numeric column for x (scatter) or color (sequential), you have to author the JSON directly or set the value via `advancedSpec` — the form won't offer numeric columns there.
+- When `advancedSpec` supplies `marks`, the array fully replaces the form-built marks. Declare every layer you want; don't expect the form's mark to be preserved underneath.
+- For a known-bad config (missing mark type or x/y encode), the panel renders an inline error banner instead of throwing — useful while authoring, but check the panel for that banner if your chart appears blank.
 
 ---
 

@@ -255,7 +255,7 @@ This covers:
 - 12-column position grid and common width/height values
 - Template variables (`[[ .DB ]]` vs `{{filter_*}}`)
 - Control panels: `selector` (dropdown) and `text_input`
-- Chart types: `line`, `area`, `bar`, `column`, `singleValue`, `table`, `ohlc`, `geo`, `md`
+- Chart types: `line`, `area`, `bar`, `column`, `singleValue`, `table`, `ohlc`, `geo`, `md`, `grammar` (3.2+ — generic Vistral-grammar-driven viz: scatter, layered marks, band-axis bars, stacked area, custom transforms, etc.). For the underlying `VistralSpec` grammar (marks, transforms, scales, encode channels), see the Vistral skill: [`vistral/agentskill/SKILL.md`](https://github.com/timeplus-io/vistral/blob/main/agentskill/SKILL.md).
 - All `viz_config.config` fields per chart type with defaults
 - `updateMode` (`"all"` / `"key"` / `"time"`) — when to use each
 - Default color palette
@@ -461,6 +461,18 @@ SELECT window_start AS time, product_id, ...
 
 ### Wrong template delimiter in dashboards
 **Fix:** Use `[[ .DB ]]` in dashboard JSON, not `{{ .DB }}`. The `{{ }}` delimiter is reserved for frontend filter variables like `{{filter_product}}`.
+
+### `chartType: "grammar"` temporal sliding window appears empty / spans years
+**Cause:** `temporalRange` is in **minutes**, not milliseconds. Setting it to `60000` (intending 1 minute) actually gives ~41 days.
+**Fix:** Use minute values directly: `"temporalRange": 1` for a 60-second window, `"temporalRange": 5` for 5 minutes. See `references/dashboard-spec.md` → "grammar".
+
+### `chartType: "grammar"` advancedSpec marks override drops the form's encode
+**Cause:** The advancedSpec JSON is deep-merged via `mergeDeepRight`, which **replaces arrays atomically**. Supplying `marks` in advancedSpec discards the entire form-built mark (and its encode).
+**Fix:** When using `advancedSpec` to layer marks (e.g. line + point), declare every mark explicitly in the JSON — don't expect the form's mark to be preserved underneath. See the "Layered line + points" example in the grammar reference.
+
+### `chartType: "grammar"` legend won't hide with `legendPosition: "none"`
+**Cause:** The shared Selector engine reserves the literal value `'none'` for its placeholder item and coerces it to `''`.
+**Fix:** Use `"legendPosition": "hidden"` to suppress the legend.
 
 ### Multi-series line/area chart renders as a single overlapping line
 **Cause:** `viz_config.config.color` left at `""`. The chart treats the result as one series and draws every point on the same line.
