@@ -116,14 +116,14 @@ categories:
 
 config:
   - key: num_cars
-    type: int
+    type: integer
     required: false
-    default: 10
+    default: "10"
     description: Number of simulated taxis (1-500 recommended).
   - key: speed_kmh
     type: float
     required: false
-    default: 60.0
+    default: "60.0"
     description: Base vehicle speed in km/h. Each car gets +/-20% variation.
 
 python_packages:
