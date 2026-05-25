@@ -30,5 +30,11 @@ resources:
   - file: ddl/001_taxi_feed.sql
     type: external_stream
     name: taxi_feed
+  - file: ddl/002_taxi_positions.sql
+    type: stream
+    name: taxi_positions
+  - file: ddl/003_mv_taxi_positions.sql
+    type: materialized_view
+    name: mv_taxi_positions
 
 dashboards: []
