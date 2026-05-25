@@ -17,6 +17,21 @@
 
 **Verification convention:** Because this is a SQL/JSON package (no unit-test framework), each task ends with concrete shell commands and their expected output. "Verify" = run the command and check the output matches.
 
+**Verification helper — read this once.** The Timeplus query endpoint at `/default/api/v1beta2/queries` accepts a JSON POST `{"sql":"..."}` and streams back Server-Sent Events. The data rows arrive as `data: [[...]]` lines. The compact verification one-liner is:
+
+```bash
+TP_QUERY() {
+  curl -s --max-time "${2:-15}" -H 'Content-Type: application/json' \
+    -d "$(jq -nc --arg sql "$1" '{sql:$sql}')" \
+    http://localhost:8000/default/api/v1beta2/queries \
+  | awk '/^data: \[/ {print substr($0,7)}'
+}
+```
+
+Define it once at the start of each terminal session. Then `TP_QUERY "SELECT 1"` prints `[[1]]`. Each subsequent `TP_QUERY "..."` returns one or more `[[...]]` JSON arrays — one per row (streaming queries emit one line per row, then keep the connection open until the timeout). The `${2:-15}` is a per-call timeout (default 15s); pass a second arg for longer streaming queries: `TP_QUERY "SELECT ... FROM tumble(...)" 80`. For installs and verification, all curl examples below use `TP_QUERY`.
+
+**Why this matters:** The plain `?query=...` URL form returns `404 page not found` on this Timeplus build — only the `/queries` JSON-POST endpoint works.
+
 ---
 
 ## File Structure
@@ -232,7 +247,7 @@ Expected: HTTP 200 from the curl POST, and JSON response body containing `"statu
 
 If install fails with `No module named 'taxi_simulator'`: the `timeplus-taxi-simulator` package install hasn't completed yet. Wait ~30s and re-run, or check status:
 ```bash
-curl -s "http://localhost:8000/default/api/v1beta2/proton?query=SELECT%20*%20FROM%20system.python_packages%20WHERE%20name='timeplus-taxi-simulator'%20FORMAT%20JSONEachRow"
+TP_QUERY "SELECT * FROM system.python_packages WHERE name='timeplus-taxi-simulator'"
 ```
 Expected: a row with `"status":"installed"`.
 
@@ -240,14 +255,14 @@ Expected: a row with `"status":"installed"`.
 
 Run:
 ```bash
-curl -s "http://localhost:8000/default/api/v1beta2/proton?query=SELECT%20*%20FROM%20taxi_fleet.taxi_feed%20LIMIT%205%20FORMAT%20JSONEachRow"
+TP_QUERY "SELECT * FROM taxi_fleet.taxi_feed LIMIT 5"
 ```
 
 Expected (after a few seconds): 5 rows each containing `car_id`, `ts`, `longitude`, `latitude`, `speed_kmh`. `car_id` should look like `"car_0001"`, `longitude` ~ -74, `latitude` ~ 40.7, `speed_kmh` should be a float between roughly 40 and 75.
 
 If the LIMIT query hangs (external streams are tail-only), use a streaming bounded query:
 ```bash
-curl -s "http://localhost:8000/default/api/v1beta2/proton?query=SELECT%20*%20FROM%20taxi_fleet.taxi_feed%20WHERE%20_tp_time%20>%20earliest_ts()%20LIMIT%205%20FORMAT%20JSONEachRow"
+TP_QUERY "SELECT * FROM taxi_fleet.taxi_feed WHERE _tp_time > earliest_ts() LIMIT 5"
 ```
 
 - [ ] **Step 6: Commit**
@@ -337,7 +352,7 @@ Expected: HTTP 200.
 
 Wait ~5 seconds, then:
 ```bash
-curl -s "http://localhost:8000/default/api/v1beta2/proton?query=SELECT%20count()%20AS%20n%20FROM%20table(taxi_fleet.taxi_positions)%20FORMAT%20JSONEachRow"
+TP_QUERY "SELECT count() AS n FROM table(taxi_fleet.taxi_positions)"
 ```
 Expected: `{"n":"<some positive integer>"}` — the count should be > 0 and grow on each re-run.
 
@@ -405,15 +420,15 @@ Expected: HTTP 200.
 
 Wait ~5 seconds, then count rows in the mutable stream:
 ```bash
-curl -s "http://localhost:8000/default/api/v1beta2/proton?query=SELECT%20count()%20AS%20n%20FROM%20table(taxi_fleet.taxi_latest)%20FORMAT%20JSONEachRow"
+TP_QUERY "SELECT count() AS n FROM table(taxi_fleet.taxi_latest)"
 ```
 Expected: `{"n":"10"}` — exactly the configured `num_cars` (10 by default), regardless of how long the app has been running.
 
 Sanity-check that positions update (run twice with a 3-second gap):
 ```bash
-curl -s "http://localhost:8000/default/api/v1beta2/proton?query=SELECT%20car_id,%20longitude,%20latitude,%20speed_kmh%20FROM%20table(taxi_fleet.taxi_latest)%20WHERE%20car_id%20=%20'car_0001'%20FORMAT%20JSONEachRow"
+TP_QUERY "SELECT car_id, longitude, latitude, speed_kmh FROM table(taxi_fleet.taxi_latest) WHERE car_id = 'car_0001'"
 sleep 3
-curl -s "http://localhost:8000/default/api/v1beta2/proton?query=SELECT%20car_id,%20longitude,%20latitude,%20speed_kmh%20FROM%20table(taxi_fleet.taxi_latest)%20WHERE%20car_id%20=%20'car_0001'%20FORMAT%20JSONEachRow"
+TP_QUERY "SELECT car_id, longitude, latitude, speed_kmh FROM table(taxi_fleet.taxi_latest) WHERE car_id = 'car_0001'"
 ```
 Expected: the two outputs differ in `longitude`/`latitude` (car has moved).
 
@@ -532,25 +547,25 @@ Use `EMIT PERIODIC 1s` to get bounded results from streaming queries. Run each:
 
 ```bash
 # v_fleet_kpis — expect one row per 5s window
-curl -s "http://localhost:8000/default/api/v1beta2/proton?query=SELECT%20*%20FROM%20taxi_fleet.v_fleet_kpis%20EMIT%20PERIODIC%201s%20LIMIT%201%20FORMAT%20JSONEachRow" -m 15
+TP_QUERY "SELECT * FROM taxi_fleet.v_fleet_kpis EMIT PERIODIC 1s LIMIT 1" 15
 ```
 Expected: a JSON row with `active_cars: 10`, non-zero `avg_speed_kmh` and `max_speed_kmh`, `updates_in_window` > 0.
 
 ```bash
 # v_speed_per_car_1m — expect 10 rows (one per car) per 1m window
-curl -s "http://localhost:8000/default/api/v1beta2/proton?query=SELECT%20*%20FROM%20taxi_fleet.v_speed_per_car_1m%20EMIT%20PERIODIC%201s%20LIMIT%2010%20FORMAT%20JSONEachRow" -m 80
+TP_QUERY "SELECT * FROM taxi_fleet.v_speed_per_car_1m EMIT PERIODIC 1s LIMIT 10" 80
 ```
 Expected (will take ~60s for the first window to close): 10 rows, distinct `car_id`s.
 
 ```bash
 # v_speed_distribution — expect a few rows (buckets) per 5s window
-curl -s "http://localhost:8000/default/api/v1beta2/proton?query=SELECT%20*%20FROM%20taxi_fleet.v_speed_distribution%20EMIT%20PERIODIC%201s%20LIMIT%206%20FORMAT%20JSONEachRow" -m 15
+TP_QUERY "SELECT * FROM taxi_fleet.v_speed_distribution EMIT PERIODIC 1s LIMIT 6" 15
 ```
 Expected: 1–6 rows of `bucket`/`cars_in_bucket` pairs (likely heavy on `40-60` and `60-80` buckets since base speed is 60).
 
 ```bash
 # v_idle_cars — typically empty (cars are moving), so just confirm the query runs without error
-curl -s "http://localhost:8000/default/api/v1beta2/proton?query=SELECT%20*%20FROM%20taxi_fleet.v_idle_cars%20EMIT%20PERIODIC%201s%20LIMIT%201%20FORMAT%20JSONEachRow" -m 25
+TP_QUERY "SELECT * FROM taxi_fleet.v_idle_cars EMIT PERIODIC 1s LIMIT 1" 25
 ```
 Expected: either no rows (curl returns empty body after timeout) **or** a row with `max_speed_kmh < 5`. Both are valid.
 
@@ -787,19 +802,19 @@ For each panel, copy the `viz_content` SQL, replace `[[ .DB ]]` with `taxi_fleet
 
 ```bash
 # tx-kpi-active / avg / max (same view)
-curl -s "http://localhost:8000/default/api/v1beta2/proton?query=SELECT%20time,%20active_cars,%20avg_speed_kmh,%20max_speed_kmh%20FROM%20taxi_fleet.v_fleet_kpis%20EMIT%20PERIODIC%201s%20LIMIT%201%20FORMAT%20JSONEachRow" -m 15
+TP_QUERY "SELECT time, active_cars, avg_speed_kmh, max_speed_kmh FROM taxi_fleet.v_fleet_kpis EMIT PERIODIC 1s LIMIT 1" 15
 
 # tx-kpi-idle (CTE pattern)
-curl -s --data-urlencode "query=WITH latest AS (SELECT max(time) AS t FROM taxi_fleet.v_idle_cars) SELECT t AS time, count() AS idle FROM taxi_fleet.v_idle_cars, latest WHERE time = t EMIT PERIODIC 1s LIMIT 1 FORMAT JSONEachRow" -m 15 "http://localhost:8000/default/api/v1beta2/proton"
+TP_QUERY "WITH latest AS (SELECT max(time) AS t FROM taxi_fleet.v_idle_cars) SELECT t AS time, count() AS idle FROM taxi_fleet.v_idle_cars, latest WHERE time = t EMIT PERIODIC 1s LIMIT 1" 15
 
 # tx-map (mutable stream)
-curl -s "http://localhost:8000/default/api/v1beta2/proton?query=SELECT%20car_id,%20longitude,%20latitude,%20speed_kmh%20FROM%20table(taxi_fleet.taxi_latest)%20FORMAT%20JSONEachRow"
+TP_QUERY "SELECT car_id, longitude, latitude, speed_kmh FROM table(taxi_fleet.taxi_latest)"
 
 # tx-speed-dist (latest bucket)
-curl -s --data-urlencode "query=WITH latest AS (SELECT max(time) AS t FROM taxi_fleet.v_speed_distribution) SELECT bucket, cars_in_bucket FROM taxi_fleet.v_speed_distribution, latest WHERE time = t ORDER BY bucket EMIT PERIODIC 1s LIMIT 6 FORMAT JSONEachRow" -m 15 "http://localhost:8000/default/api/v1beta2/proton"
+TP_QUERY "WITH latest AS (SELECT max(time) AS t FROM taxi_fleet.v_speed_distribution) SELECT bucket, cars_in_bucket FROM taxi_fleet.v_speed_distribution, latest WHERE time = t ORDER BY bucket EMIT PERIODIC 1s LIMIT 6" 15
 
 # tx-speed-per-car
-curl -s "http://localhost:8000/default/api/v1beta2/proton?query=SELECT%20time,%20car_id,%20avg_speed_kmh%20FROM%20taxi_fleet.v_speed_per_car_1m%20EMIT%20PERIODIC%201s%20LIMIT%2010%20FORMAT%20JSONEachRow" -m 80
+TP_QUERY "SELECT time, car_id, avg_speed_kmh FROM taxi_fleet.v_speed_per_car_1m EMIT PERIODIC 1s LIMIT 10" 80
 ```
 
 Each command should return non-empty JSON (or a clear empty result for `v_idle_cars` if no cars are idle). Any SQL error means the panel will fail to render — fix the JSON and re-install.
@@ -873,7 +888,7 @@ Expected: HTTP 200 or 404 (404 = wasn't installed; both are acceptable starting 
 
 Then drop the database to be thorough:
 ```bash
-curl -s -X POST "http://localhost:8000/default/api/v1beta2/proton" --data-binary "DROP DATABASE IF EXISTS taxi_fleet"
+TP_QUERY "DROP DATABASE IF EXISTS taxi_fleet"
 ```
 
 - [ ] **Step 2: Re-install from scratch**
@@ -895,19 +910,19 @@ Each of these must succeed:
 
 ```bash
 # (a) positions are accumulating
-curl -s "http://localhost:8000/default/api/v1beta2/proton?query=SELECT%20count()%20FROM%20table(taxi_fleet.taxi_positions)%20FORMAT%20JSONEachRow"
+TP_QUERY "SELECT count() FROM table(taxi_fleet.taxi_positions)"
 # Expected: a number > 0
 
 # (b) taxi_latest has exactly num_cars rows
-curl -s "http://localhost:8000/default/api/v1beta2/proton?query=SELECT%20count()%20FROM%20table(taxi_fleet.taxi_latest)%20FORMAT%20JSONEachRow"
+TP_QUERY "SELECT count() FROM table(taxi_fleet.taxi_latest)"
 # Expected: 10
 
 # (c) fleet KPIs reasonable
-curl -s "http://localhost:8000/default/api/v1beta2/proton?query=SELECT%20*%20FROM%20taxi_fleet.v_fleet_kpis%20EMIT%20PERIODIC%201s%20LIMIT%201%20FORMAT%20JSONEachRow" -m 10
+TP_QUERY "SELECT * FROM taxi_fleet.v_fleet_kpis EMIT PERIODIC 1s LIMIT 1" 10
 # Expected: active_cars=10, avg_speed_kmh between 40 and 80
 
 # (d) per-car 1m view has 10 rows
-curl -s "http://localhost:8000/default/api/v1beta2/proton?query=SELECT%20count_distinct(car_id)%20FROM%20taxi_fleet.v_speed_per_car_1m%20EMIT%20PERIODIC%201s%20LIMIT%201%20FORMAT%20JSONEachRow" -m 10
+TP_QUERY "SELECT count_distinct(car_id) FROM taxi_fleet.v_speed_per_car_1m EMIT PERIODIC 1s LIMIT 1" 10
 # Expected: 10
 ```
 
@@ -923,7 +938,7 @@ curl -X POST "http://localhost:8000/default/api/v1beta2/apps/install" \
 ```
 Expected: HTTP 200, then after ~10 seconds:
 ```bash
-curl -s "http://localhost:8000/default/api/v1beta2/proton?query=SELECT%20count()%20FROM%20table(taxi_fleet.taxi_latest)%20FORMAT%20JSONEachRow"
+TP_QUERY "SELECT count() FROM table(taxi_fleet.taxi_latest)"
 ```
 Expected: 50.
 
