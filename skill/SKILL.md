@@ -437,6 +437,79 @@ config:
 TTL to_datetime(_tp_time) + INTERVAL {{ .Config.retention_hours }} HOUR
 ```
 
+## Hiding Secrets in Python External Streams
+
+Marking a config key `secret: true` only masks it **in the install UI**. Once the value is rendered into a DDL file via `{{ .Config.<key> }}`, it is stored verbatim in the resource definition — anyone with `SHOW CREATE EXTERNAL STREAM` privilege then sees it in cleartext. This matters most for Python external streams, where the `$$ ... $$` body is the natural place to put credentials but is also the most exposed surface.
+
+**Pattern:** keep the secret out of the Python body by putting it in a `named_collection`, then have Proton inject it into the stream's `init_function_parameters` setting at runtime. A small `_tp_init()` hook parses the JSON and stashes the values in module globals that the read function reads.
+
+### 1. Declare the named collection (a DDL resource)
+
+```sql
+-- ddl/000_creds_nc.sql
+CREATE NAMED COLLECTION IF NOT EXISTS aws_cost_creds AS
+  init_function_parameters = '{"access_key_id":{{ .Config.aws_access_key_id | quote }},"secret_access_key":{{ .Config.aws_secret_access_key | quote }}}'
+  NOT OVERRIDABLE;
+```
+
+- **`{{ ... | quote }}`** is the sprig `quote` function — it wraps the value in double quotes and escapes any internal `"` or `\`. Use it for every interpolated secret to keep the resulting blob valid JSON regardless of the raw value.
+- **`NOT OVERRIDABLE`** prevents a caller from passing a different value at query time.
+- **Named collections are global** — they live outside any database. Pick a name that includes your app's `db_name` (e.g. `aws_cost_creds`) so two apps on the same cluster don't collide. **Do not template it with `{{ .DB }}`** — the manifest's `name:` field is not template-rendered, so the literal SQL identifier must match the literal manifest `name:`. (This is the same convention as UDFs.)
+
+Manifest entry — must be ordered **before** any stream that references it. The `name:` must match the literal SQL identifier exactly:
+
+```yaml
+resources:
+  - file: ddl/000_creds_nc.sql
+    type: named_collection
+    name: aws_cost_creds
+  - file: ddl/001_poller.sql
+    type: external_stream
+    name: poller
+```
+
+### 2. Reference the collection from the Python external stream
+
+```sql
+-- ddl/001_poller.sql
+CREATE EXTERNAL STREAM IF NOT EXISTS {{ .DB }}.poller (...)
+AS $$
+import json
+
+# Populated by _tp_init() at session start. Leaving the literals empty here
+# is what keeps secrets out of SHOW CREATE EXTERNAL STREAM.
+AWS_ACCESS_KEY_ID = ""
+AWS_SECRET_ACCESS_KEY = ""
+
+def _tp_init(params):
+    global AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
+    cfg = json.loads(params)
+    AWS_ACCESS_KEY_ID = cfg["access_key_id"]
+    AWS_SECRET_ACCESS_KEY = cfg["secret_access_key"]
+
+def poll():
+    # AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY are available here
+    ...
+$$
+SETTINGS type='python', mode='streaming', read_function_name='poll',
+         init_function_name='_tp_init', named_collection='aws_cost_creds';
+```
+
+### How it works
+
+1. The installer creates the named collection with the JSON blob. The collection lives outside the stream definition.
+2. At storage construction time, Proton's `updateSettingsByNamedCollection` merges the collection's `init_function_parameters` into the in-memory `ExternalStreamSettings`, but `SHOW CREATE EXTERNAL STREAM` re-serializes the **original** parsed AST — so all it shows is `SETTINGS … named_collection='<db>_creds'`. The keys never appear.
+3. When a query starts a read session, Proton calls `_tp_init(params)` once with the JSON string from the collection. The init function shares the module's global namespace with the read function, so the read function picks up the credentials.
+
+### Caveats
+
+- **`system.named_collections` still exposes the blob.** Reading the `collection` map or `create_query` column from `system.named_collections` returns the raw JSON, since Proton only auto-masks the literal key `password`. Restrict that privilege to operators. Selecting just the `name` column is safe and works for discovery (`SELECT name FROM system.named_collections`).
+- **`init_function_parameters` is one string.** Pack multiple secrets as JSON (as above). For a single value, a plain string is fine.
+- **`init_function_name` and `init_function_parameters` must both be set** — Proton throws `INVALID_SETTING_VALUE` if you set parameters without a function name.
+- **Don't put non-secret config in the collection.** Keep things like region lists, intervals, and toggles as ordinary `{{ .Config.* }}` template substitutions — they are easier to read in the DDL and contribute nothing to the SHOW CREATE risk.
+- **The init hook runs per session, not once globally.** It's cheap (one JSON parse), but if you do anything expensive there, scope it behind a `if not _ready: …` guard.
+- **Named-collection values are snapshotted at stream-create time.** `ALTER NAMED COLLECTION` updates `system.named_collections`, but an *existing* external stream keeps using the value it captured at `CREATE EXTERNAL STREAM` time — proton calls `updateSettingsByNamedCollection` only during storage construction. `ALTER STREAM … MODIFY SETTING` on an external stream is accepted by the engine, but the Python body (the `$$ … $$` script) is bound to the storage via `exec_script` at create time, *not* via `SETTINGS`, so no `ALTER … MODIFY SETTING` can rewrite it. To rotate credentials or change the body you must `DROP STREAM` and re-create. Plan for that in your install/upgrade flow.
+
 ## Common Mistakes
 
 ### `CREATE` without `IF NOT EXISTS` (breaks upgrade)

@@ -80,6 +80,27 @@ Or from the repo root: `make build APP=aws-cost`.
 
 S3 bucket sizes are refreshed once per hour internally (the daily CloudWatch metric changes at most once a day, so faster polling is wasted CloudWatch calls).
 
+## Credentials handling
+
+Starting in v0.3.1, the two AWS keys you supply at install time are stored in a Proton **named collection** (`aws_cost_creds`) rather than rendered into the Python stream body. This keeps them out of `SHOW CREATE EXTERNAL STREAM aws_cost.aws_resource_poller` (and the price poller). The streams reference the collection via `SETTINGS named_collection='aws_cost_creds'`, and a `_tp_init()` hook injects the values at session start.
+
+**Privileges the installing principal needs** (in addition to the usual create-stream grants):
+
+- `CREATE NAMED COLLECTION` — to create `aws_cost_creds`
+- `NAMED COLLECTION` on `aws_cost_creds` — to attach it to the two external streams
+
+**Where the secrets are still visible:** `system.named_collections` returns the raw JSON blob (Proton auto-masks only the literal key `password`). Restrict `SELECT` on that table to operators. `SELECT name FROM system.named_collections` is safe and works for discovery.
+
+**Upgrading from v0.3.0** (which still has credentials in the Python body): re-installing the package will create `aws_cost_creds` but the existing streams keep their old bodies because `CREATE EXTERNAL STREAM IF NOT EXISTS` is a no-op. `ALTER STREAM ... MODIFY SETTING` can't rewrite the `$$ ... $$` Python body either. Drop the two pollers and reinstall:
+
+```sql
+DROP STREAM aws_cost.aws_resource_poller;
+DROP STREAM aws_cost.aws_price_poller;
+-- then reinstall the app
+```
+
+**Rotating credentials later:** `ALTER NAMED COLLECTION aws_cost_creds SET init_function_parameters='{"access_key_id":"…","secret_access_key":"…"}'` updates `system.named_collections`, but the two streams captured the old value at create time (Proton merges the collection into stream settings only during storage construction). To actually rotate, drop and re-create the two streams after the `ALTER NAMED COLLECTION`.
+
 ## IAM permissions required
 
 The IAM principal needs:
