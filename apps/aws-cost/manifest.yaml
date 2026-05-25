@@ -1,7 +1,7 @@
 package_format_version: 1
 id: io.timeplus.aws-cost
 name: AWS Resource Cost Monitor
-version: 0.3.0
+version: 0.3.1
 author: Timeplus
 description: >
   Realtime AWS resource usage and cost monitoring. Polls EC2 instances,
