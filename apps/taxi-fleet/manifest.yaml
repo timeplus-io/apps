@@ -1,0 +1,31 @@
+package_format_version: 1
+id: io.timeplus.taxi-fleet
+name: NYC Taxi Fleet Analytics
+version: 0.1.0
+author: Timeplus
+description: >
+  Real-time NYC taxi fleet analytics powered by the timeplus-taxi-simulator
+  Python package — live map, speed analytics, idle detection, fleet KPIs.
+db_name: taxi_fleet
+categories:
+  - analytics
+  - demo
+
+config:
+  - key: num_cars
+    type: integer
+    required: false
+    default: "10"
+    description: Number of simulated taxis (1-500 recommended).
+  - key: speed_kmh
+    type: float
+    required: false
+    default: "60.0"
+    description: Base vehicle speed in km/h. Each car gets +/-20% variation.
+
+python_packages:
+  - timeplus-taxi-simulator>=0.1.0
+
+resources: []
+
+dashboards: []
