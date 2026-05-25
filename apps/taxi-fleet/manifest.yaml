@@ -26,6 +26,9 @@ config:
 python_packages:
   - timeplus-taxi-simulator>=0.1.0
 
-resources: []
+resources:
+  - file: ddl/001_taxi_feed.sql
+    type: external_stream
+    name: taxi_feed
 
 dashboards: []
