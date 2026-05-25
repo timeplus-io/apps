@@ -32,6 +32,15 @@ Define it once at the start of each terminal session. Then `TP_QUERY "SELECT 1"`
 
 **Why this matters:** The plain `?query=...` URL form returns `404 page not found` on this Timeplus build — only the `/queries` JSON-POST endpoint works.
 
+**Re-install pattern.** `make install` (POST to `/apps/install`) **fails with HTTP 500** if the app is already installed and the manifest version hasn't been bumped. For iterative development across these tasks, the cleanest pattern is to uninstall first:
+
+```bash
+curl -s -X DELETE "http://localhost:8000/default/api/v1beta2/apps/io.timeplus.taxi-fleet"
+make -C apps/taxi-fleet install
+```
+
+This drops the `taxi_fleet` database and any in-flight data, then re-installs from scratch. Lost data is fine — the simulator backfills within seconds. The same pattern is used in Task 8's clean-slate verification.
+
 ---
 
 ## File Structure
