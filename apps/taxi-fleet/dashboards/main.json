@@ -103,7 +103,7 @@
     "description": "",
     "position": { "x": 0, "y": 3, "w": 8, "h": 6, "nextX": 8, "nextY": 9 },
     "viz_type": "chart",
-    "viz_content": "SELECT car_id, longitude, latitude, speed_kmh FROM table([[ .DB ]].taxi_latest)",
+    "viz_content": "SELECT car_id, longitude, latitude, speed_kmh FROM [[ .DB ]].taxi_latest",
     "viz_config": {
       "chartType": "geo",
       "config": {
