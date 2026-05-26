@@ -166,7 +166,7 @@ Simple Markdown panel. Markdown source lives in `viz_config.mdString`. Can optio
 ```
 
 - `viz_config.mdString` — Markdown source with optional `{{column_name}}` placeholders
-- `viz_content` — SQL query; leave `""` if no interpolation needed
+- `viz_content` — SQL query. **Must not be empty even for static text** — set it to `"SELECT 1"` if the markdown has no interpolation. An empty string leaves the panel stuck loading.
 - Interpolation uses only the **last row** of the query result
 
 ---
@@ -174,6 +174,8 @@ Simple Markdown panel. Markdown source lives in `viz_config.mdString`. Can optio
 ## viz_type: `"chart"` — `chartType: "md"` (Markdown viz)
 
 A more powerful Markdown panel that runs a SQL query and interpolates column values into the template. Use this instead of `viz_type: "markdown"` when you need key-based lookups or streaming update modes.
+
+**Static markdown still needs a query.** Both `viz_type: "markdown"` and `chartType: "md"` panels treat `viz_content` as required — an empty string leaves the panel stuck on a loading state. For pure-text headers/instructions with no interpolation, set `"viz_content": "SELECT 1"` as a no-op stub.
 
 ```json
 {
