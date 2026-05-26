@@ -166,7 +166,7 @@ Simple Markdown panel. Markdown source lives in `viz_config.mdString`. Can optio
 ```
 
 - `viz_config.mdString` — Markdown source with optional `{{column_name}}` placeholders
-- `viz_content` — SQL query; leave `""` if no interpolation needed
+- `viz_content` — SQL query. **Must not be empty even for static text** — set it to `"SELECT 1"` if the markdown has no interpolation. An empty string leaves the panel stuck loading.
 - Interpolation uses only the **last row** of the query result
 
 ---
@@ -174,6 +174,8 @@ Simple Markdown panel. Markdown source lives in `viz_config.mdString`. Can optio
 ## viz_type: `"chart"` — `chartType: "md"` (Markdown viz)
 
 A more powerful Markdown panel that runs a SQL query and interpolates column values into the template. Use this instead of `viz_type: "markdown"` when you need key-based lookups or streaming update modes.
+
+**Static markdown still needs a query.** Both `viz_type: "markdown"` and `chartType: "md"` panels treat `viz_content` as required — an empty string leaves the panel stuck on a loading state. For pure-text headers/instructions with no interpolation, set `"viz_content": "SELECT 1"` as a no-op stub.
 
 ```json
 {
@@ -491,7 +493,7 @@ Map scatter chart. Requires two numeric columns for longitude and latitude.
     "colors": ["#ED64A6", "#F0BE3E", "#DA4B36"],
     "opacity": 0.8,
     "zoom": 4,
-    "center": [0, 20],
+    "center": [20, 0],
     "size": {
       "key": "",
       "value": 4,
@@ -507,12 +509,26 @@ Map scatter chart. Requires two numeric columns for longitude and latitude.
 | `latitude` | string | Column name for latitude (numeric) |
 | `color` | string | Column for dot coloring |
 | `visibleColumns` | string[] | Columns shown in the tooltip popup |
-| `zoom` | number | Initial map zoom level |
-| `center` | [lon, lat] | Initial map center |
+| `zoom` | number | Initial map zoom level (typical range 1–18) |
+| `center` | [lat, lon] | Initial map center — **latitude first, then longitude** (Vistral convention; do NOT swap). The map opens here on first load and stays put — there's no auto-fit-to-data option exposed. Pick values inside your data's bounding box. |
 | `opacity` | number | Dot opacity 0–1 |
 | `size.key` | string | Column to scale dot size by (empty = fixed size) |
 | `size.value` | number | Fixed dot size (when `size.key` is empty) |
 | `size.range` | [min, max] | Min/max dot size when `size.key` is set |
+
+**Picking `center` and `zoom`.** The geo panel has no `autoFit` option in the dashboard JSON — the initial view is fixed. Compute it from your data:
+
+```sql
+-- Find the midpoint of your data's bounding box
+SELECT
+  round((min(latitude)  + max(latitude))  / 2, 4) AS center_lat,
+  round((min(longitude) + max(longitude)) / 2, 4) AS center_lon
+FROM table(<your_mutable_stream>);
+```
+
+Then set `"center": [<center_lat>, <center_lon>]` (lat first!) and pick `zoom` so the bounding box fits comfortably. Rough rule: each step of zoom halves the visible extent. Zoom 11 ≈ 50 km wide, 12 ≈ 25 km, 13 ≈ 12 km, 14 ≈ 6 km.
+
+**Common bug:** swapping `[lat, lon]` ↔ `[lon, lat]` lands you on the opposite side of the world. If your map opens far from your data, that's the cause.
 
 ---
 

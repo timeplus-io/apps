@@ -1,0 +1,122 @@
+[
+  {
+    "id": "tx-header",
+    "title": "About",
+    "description": "",
+    "position": { "x": 0, "y": 0, "w": 12, "h": 2, "nextX": 12, "nextY": 1 },
+    "viz_type": "chart",
+    "viz_content": "SELECT 1",
+    "viz_config": {
+      "chartType": "md",
+      "config": {
+        "content": "# NYC Taxi Fleet Analytics\n\nReal-time telemetry from the `timeplus-taxi-simulator` Python package. Map shows latest position of each taxi; KPIs and charts update on a 5-second tumbling window.",
+        "updateMode": "all",
+        "updateKey": ""
+      }
+    }
+  },
+  {
+    "id": "tx-kpi-active",
+    "title": "Active cars",
+    "description": "",
+    "position": { "x": 0, "y": 1, "w": 4, "h": 2, "nextX": 4, "nextY": 3 },
+    "viz_type": "chart",
+    "viz_content": "SELECT time, active_cars FROM [[ .DB ]].v_fleet_kpis",
+    "viz_config": {
+      "chartType": "singleValue",
+      "config": {
+        "value": "active_cars",
+        "color": "blue",
+        "sparkline": false,
+        "delta": false,
+        "fontSize": 64,
+        "fractionDigits": 0,
+        "unit": { "position": "right", "value": "" }
+      }
+    }
+  },
+  {
+    "id": "tx-kpi-avg-speed",
+    "title": "Avg speed",
+    "description": "",
+    "position": { "x": 4, "y": 1, "w": 4, "h": 2, "nextX": 8, "nextY": 3 },
+    "viz_type": "chart",
+    "viz_content": "SELECT time, avg_speed_kmh FROM [[ .DB ]].v_fleet_kpis",
+    "viz_config": {
+      "chartType": "singleValue",
+      "config": {
+        "value": "avg_speed_kmh",
+        "color": "green",
+        "sparkline": true,
+        "sparklineColor": "green",
+        "delta": false,
+        "fontSize": 64,
+        "fractionDigits": 1,
+        "unit": { "position": "right", "value": "km/h" }
+      }
+    }
+  },
+  {
+    "id": "tx-kpi-max-speed",
+    "title": "Max speed",
+    "description": "",
+    "position": { "x": 8, "y": 1, "w": 4, "h": 2, "nextX": 12, "nextY": 3 },
+    "viz_type": "chart",
+    "viz_content": "SELECT time, max_speed_kmh FROM [[ .DB ]].v_fleet_kpis",
+    "viz_config": {
+      "chartType": "singleValue",
+      "config": {
+        "value": "max_speed_kmh",
+        "color": "orange",
+        "sparkline": true,
+        "sparklineColor": "orange",
+        "delta": false,
+        "fontSize": 64,
+        "fractionDigits": 1,
+        "unit": { "position": "right", "value": "km/h" }
+      }
+    }
+  },
+  {
+    "id": "tx-map",
+    "title": "Live fleet map",
+    "description": "",
+    "position": { "x": 0, "y": 3, "w": 8, "h": 6, "nextX": 8, "nextY": 9 },
+    "viz_type": "chart",
+    "viz_content": "SELECT car_id, longitude, latitude, speed_kmh FROM [[ .DB ]].taxi_latest",
+    "viz_config": {
+      "chartType": "geo",
+      "config": {
+        "longitude": "longitude",
+        "latitude": "latitude",
+        "color": "car_id",
+        "updateMode": "key",
+        "updateKey": "car_id",
+        "visibleColumns": ["car_id", "speed_kmh"],
+        "opacity": 0.9,
+        "zoom": 12,
+        "center": [40.749, -73.985],
+        "size": { "key": "", "value": 6, "range": [4, 12] }
+      }
+    }
+  },
+  {
+    "id": "tx-speed-dist",
+    "title": "Speed distribution (km/h)",
+    "description": "",
+    "position": { "x": 8, "y": 3, "w": 4, "h": 6, "nextX": 12, "nextY": 9 },
+    "viz_type": "chart",
+    "viz_content": "WITH latest AS (SELECT max(time) AS t FROM [[ .DB ]].v_speed_distribution) SELECT bucket, cars_in_bucket FROM [[ .DB ]].v_speed_distribution, latest WHERE time = t ORDER BY bucket",
+    "viz_config": {
+      "chartType": "bar",
+      "config": {
+        "xAxis": "bucket",
+        "yAxis": "cars_in_bucket",
+        "color": "",
+        "updateMode": "all",
+        "xTitle": "Speed bucket",
+        "yTitle": "Cars"
+      }
+    }
+  }
+]
