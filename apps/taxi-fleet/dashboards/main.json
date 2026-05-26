@@ -83,7 +83,7 @@
     "description": "",
     "position": { "x": 9, "y": 1, "w": 3, "h": 2, "nextX": 12, "nextY": 3 },
     "viz_type": "chart",
-    "viz_content": "WITH latest AS (SELECT max(time) AS t FROM [[ .DB ]].v_idle_cars) SELECT t AS time, count() AS idle FROM [[ .DB ]].v_idle_cars, latest WHERE time = t",
+    "viz_content": "WITH per_car AS (SELECT window_start, car_id, max(speed_kmh) AS max_v FROM tumble([[ .DB ]].taxi_positions, 10s) GROUP BY window_start, car_id) SELECT window_start AS time, count_if(max_v < 5) AS idle FROM per_car GROUP BY window_start",
     "viz_config": {
       "chartType": "singleValue",
       "config": {
