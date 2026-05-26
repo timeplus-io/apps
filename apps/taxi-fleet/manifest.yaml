@@ -55,4 +55,7 @@ resources:
     type: view
     name: v_idle_cars
 
-dashboards: []
+dashboards:
+  - file: dashboards/main.json
+    name: Taxi Fleet
+    description: Live map, speed analytics, idle detection, and fleet KPIs
