@@ -114,8 +114,8 @@
         "updateKey": "car_id",
         "visibleColumns": ["car_id", "speed_kmh"],
         "opacity": 0.9,
-        "zoom": 11,
-        "center": [-74.0, 40.72],
+        "zoom": 12,
+        "center": [-73.985, 40.749],
         "size": { "key": "", "value": 6, "range": [4, 12] }
       }
     }
