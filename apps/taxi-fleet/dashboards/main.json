@@ -118,23 +118,5 @@
         "yTitle": "Cars"
       }
     }
-  },
-  {
-    "id": "tx-speed-per-car",
-    "title": "Avg speed per car (1-minute windows)",
-    "description": "",
-    "position": { "x": 0, "y": 9, "w": 12, "h": 4, "nextX": 12, "nextY": 13 },
-    "viz_type": "chart",
-    "viz_content": "SELECT time, car_id, avg_speed_kmh FROM [[ .DB ]].v_speed_per_car_1m",
-    "viz_config": {
-      "chartType": "line",
-      "config": {
-        "xAxis": "time",
-        "yAxis": "avg_speed_kmh",
-        "color": "car_id",
-        "xRange": "Infinity",
-        "yTitle": "km/h"
-      }
-    }
   }
 ]

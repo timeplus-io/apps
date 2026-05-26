@@ -45,9 +45,6 @@ resources:
   - file: ddl/006_v_fleet_kpis.sql
     type: view
     name: v_fleet_kpis
-  - file: ddl/007_v_speed_per_car_1m.sql
-    type: view
-    name: v_speed_per_car_1m
   - file: ddl/008_v_speed_distribution.sql
     type: view
     name: v_speed_distribution
