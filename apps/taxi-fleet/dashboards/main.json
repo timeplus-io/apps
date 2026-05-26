@@ -115,7 +115,7 @@
         "visibleColumns": ["car_id", "speed_kmh"],
         "opacity": 0.9,
         "zoom": 12,
-        "center": [-73.985, 40.749],
+        "center": [40.749, -73.985],
         "size": { "key": "", "value": 6, "range": [4, 12] }
       }
     }
