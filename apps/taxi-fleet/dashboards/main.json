@@ -19,7 +19,7 @@
     "id": "tx-kpi-active",
     "title": "Active cars",
     "description": "",
-    "position": { "x": 0, "y": 1, "w": 3, "h": 2, "nextX": 3, "nextY": 3 },
+    "position": { "x": 0, "y": 1, "w": 4, "h": 2, "nextX": 4, "nextY": 3 },
     "viz_type": "chart",
     "viz_content": "SELECT time, active_cars FROM [[ .DB ]].v_fleet_kpis",
     "viz_config": {
@@ -39,7 +39,7 @@
     "id": "tx-kpi-avg-speed",
     "title": "Avg speed",
     "description": "",
-    "position": { "x": 3, "y": 1, "w": 3, "h": 2, "nextX": 6, "nextY": 3 },
+    "position": { "x": 4, "y": 1, "w": 4, "h": 2, "nextX": 8, "nextY": 3 },
     "viz_type": "chart",
     "viz_content": "SELECT time, avg_speed_kmh FROM [[ .DB ]].v_fleet_kpis",
     "viz_config": {
@@ -60,7 +60,7 @@
     "id": "tx-kpi-max-speed",
     "title": "Max speed",
     "description": "",
-    "position": { "x": 6, "y": 1, "w": 3, "h": 2, "nextX": 9, "nextY": 3 },
+    "position": { "x": 8, "y": 1, "w": 4, "h": 2, "nextX": 12, "nextY": 3 },
     "viz_type": "chart",
     "viz_content": "SELECT time, max_speed_kmh FROM [[ .DB ]].v_fleet_kpis",
     "viz_config": {
@@ -74,26 +74,6 @@
         "fontSize": 64,
         "fractionDigits": 1,
         "unit": { "position": "right", "value": "km/h" }
-      }
-    }
-  },
-  {
-    "id": "tx-kpi-idle",
-    "title": "Idle cars (last 10s)",
-    "description": "",
-    "position": { "x": 9, "y": 1, "w": 3, "h": 2, "nextX": 12, "nextY": 3 },
-    "viz_type": "chart",
-    "viz_content": "WITH per_car AS (SELECT window_start, car_id, max(speed_kmh) AS max_v FROM tumble([[ .DB ]].taxi_positions, 10s) GROUP BY window_start, car_id) SELECT window_start AS time, count_if(max_v < 5) AS idle FROM per_car GROUP BY window_start",
-    "viz_config": {
-      "chartType": "singleValue",
-      "config": {
-        "value": "idle",
-        "color": "red",
-        "sparkline": false,
-        "delta": false,
-        "fontSize": 64,
-        "fractionDigits": 0,
-        "unit": { "position": "right", "value": "" }
       }
     }
   },
@@ -124,7 +104,7 @@
     "id": "tx-speed-dist",
     "title": "Speed distribution (km/h)",
     "description": "",
-    "position": { "x": 8, "y": 3, "w": 4, "h": 3, "nextX": 12, "nextY": 6 },
+    "position": { "x": 8, "y": 3, "w": 4, "h": 6, "nextX": 12, "nextY": 9 },
     "viz_type": "chart",
     "viz_content": "WITH latest AS (SELECT max(time) AS t FROM [[ .DB ]].v_speed_distribution) SELECT bucket, cars_in_bucket FROM [[ .DB ]].v_speed_distribution, latest WHERE time = t ORDER BY bucket",
     "viz_config": {
@@ -136,22 +116,6 @@
         "updateMode": "all",
         "xTitle": "Speed bucket",
         "yTitle": "Cars"
-      }
-    }
-  },
-  {
-    "id": "tx-idle-table",
-    "title": "Idle cars",
-    "description": "",
-    "position": { "x": 8, "y": 6, "w": 4, "h": 3, "nextX": 12, "nextY": 9 },
-    "viz_type": "chart",
-    "viz_content": "SELECT car_id, max_speed_kmh, longitude, latitude FROM [[ .DB ]].v_idle_cars",
-    "viz_config": {
-      "chartType": "table",
-      "config": {
-        "tableWrap": false,
-        "updateMode": "all",
-        "updateKey": ""
       }
     }
   },

@@ -51,11 +51,8 @@ resources:
   - file: ddl/008_v_speed_distribution.sql
     type: view
     name: v_speed_distribution
-  - file: ddl/009_v_idle_cars.sql
-    type: view
-    name: v_idle_cars
 
 dashboards:
   - file: dashboards/main.json
     name: Taxi Fleet
-    description: Live map, speed analytics, idle detection, and fleet KPIs
+    description: Live map, speed analytics, and fleet KPIs
