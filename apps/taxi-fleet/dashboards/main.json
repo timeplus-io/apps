@@ -133,6 +133,7 @@
         "xAxis": "bucket",
         "yAxis": "cars_in_bucket",
         "color": "",
+        "updateMode": "all",
         "xTitle": "Speed bucket",
         "yTitle": "Cars"
       }
@@ -148,7 +149,9 @@
     "viz_config": {
       "chartType": "table",
       "config": {
-        "tableWrap": false
+        "tableWrap": false,
+        "updateMode": "all",
+        "updateKey": ""
       }
     }
   },
