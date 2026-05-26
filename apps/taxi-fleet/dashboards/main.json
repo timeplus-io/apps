@@ -3,7 +3,7 @@
     "id": "tx-header",
     "title": "About",
     "description": "",
-    "position": { "x": 0, "y": 0, "w": 12, "h": 1, "nextX": 12, "nextY": 1 },
+    "position": { "x": 0, "y": 0, "w": 12, "h": 2, "nextX": 12, "nextY": 1 },
     "viz_type": "chart",
     "viz_content": "SELECT 1",
     "viz_config": {
