@@ -244,13 +244,13 @@
         "description": "Cumulative PnL, Sharpe and hit rate \u2014 pick the alpha via the dropdown"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.8/alpha-101.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.9/alpha-101.tpapp"
   },
   {
     "package_format_version": 1,
     "id": "io.timeplus.aws-cost",
     "name": "AWS Resource Cost Monitor",
-    "version": "0.3.0",
+    "version": "0.3.1",
     "author": "Timeplus",
     "description": "Realtime AWS resource usage and cost monitoring. Polls EC2 instances, EBS volumes, and S3 buckets across configured regions, joins live inventory with AWS On-Demand pricing, and breaks down hourly spend by service, region, and creator. Requires an IAM principal with: ec2:DescribeInstances, ec2:DescribeVolumes, s3:ListAllMyBuckets, cloudwatch:GetMetricStatistics, cloudtrail:LookupEvents, pricing:GetProducts.\n",
     "db_name": "aws_cost",
@@ -312,6 +312,11 @@
       "boto3>=1.34.0"
     ],
     "resources": [
+      {
+        "file": "ddl/000_aws_creds_nc.sql",
+        "type": "named_collection",
+        "name": "aws_cost_creds"
+      },
       {
         "file": "ddl/001_aws_resource_poller.sql",
         "type": "external_stream",
@@ -405,7 +410,7 @@
         "description": "Realtime AWS spend by service, region, and creator"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.8/aws-cost.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.9/aws-cost.tpapp"
   },
   {
     "package_format_version": 1,
@@ -503,7 +508,7 @@
         "description": "Real-time post volume, engagement, language breakdown, and live feed"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.8/bluesky.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.9/bluesky.tpapp"
   },
   {
     "package_format_version": 1,
@@ -563,7 +568,7 @@
         "description": "Real-time complex event processing visualization"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.8/cep.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.9/cep.tpapp"
   },
   {
     "package_format_version": 1,
@@ -781,7 +786,7 @@
         "description": "Real-time spike ratio monitoring, baseline tables, and live traffic"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.8/cisco-asa-ddos.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.9/cisco-asa-ddos.tpapp"
   },
   {
     "package_format_version": 1,
@@ -968,7 +973,7 @@
         "name": "spending_alert"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.8/game-feature-pipeline.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.9/game-feature-pipeline.tpapp"
   },
   {
     "package_format_version": 1,
@@ -1019,7 +1024,7 @@
         "description": "Real-time view of GitHub public events"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.8/github.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.9/github.tpapp"
   },
   {
     "package_format_version": 1,
@@ -1105,7 +1110,7 @@
         "name": "get_hn_post"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.8/hacker-news.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.9/hacker-news.tpapp"
   },
   {
     "package_format_version": 1,
@@ -1276,7 +1281,7 @@
         "description": "Real-time trading metrics \u2014 participation rate and P&L"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.8/invest-insights.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.9/invest-insights.tpapp"
   },
   {
     "package_format_version": 1,
@@ -1425,6 +1430,84 @@
         "description": "Real-time OHLC, returns, and RSI for Coinbase crypto pairs"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.8/market-data.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.9/market-data.tpapp"
+  },
+  {
+    "package_format_version": 1,
+    "id": "io.timeplus.taxi-fleet",
+    "name": "NYC Taxi Fleet Analytics",
+    "version": "0.1.0",
+    "author": "Timeplus",
+    "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJiZyIgeDE9IjAiIHkxPSIwIiB4Mj0iNDgiIHkyPSI0OCIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNGQ0QzNEQiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiNGNTlFMEIiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHJ4PSIxMSIgZmlsbD0idXJsKCNiZykiLz48cmVjdCB4PSIyMCIgeT0iMTEiIHdpZHRoPSI4IiBoZWlnaHQ9IjMiIHJ4PSIwLjUiIGZpbGw9IndoaXRlIi8+PHBhdGggZD0iTSA4IDI4IEwgMTAgMjAgUSAxMSAxOCAxNCAxOCBMIDM0IDE4IFEgMzcgMTggMzggMjAgTCA0MCAyOCBMIDQwIDM0IEwgMzYgMzQgTCAzNiAzMiBMIDEyIDMyIEwgMTIgMzQgTCA4IDM0IFoiIGZpbGw9IndoaXRlIi8+PHBhdGggZD0iTSAxMyAyNiBMIDE1IDIwIEwgMzMgMjAgTCAzNSAyNiBaIiBmaWxsPSIjMEYxNzJBIiBvcGFjaXR5PSIwLjg1Ii8+PGxpbmUgeDE9IjI0IiB5MT0iMjAiIHgyPSIyNCIgeTI9IjI3IiBzdHJva2U9IiMwRjE3MkEiIHN0cm9rZS13aWR0aD0iMC42IiBvcGFjaXR5PSIwLjUiLz48Y2lyY2xlIGN4PSIxNSIgY3k9IjMzIiByPSIzIiBmaWxsPSIjMEYxNzJBIi8+PGNpcmNsZSBjeD0iMzMiIGN5PSIzMyIgcj0iMyIgZmlsbD0iIzBGMTcyQSIvPjxjaXJjbGUgY3g9IjE1IiBjeT0iMzMiIHI9IjEiIGZpbGw9IiM5NEEzQjgiLz48Y2lyY2xlIGN4PSIzMyIgY3k9IjMzIiByPSIxIiBmaWxsPSIjOTRBM0I4Ii8+PC9zdmc+",
+    "description": "Real-time NYC taxi fleet analytics powered by the timeplus-taxi-simulator Python package \u2014 live map and fleet speed KPIs.\n",
+    "db_name": "taxi_fleet",
+    "categories": [
+      "analytics",
+      "demo"
+    ],
+    "config": [
+      {
+        "key": "num_cars",
+        "type": "integer",
+        "required": false,
+        "default": "10",
+        "description": "Number of simulated taxis (1-500 recommended)."
+      },
+      {
+        "key": "speed_kmh",
+        "type": "float",
+        "required": false,
+        "default": "60.0",
+        "description": "Base vehicle speed in km/h. Each car gets +/-20% variation."
+      }
+    ],
+    "python_packages": [
+      "timeplus-taxi-simulator>=0.1.0"
+    ],
+    "resources": [
+      {
+        "file": "ddl/001_taxi_feed.sql",
+        "type": "external_stream",
+        "name": "taxi_feed"
+      },
+      {
+        "file": "ddl/002_taxi_positions.sql",
+        "type": "stream",
+        "name": "taxi_positions"
+      },
+      {
+        "file": "ddl/003_mv_taxi_positions.sql",
+        "type": "materialized_view",
+        "name": "mv_taxi_positions"
+      },
+      {
+        "file": "ddl/004_taxi_latest.sql",
+        "type": "mutable_stream",
+        "name": "taxi_latest"
+      },
+      {
+        "file": "ddl/005_mv_taxi_latest.sql",
+        "type": "materialized_view",
+        "name": "mv_taxi_latest"
+      },
+      {
+        "file": "ddl/006_v_fleet_kpis.sql",
+        "type": "view",
+        "name": "v_fleet_kpis"
+      },
+      {
+        "file": "ddl/008_v_speed_distribution.sql",
+        "type": "view",
+        "name": "v_speed_distribution"
+      }
+    ],
+    "dashboards": [
+      {
+        "file": "dashboards/main.json",
+        "name": "Taxi Fleet",
+        "description": "Live map, speed analytics, and fleet KPIs"
+      }
+    ],
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.4.9/taxi-fleet.tpapp"
   }
 ]
