@@ -1,0 +1,114 @@
+[
+  {
+    "id": "geo-md-header",
+    "title": "About",
+    "description": "",
+    "position": { "x": 0, "y": 0, "w": 12, "h": 2, "nextX": 12, "nextY": 1 },
+    "viz_type": "chart",
+    "viz_content": "SELECT 1",
+    "viz_config": {
+      "chartType": "md",
+      "config": {
+        "content": "# Geo IP Lookup\n\nType any IPv4 address in the input below to look it up in the dbip city-IPv4 dataset. The lookup uses an `IP_TRIE` dictionary for sub-millisecond response.\n\nTry: `140.82.112.4` (GitHub), `8.8.8.8` (Google DNS), `1.1.1.1` (Cloudflare DNS), `52.94.236.248` (AWS).\n\n_First lookup after install can take ~30s while the trie loads ~3M ranges; subsequent lookups are instant._",
+        "updateMode": "all",
+        "updateKey": ""
+      }
+    }
+  },
+  {
+    "id": "geo-input-ip",
+    "title": "IP address",
+    "description": "",
+    "position": { "x": 0, "y": 2, "w": 12, "h": 1, "nextX": 12, "nextY": 3 },
+    "viz_type": "control",
+    "viz_content": "",
+    "viz_config": {
+      "controlType": "text_input",
+      "config": {
+        "variable": "ip_address",
+        "defaultValue": "140.82.112.4",
+        "placeholder": "Enter an IPv4 address"
+      }
+    }
+  },
+  {
+    "id": "geo-result-table",
+    "title": "Lookup result",
+    "description": "",
+    "position": { "x": 0, "y": 3, "w": 12, "h": 4, "nextX": 12, "nextY": 7 },
+    "viz_type": "chart",
+    "viz_content": "SELECT dict_get('[[ .DB ]].ip_trie', 'country_code', to_ipv4('{{filter_ip_address}}')) AS country, dict_get('[[ .DB ]].ip_trie', 'state', to_ipv4('{{filter_ip_address}}')) AS state, dict_get('[[ .DB ]].ip_trie', 'city', to_ipv4('{{filter_ip_address}}')) AS city, dict_get('[[ .DB ]].ip_trie', 'latitude', to_ipv4('{{filter_ip_address}}')) AS latitude, dict_get('[[ .DB ]].ip_trie', 'longitude', to_ipv4('{{filter_ip_address}}')) AS longitude",
+    "viz_config": {
+      "chartType": "table",
+      "config": {
+        "updateMode": "all",
+        "updateKey": ""
+      }
+    }
+  },
+  {
+    "id": "geo-map",
+    "title": "Location",
+    "description": "",
+    "position": { "x": 0, "y": 7, "w": 12, "h": 8, "nextX": 12, "nextY": 15 },
+    "viz_type": "chart",
+    "viz_content": "SELECT '{{filter_ip_address}}' AS ip, dict_get('[[ .DB ]].ip_trie', 'latitude', to_ipv4('{{filter_ip_address}}')) AS latitude, dict_get('[[ .DB ]].ip_trie', 'longitude', to_ipv4('{{filter_ip_address}}')) AS longitude, dict_get('[[ .DB ]].ip_trie', 'city', to_ipv4('{{filter_ip_address}}')) AS city, dict_get('[[ .DB ]].ip_trie', 'country_code', to_ipv4('{{filter_ip_address}}')) AS country",
+    "viz_config": {
+      "chartType": "geo",
+      "config": {
+        "longitude": "longitude",
+        "latitude": "latitude",
+        "color": "ip",
+        "updateMode": "all",
+        "updateKey": "",
+        "visibleColumns": ["ip", "city", "country"],
+        "opacity": 0.9,
+        "zoom": 4,
+        "center": [20, 0],
+        "size": { "key": "", "value": 10, "range": [6, 14] }
+      }
+    }
+  },
+  {
+    "id": "geo-stats-count",
+    "title": "Loaded ranges",
+    "description": "",
+    "position": { "x": 0, "y": 15, "w": 6, "h": 3, "nextX": 6, "nextY": 18 },
+    "viz_type": "chart",
+    "viz_content": "SELECT element_count FROM system.dictionaries WHERE database = '[[ .DB ]]' AND name = 'ip_trie'",
+    "viz_config": {
+      "chartType": "singleValue",
+      "config": {
+        "value": "element_count",
+        "color": "blue",
+        "sparkline": false,
+        "delta": false,
+        "fontSize": 56,
+        "fractionDigits": 0,
+        "unit": { "position": "right", "value": " CIDRs" },
+        "updateMode": "all"
+      }
+    }
+  },
+  {
+    "id": "geo-stats-time",
+    "title": "Dictionary status",
+    "description": "",
+    "position": { "x": 6, "y": 15, "w": 6, "h": 3, "nextX": 12, "nextY": 18 },
+    "viz_type": "chart",
+    "viz_content": "SELECT status FROM system.dictionaries WHERE database = '[[ .DB ]]' AND name = 'ip_trie'",
+    "viz_config": {
+      "chartType": "singleValue",
+      "config": {
+        "value": "status",
+        "color": "green",
+        "sparkline": false,
+        "delta": false,
+        "fontSize": 32,
+        "fractionDigits": 0,
+        "unit": { "position": "right", "value": "" },
+        "updateMode": "all"
+      }
+    }
+  }
+]
