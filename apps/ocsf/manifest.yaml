@@ -49,5 +49,11 @@ resources:
   - file: ddl/001_ocsf_events_source.sql
     type: external_stream
     name: ocsf_events_source
+  - file: ddl/002_ocsf_events.sql
+    type: stream
+    name: ocsf_events
+  - file: ddl/003_mv_ocsf_events_ingest.sql
+    type: materialized_view
+    name: mv_ocsf_events_ingest
 
 dashboards: []
