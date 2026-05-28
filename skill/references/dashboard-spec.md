@@ -119,7 +119,7 @@ Controls set filter variables. They do not run a query; `viz_content` is always 
 |---|---|
 | `chartType` | `"selector"` |
 | `label` | Text shown left of the dropdown |
-| `labelWidth` | Pixel width of the label (string, e.g. `"60"`) |
+| `labelWidth` | Percent of the panel width allocated to the label (string, `"0"`–`"100"`, e.g. `"50"` for 50%). Despite the name, the unit is percent, not pixels. |
 | `target` | The `{{filter_*}}` variable this control writes |
 | `defaultValue` | Initially selected value |
 | `inlineValues` | Comma-separated list of options |
@@ -135,16 +135,17 @@ Controls set filter variables. They do not run a query; `viz_content` is always 
 ```json
 {
   "viz_config": {
-    "chartType": "text_input",
+    "chartType": "text",
     "label": "Source IP",
-    "labelWidth": "60",
+    "labelWidth": "50",
     "target": "filter_src_ip",
-    "defaultValue": "203.0.113.67"
+    "defaultValue": "203.0.113.67",
+    "inlineValues": ""
   }
 }
 ```
 
-Use `"chartType": "text_input"` (not `"text"`) for a free-form text field.
+Use `"chartType": "text"` for a free-form text field. Do NOT use `"text_input"` — that value silently falls through to the selector renderer and shows a dropdown. The empty `"inlineValues": ""` is required (match the UI builder's emitted shape exactly).
 
 ---
 

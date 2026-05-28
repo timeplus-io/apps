@@ -1,0 +1,1 @@
+GRANT SELECT ON {{ .DB }}.* TO {{ .Config.dict_user }};

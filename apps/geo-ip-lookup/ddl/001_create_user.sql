@@ -1,0 +1,1 @@
+CREATE USER IF NOT EXISTS {{ .Config.dict_user }} IDENTIFIED BY '{{ .Config.dict_password }}';

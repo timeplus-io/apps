@@ -1,0 +1,88 @@
+[
+  {
+    "id": "geo-md-header",
+    "title": "About",
+    "description": "",
+    "position": { "x": 0, "y": 0, "w": 6, "h": 5, "nextX": 6, "nextY": 5 },
+    "viz_type": "chart",
+    "viz_content": "SELECT 1",
+    "viz_config": {
+      "chartType": "md",
+      "config": {
+        "content": "# Geo IP Lookup\n\nType any IPv4 address in the input below to look it up in the dbip city-IPv4 dataset. The lookup uses an `IP_TRIE` dictionary for sub-millisecond response.\n\nTry: `8.8.8.8` (Google DNS), `1.1.1.1` (Cloudflare DNS), `52.94.236.248` (AWS).\n\n**Known issue:** On first install, `populate_geoip` races `load_dbip` due to mutable-stream eventual consistency — ~1.17M of 3.15M ranges land in `geoip_lookup`. If a lookup returns empty for an IP you believe should resolve, re-run the populate INSERT manually:\n\n```sql\nINSERT INTO geo.geoip_lookup (cidr, latitude, longitude, country_code, state, city)\nSELECT cidr, latitude, longitude, coalesce(country_code,''), coalesce(state1,''), coalesce(city,'')\nFROM geo.v_dbip_city_ipv4_with_cidr;\nSYSTEM RELOAD DICTIONARY geo.ip_trie;\n```\n\n_First lookup after install can take ~30s while the trie loads; subsequent lookups are instant._",
+        "updateKey": "",
+        "updateMode": "all"
+      }
+    }
+  },
+  {
+    "id": "geo-input-ip",
+    "title": "IP address",
+    "description": "",
+    "position": { "x": 6, "y": 0, "w": 6, "h": 1, "nextX": 12, "nextY": 1 },
+    "viz_type": "control",
+    "viz_content": "",
+    "viz_config": {
+      "chartType": "text",
+      "defaultValue": "8.8.8.8",
+      "inlineValues": "",
+      "label": "IP (try 8.8.8.8 / 1.1.1.1 / 52.94.236.248)",
+      "labelWidth": "50",
+      "target": "filter_ip_address"
+    }
+  },
+  {
+    "id": "geo-result-table",
+    "title": "Lookup result",
+    "description": "",
+    "position": { "x": 6, "y": 1, "w": 6, "h": 2, "nextX": 12, "nextY": 3 },
+    "viz_type": "chart",
+    "viz_content": "SELECT dict_get('[[ .DB ]].ip_trie', 'country_code', to_ipv4('{{filter_ip_address}}')) AS country, dict_get('[[ .DB ]].ip_trie', 'state', to_ipv4('{{filter_ip_address}}')) AS state, dict_get('[[ .DB ]].ip_trie', 'city', to_ipv4('{{filter_ip_address}}')) AS city, dict_get('[[ .DB ]].ip_trie', 'latitude', to_ipv4('{{filter_ip_address}}')) AS latitude, dict_get('[[ .DB ]].ip_trie', 'longitude', to_ipv4('{{filter_ip_address}}')) AS longitude",
+    "viz_config": {
+      "chartType": "table",
+      "config": {
+        "updateMode": "all",
+        "updateKey": ""
+      }
+    }
+  },
+  {
+    "id": "geo-stats",
+    "title": "Dictionary status",
+    "description": "",
+    "position": { "x": 6, "y": 3, "w": 6, "h": 2, "nextX": 12, "nextY": 5 },
+    "viz_type": "chart",
+    "viz_content": "SELECT status, element_count FROM system.dictionaries WHERE database = '[[ .DB ]]' AND name = 'ip_trie'",
+    "viz_config": {
+      "chartType": "md",
+      "config": {
+        "content": "**Status:** `{{status}}` · **Loaded ranges:** {{element_count}} CIDRs",
+        "updateMode": "all",
+        "updateKey": ""
+      }
+    }
+  },
+  {
+    "id": "geo-map",
+    "title": "Location",
+    "description": "",
+    "position": { "x": 0, "y": 5, "w": 12, "h": 5, "nextX": 12, "nextY": 10 },
+    "viz_type": "chart",
+    "viz_content": "SELECT '{{filter_ip_address}}' AS ip, dict_get('[[ .DB ]].ip_trie', 'latitude', to_ipv4('{{filter_ip_address}}')) AS latitude, dict_get('[[ .DB ]].ip_trie', 'longitude', to_ipv4('{{filter_ip_address}}')) AS longitude, dict_get('[[ .DB ]].ip_trie', 'city', to_ipv4('{{filter_ip_address}}')) AS city, dict_get('[[ .DB ]].ip_trie', 'country_code', to_ipv4('{{filter_ip_address}}')) AS country",
+    "viz_config": {
+      "chartType": "geo",
+      "config": {
+        "longitude": "longitude",
+        "latitude": "latitude",
+        "color": "ip",
+        "updateMode": "all",
+        "updateKey": "",
+        "visibleColumns": ["ip", "city", "country"],
+        "opacity": 0.9,
+        "zoom": 1,
+        "center": [20, 0],
+        "size": { "key": "", "value": 10, "range": [6, 14] }
+      }
+    }
+  }
+]
