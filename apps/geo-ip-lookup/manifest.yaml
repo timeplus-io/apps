@@ -1,0 +1,63 @@
+package_format_version: 1
+id: io.timeplus.geo-ip-lookup
+name: Geo IP Lookup
+version: 0.1.0
+author: Timeplus
+description: >
+  Interactive IPv4 to city geo lookup powered by the dbip IPv4 dataset.
+  Loads ~3M ranges into an IP_TRIE dictionary for sub-millisecond
+  dict_get lookups. Includes a dashboard with text input, lookup
+  result table, and map.
+icon: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCI+CiAgPGRlZnM+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImJnIiB4MT0iMCIgeTE9IjAiIHgyPSI0OCIgeTI9IjQ4IiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+CiAgICAgIDxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNENTNGOEMiLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjOUYyQkMwIi8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHJ4PSIxMSIgZmlsbD0idXJsKCNiZykiLz4KICA8Y2lyY2xlIGN4PSIyMiIgY3k9IjIyIiByPSI5IiBmaWxsPSJub25lIiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjEuNSIvPgogIDxwYXRoIGQ9Ik0gMTMgMjIgTCAzMSAyMiIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIxLjIiIGZpbGw9Im5vbmUiIG9wYWNpdHk9IjAuOSIvPgogIDxwYXRoIGQ9Ik0gMjIgMTMgQyAxNyAxNywgMTcgMjcsIDIyIDMxIEMgMjcgMjcsIDI3IDE3LCAyMiAxMyBaIiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjEuMiIgZmlsbD0ibm9uZSIgb3BhY2l0eT0iMC45Ii8+CiAgPHBhdGggZD0iTSAzMiAyNiBDIDMyIDMwLCAyOCAzNSwgMjggMzUgQyAyOCAzNSwgMjQgMzAsIDI0IDI2IEMgMjQgMjMuOCwgMjUuOCAyMiwgMjggMjIgQyAzMC4yIDIyLCAzMiAyMy44LCAzMiAyNiBaIiBmaWxsPSJ3aGl0ZSIvPgogIDxjaXJjbGUgY3g9IjI4IiBjeT0iMjYiIHI9IjEuNiIgZmlsbD0iIzlGMkJDMCIvPgo8L3N2Zz4K"
+db_name: geo
+categories:
+  - observability
+  - utilities
+  - demo
+
+config:
+  - key: dict_user
+    type: string
+    required: false
+    default: "geolookup"
+    description: >
+      Timeplus user that the IP_TRIE dictionary connects as to read its
+      source stream. The app creates this user at install via a
+      type:system resource. Override only if you need a different name.
+  - key: dict_password
+    type: string
+    required: false
+    secret: true
+    default: "demo123"
+    description: Password for dict_user. Used in both CREATE USER and the dictionary source.
+
+resources:
+  - file: ddl/001_create_user.sql
+    type: system
+    name: create_geolookup_user
+  - file: ddl/002_grant_select.sql
+    type: system
+    name: grant_select_geolookup
+  - file: ddl/003_dbip_city_ipv4.sql
+    type: mutable_stream
+    name: dbip_city_ipv4
+  - file: ddl/004_load_dbip.sql
+    type: system
+    name: load_dbip
+  - file: ddl/005_v_dbip_city_ipv4_with_cidr.sql
+    type: view
+    name: v_dbip_city_ipv4_with_cidr
+  - file: ddl/006_geoip_lookup.sql
+    type: mutable_stream
+    name: geoip_lookup
+  - file: ddl/007_populate_geoip.sql
+    type: system
+    name: populate_geoip
+  - file: ddl/008_ip_trie.sql
+    type: dictionary
+    name: ip_trie
+
+dashboards:
+  - file: dashboards/main.json
+    name: Geo IP Lookup
+    description: Type an IP, see the city.
