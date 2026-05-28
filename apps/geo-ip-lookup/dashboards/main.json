@@ -23,11 +23,12 @@
     "viz_type": "control",
     "viz_content": "",
     "viz_config": {
-      "chartType": "text_input",
+      "chartType": "text",
       "target": "filter_ip_address",
       "label": "IP (try 8.8.8.8 / 1.1.1.1 / 52.94.236.248)",
       "labelWidth": "340",
-      "defaultValue": "8.8.8.8"
+      "defaultValue": "8.8.8.8",
+      "inlineValues": ""
     }
   },
   {
