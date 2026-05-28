@@ -3,7 +3,7 @@
     "id": "geo-md-header",
     "title": "About",
     "description": "",
-    "position": { "x": 0, "y": 0, "w": 12, "h": 2, "nextX": 12, "nextY": 1 },
+    "position": { "x": 0, "y": 0, "w": 12, "h": 7, "nextX": 12, "nextY": 7 },
     "viz_type": "chart",
     "viz_content": "SELECT 1",
     "viz_config": {
@@ -19,23 +19,22 @@
     "id": "geo-input-ip",
     "title": "IP address",
     "description": "",
-    "position": { "x": 0, "y": 2, "w": 12, "h": 1, "nextX": 12, "nextY": 3 },
+    "position": { "x": 0, "y": 7, "w": 12, "h": 1, "nextX": 12, "nextY": 8 },
     "viz_type": "control",
     "viz_content": "",
     "viz_config": {
-      "controlType": "text_input",
-      "config": {
-        "variable": "ip_address",
-        "defaultValue": "140.82.112.4",
-        "placeholder": "Enter an IPv4 address"
-      }
+      "chartType": "text_input",
+      "target": "filter_ip_address",
+      "label": "IP address",
+      "labelWidth": "100",
+      "defaultValue": "140.82.112.4"
     }
   },
   {
     "id": "geo-result-table",
     "title": "Lookup result",
     "description": "",
-    "position": { "x": 0, "y": 3, "w": 12, "h": 4, "nextX": 12, "nextY": 7 },
+    "position": { "x": 0, "y": 8, "w": 12, "h": 4, "nextX": 12, "nextY": 12 },
     "viz_type": "chart",
     "viz_content": "SELECT dict_get('[[ .DB ]].ip_trie', 'country_code', to_ipv4('{{filter_ip_address}}')) AS country, dict_get('[[ .DB ]].ip_trie', 'state', to_ipv4('{{filter_ip_address}}')) AS state, dict_get('[[ .DB ]].ip_trie', 'city', to_ipv4('{{filter_ip_address}}')) AS city, dict_get('[[ .DB ]].ip_trie', 'latitude', to_ipv4('{{filter_ip_address}}')) AS latitude, dict_get('[[ .DB ]].ip_trie', 'longitude', to_ipv4('{{filter_ip_address}}')) AS longitude",
     "viz_config": {
@@ -50,7 +49,7 @@
     "id": "geo-map",
     "title": "Location",
     "description": "",
-    "position": { "x": 0, "y": 7, "w": 12, "h": 8, "nextX": 12, "nextY": 15 },
+    "position": { "x": 0, "y": 12, "w": 12, "h": 8, "nextX": 12, "nextY": 20 },
     "viz_type": "chart",
     "viz_content": "SELECT '{{filter_ip_address}}' AS ip, dict_get('[[ .DB ]].ip_trie', 'latitude', to_ipv4('{{filter_ip_address}}')) AS latitude, dict_get('[[ .DB ]].ip_trie', 'longitude', to_ipv4('{{filter_ip_address}}')) AS longitude, dict_get('[[ .DB ]].ip_trie', 'city', to_ipv4('{{filter_ip_address}}')) AS city, dict_get('[[ .DB ]].ip_trie', 'country_code', to_ipv4('{{filter_ip_address}}')) AS country",
     "viz_config": {
@@ -70,44 +69,18 @@
     }
   },
   {
-    "id": "geo-stats-count",
-    "title": "Loaded ranges",
-    "description": "",
-    "position": { "x": 0, "y": 15, "w": 6, "h": 3, "nextX": 6, "nextY": 18 },
-    "viz_type": "chart",
-    "viz_content": "SELECT element_count FROM system.dictionaries WHERE database = '[[ .DB ]]' AND name = 'ip_trie'",
-    "viz_config": {
-      "chartType": "singleValue",
-      "config": {
-        "value": "element_count",
-        "color": "blue",
-        "sparkline": false,
-        "delta": false,
-        "fontSize": 56,
-        "fractionDigits": 0,
-        "unit": { "position": "right", "value": " CIDRs" },
-        "updateMode": "all"
-      }
-    }
-  },
-  {
-    "id": "geo-stats-time",
+    "id": "geo-stats",
     "title": "Dictionary status",
     "description": "",
-    "position": { "x": 6, "y": 15, "w": 6, "h": 3, "nextX": 12, "nextY": 18 },
+    "position": { "x": 0, "y": 20, "w": 12, "h": 2, "nextX": 12, "nextY": 22 },
     "viz_type": "chart",
-    "viz_content": "SELECT status FROM system.dictionaries WHERE database = '[[ .DB ]]' AND name = 'ip_trie'",
+    "viz_content": "SELECT status, element_count FROM system.dictionaries WHERE database = '[[ .DB ]]' AND name = 'ip_trie'",
     "viz_config": {
-      "chartType": "singleValue",
+      "chartType": "md",
       "config": {
-        "value": "status",
-        "color": "green",
-        "sparkline": false,
-        "delta": false,
-        "fontSize": 32,
-        "fractionDigits": 0,
-        "unit": { "position": "right", "value": "" },
-        "updateMode": "all"
+        "content": "**Status:** `{{status}}` · **Loaded ranges:** {{element_count}} CIDRs",
+        "updateMode": "all",
+        "updateKey": ""
       }
     }
   }
