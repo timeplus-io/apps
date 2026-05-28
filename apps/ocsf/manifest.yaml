@@ -58,5 +58,8 @@ resources:
   - file: ddl/004_v_ocsf_authentication_flatten.sql
     type: view
     name: v_ocsf_authentication_flatten
+  - file: ddl/005_v_ocsf_network_activity_flatten.sql
+    type: view
+    name: v_ocsf_network_activity_flatten
 
 dashboards: []
