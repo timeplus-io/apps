@@ -45,6 +45,9 @@ config:
     default: "24"
     description: TTL for the ocsf_events stream in hours.
 
-resources: []
+resources:
+  - file: ddl/001_ocsf_events_source.sql
+    type: external_stream
+    name: ocsf_events_source
 
 dashboards: []
