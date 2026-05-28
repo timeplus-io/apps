@@ -64,5 +64,8 @@ resources:
   - file: ddl/006_v_ocsf_process_activity_flatten.sql
     type: view
     name: v_ocsf_process_activity_flatten
+  - file: ddl/007_v_ocsf_security_finding_flatten.sql
+    type: view
+    name: v_ocsf_security_finding_flatten
 
 dashboards: []
