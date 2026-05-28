@@ -3,7 +3,7 @@
     "id": "geo-md-header",
     "title": "About",
     "description": "",
-    "position": { "x": 0, "y": 0, "w": 12, "h": 7, "nextX": 12, "nextY": 7 },
+    "position": { "x": 0, "y": 0, "w": 12, "h": 5, "nextX": 12, "nextY": 5 },
     "viz_type": "chart",
     "viz_content": "SELECT 1",
     "viz_config": {
@@ -19,14 +19,14 @@
     "id": "geo-input-ip",
     "title": "IP address",
     "description": "",
-    "position": { "x": 0, "y": 7, "w": 12, "h": 1, "nextX": 12, "nextY": 8 },
+    "position": { "x": 0, "y": 5, "w": 12, "h": 1, "nextX": 12, "nextY": 6 },
     "viz_type": "control",
     "viz_content": "",
     "viz_config": {
       "chartType": "text",
       "target": "filter_ip_address",
       "label": "IP (try 8.8.8.8 / 1.1.1.1 / 52.94.236.248)",
-      "labelWidth": "340",
+      "labelWidth": "50",
       "defaultValue": "8.8.8.8",
       "inlineValues": ""
     }
@@ -35,7 +35,7 @@
     "id": "geo-result-table",
     "title": "Lookup result",
     "description": "",
-    "position": { "x": 0, "y": 8, "w": 12, "h": 4, "nextX": 12, "nextY": 12 },
+    "position": { "x": 0, "y": 6, "w": 12, "h": 4, "nextX": 12, "nextY": 10 },
     "viz_type": "chart",
     "viz_content": "SELECT dict_get('[[ .DB ]].ip_trie', 'country_code', to_ipv4('{{filter_ip_address}}')) AS country, dict_get('[[ .DB ]].ip_trie', 'state', to_ipv4('{{filter_ip_address}}')) AS state, dict_get('[[ .DB ]].ip_trie', 'city', to_ipv4('{{filter_ip_address}}')) AS city, dict_get('[[ .DB ]].ip_trie', 'latitude', to_ipv4('{{filter_ip_address}}')) AS latitude, dict_get('[[ .DB ]].ip_trie', 'longitude', to_ipv4('{{filter_ip_address}}')) AS longitude",
     "viz_config": {
@@ -50,7 +50,7 @@
     "id": "geo-map",
     "title": "Location",
     "description": "",
-    "position": { "x": 0, "y": 12, "w": 12, "h": 8, "nextX": 12, "nextY": 20 },
+    "position": { "x": 0, "y": 10, "w": 12, "h": 8, "nextX": 12, "nextY": 18 },
     "viz_type": "chart",
     "viz_content": "SELECT '{{filter_ip_address}}' AS ip, dict_get('[[ .DB ]].ip_trie', 'latitude', to_ipv4('{{filter_ip_address}}')) AS latitude, dict_get('[[ .DB ]].ip_trie', 'longitude', to_ipv4('{{filter_ip_address}}')) AS longitude, dict_get('[[ .DB ]].ip_trie', 'city', to_ipv4('{{filter_ip_address}}')) AS city, dict_get('[[ .DB ]].ip_trie', 'country_code', to_ipv4('{{filter_ip_address}}')) AS country",
     "viz_config": {
@@ -73,7 +73,7 @@
     "id": "geo-stats",
     "title": "Dictionary status",
     "description": "",
-    "position": { "x": 0, "y": 20, "w": 12, "h": 2, "nextX": 12, "nextY": 22 },
+    "position": { "x": 0, "y": 18, "w": 12, "h": 2, "nextX": 12, "nextY": 20 },
     "viz_type": "chart",
     "viz_content": "SELECT status, element_count FROM system.dictionaries WHERE database = '[[ .DB ]]' AND name = 'ip_trie'",
     "viz_config": {
