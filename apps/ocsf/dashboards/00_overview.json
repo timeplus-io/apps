@@ -1,0 +1,113 @@
+[
+  {
+    "id": "ocsf-metric-events-per-sec",
+    "title": "Events / sec (1m)",
+    "description": "Total OCSF events per second over the last 1 minute.",
+    "position": {
+      "x": 0,
+      "y": 0,
+      "w": 6,
+      "h": 4,
+      "nextX": 6,
+      "nextY": 4
+    },
+    "viz_type": "chart",
+    "viz_content": "SELECT count() / 60.0 AS events_per_sec FROM table(ocsf.ocsf_events) WHERE _tp_time > now() - interval 1 minute",
+    "viz_config": {
+      "chartType": "single_value",
+      "config": {
+        "updateMode": "replace",
+        "updateKey": ""
+      }
+    }
+  },
+  {
+    "id": "ocsf-metric-auth-failures",
+    "title": "Auth failures (5m)",
+    "description": "Authentication failure count over the last 5 minutes.",
+    "position": {
+      "x": 6,
+      "y": 0,
+      "w": 6,
+      "h": 4,
+      "nextX": 12,
+      "nextY": 4
+    },
+    "viz_type": "chart",
+    "viz_content": "SELECT count() AS failures FROM table(ocsf.v_ocsf_authentication_flatten) WHERE status = 'Failure' AND _tp_time > now() - interval 5 minute",
+    "viz_config": {
+      "chartType": "single_value",
+      "config": {
+        "updateMode": "replace",
+        "updateKey": ""
+      }
+    }
+  },
+  {
+    "id": "ocsf-metric-high-critical-findings",
+    "title": "High+Critical findings (5m)",
+    "description": "High and Critical severity security findings in the last 5 minutes.",
+    "position": {
+      "x": 12,
+      "y": 0,
+      "w": 6,
+      "h": 4,
+      "nextX": 18,
+      "nextY": 4
+    },
+    "viz_type": "chart",
+    "viz_content": "SELECT count() AS findings FROM table(ocsf.v_ocsf_security_finding_flatten) WHERE severity IN ('High','Critical') AND _tp_time > now() - interval 5 minute",
+    "viz_config": {
+      "chartType": "single_value",
+      "config": {
+        "updateMode": "replace",
+        "updateKey": ""
+      }
+    }
+  },
+  {
+    "id": "ocsf-metric-active-source-ips",
+    "title": "Active source IPs (5m)",
+    "description": "Distinct source IPs seen in authentication events over the last 5 minutes.",
+    "position": {
+      "x": 18,
+      "y": 0,
+      "w": 6,
+      "h": 4,
+      "nextX": 24,
+      "nextY": 4
+    },
+    "viz_type": "chart",
+    "viz_content": "SELECT count_distinct(src_endpoint_ip) AS unique_sources FROM table(ocsf.v_ocsf_authentication_flatten) WHERE _tp_time > now() - interval 5 minute",
+    "viz_config": {
+      "chartType": "single_value",
+      "config": {
+        "updateMode": "replace",
+        "updateKey": ""
+      }
+    }
+  },
+  {
+    "id": "ocsf-about",
+    "title": "About",
+    "description": "",
+    "position": {
+      "x": 0,
+      "y": 4,
+      "w": 24,
+      "h": 6,
+      "nextX": 24,
+      "nextY": 10
+    },
+    "viz_type": "chart",
+    "viz_content": "SELECT 1",
+    "viz_config": {
+      "chartType": "md",
+      "config": {
+        "content": "### OCSF Security Event Analytics\n\nReal-time analytics over the [Open Cybersecurity Schema Framework](https://schema.ocsf.io/) event stream emitted by the [`timeplus-ocsf-simulator`](https://pypi.org/project/timeplus-ocsf-simulator/) package.\n\nFour event classes are flattened and surfaced above: **Authentication (3002)**, **Network Activity (4001)**, **Process Activity (1007)**, and **Security Finding (2001)**.\n\n> Heads-up: the simulator generates random IPs and user names for each event, so cross-class correlations (e.g. linking an authentication failure to a subsequent suspicious process by IP) will not match. Each section above is self-contained per class.",
+        "updateMode": "all",
+        "updateKey": ""
+      }
+    }
+  }
+]

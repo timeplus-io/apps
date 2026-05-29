@@ -69,6 +69,18 @@ resources:
     name: v_ocsf_security_finding_flatten
 
 dashboards:
-  - file: dashboards/main.json
-    name: OCSF Security Events
-    description: Real-time authentication, network, process, and security-finding analytics
+  - file: dashboards/00_overview.json
+    name: OCSF Overview
+    description: Headline counters across all four event classes
+  - file: dashboards/10_authentication.json
+    name: "OCSF — Authentication"
+    description: Authentication (class 3002) — failures, brute force, top sources
+  - file: dashboards/20_network.json
+    name: "OCSF — Network Activity"
+    description: Network (class 4001) — protocol traffic, high-severity events, scanning
+  - file: dashboards/30_process.json
+    name: "OCSF — Process Activity"
+    description: Process (class 1007) — creates, suspicious command lines, privilege mismatch
+  - file: dashboards/40_findings.json
+    name: "OCSF — Security Findings"
+    description: Findings (class 2001) — severity trends, malware, top finding titles

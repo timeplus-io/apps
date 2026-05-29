@@ -1,0 +1,97 @@
+[
+  {
+    "id": "ocsf-net-bytes-by-protocol",
+    "title": "Bytes by protocol / min",
+    "description": "Network traffic bytes per protocol in 1-minute tumbling windows.",
+    "position": {
+      "x": 0,
+      "y": 0,
+      "w": 24,
+      "h": 8,
+      "nextX": 24,
+      "nextY": 8
+    },
+    "viz_type": "chart",
+    "viz_content": "SELECT window_start AS time, protocol_name, sum(traffic_bytes) AS bytes FROM tumble(ocsf.v_ocsf_network_activity_flatten, 1m) GROUP BY window_start, protocol_name",
+    "viz_config": {
+      "chartType": "line",
+      "config": {
+        "xAxis": "time",
+        "yAxis": [
+          "bytes"
+        ],
+        "color": "protocol_name",
+        "xRange": "Infinity",
+        "xFormat": "",
+        "xTitle": "",
+        "yTitle": "",
+        "yRange": {
+          "min": null,
+          "max": null
+        },
+        "lineStyle": "curve",
+        "dataLabel": false,
+        "showAll": false,
+        "legend": true,
+        "points": false,
+        "gridlines": true,
+        "unit": {
+          "position": "left",
+          "value": ""
+        },
+        "fractionDigits": 0,
+        "colors": [
+          "#ED64A6",
+          "#F0BE3E",
+          "#DA4B36",
+          "#9A1563",
+          "#FF4A71",
+          "#D12D50",
+          "#8934D9",
+          "#D53F8C",
+          "#F7775A",
+          "#8934D9"
+        ],
+        "yTickLabel": {
+          "maxChar": 25
+        }
+      }
+    }
+  },
+  {
+    "id": "ocsf-net-high-severity-events",
+    "title": "High-severity events (15m)",
+    "description": "High and Critical severity network events in the last 15 minutes.",
+    "position": {
+      "x": 0,
+      "y": 8,
+      "w": 12,
+      "h": 8,
+      "nextX": 12,
+      "nextY": 16
+    },
+    "viz_type": "chart",
+    "viz_content": "SELECT _tp_time, src_ip, dst_ip, protocol_name, severity, traffic_bytes FROM table(ocsf.v_ocsf_network_activity_flatten) WHERE severity IN ('High','Critical') AND _tp_time > now() - interval 15 minute ORDER BY _tp_time DESC LIMIT 20",
+    "viz_config": {
+      "chartType": "table"
+    }
+  },
+  {
+    "id": "ocsf-net-scanning-candidates",
+    "title": "Scanning candidates (2m)",
+    "description": "Source IPs with 20+ attempts to 10+ distinct targets in 2-minute windows.",
+    "position": {
+      "x": 12,
+      "y": 8,
+      "w": 12,
+      "h": 8,
+      "nextX": 24,
+      "nextY": 16
+    },
+    "viz_type": "chart",
+    "viz_content": "SELECT window_start, src_ip, count() AS attempts, count_distinct(dst_ip) AS targets FROM tumble(ocsf.v_ocsf_network_activity_flatten, 2m) GROUP BY window_start, src_ip HAVING attempts >= 20 AND targets >= 10 ORDER BY window_start DESC LIMIT 20",
+    "viz_config": {
+      "chartType": "table"
+    }
+  }
+]

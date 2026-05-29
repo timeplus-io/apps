@@ -1,0 +1,97 @@
+[
+  {
+    "id": "ocsf-proc-creates-per-min",
+    "title": "Process creates / min",
+    "description": "Count of process Create events in 1-minute tumbling windows.",
+    "position": {
+      "x": 0,
+      "y": 0,
+      "w": 24,
+      "h": 8,
+      "nextX": 24,
+      "nextY": 8
+    },
+    "viz_type": "chart",
+    "viz_content": "SELECT window_start AS time, count() AS creates FROM tumble(ocsf.v_ocsf_process_activity_flatten, 1m) WHERE activity_name = 'Create' GROUP BY window_start",
+    "viz_config": {
+      "chartType": "line",
+      "config": {
+        "xAxis": "time",
+        "yAxis": [
+          "creates"
+        ],
+        "color": "",
+        "xRange": "Infinity",
+        "xFormat": "",
+        "xTitle": "",
+        "yTitle": "",
+        "yRange": {
+          "min": null,
+          "max": null
+        },
+        "lineStyle": "curve",
+        "dataLabel": false,
+        "showAll": false,
+        "legend": true,
+        "points": false,
+        "gridlines": true,
+        "unit": {
+          "position": "left",
+          "value": ""
+        },
+        "fractionDigits": 0,
+        "colors": [
+          "#ED64A6",
+          "#F0BE3E",
+          "#DA4B36",
+          "#9A1563",
+          "#FF4A71",
+          "#D12D50",
+          "#8934D9",
+          "#D53F8C",
+          "#F7775A",
+          "#8934D9"
+        ],
+        "yTickLabel": {
+          "maxChar": 25
+        }
+      }
+    }
+  },
+  {
+    "id": "ocsf-proc-suspicious-cmdlines",
+    "title": "Suspicious command lines (15m)",
+    "description": "Process events matching suspicious command-line patterns in the last 15 minutes.",
+    "position": {
+      "x": 0,
+      "y": 8,
+      "w": 12,
+      "h": 8,
+      "nextX": 12,
+      "nextY": 16
+    },
+    "viz_type": "chart",
+    "viz_content": "SELECT _tp_time, device_hostname, process_name, process_cmd_line, process_user_name FROM table(ocsf.v_ocsf_process_activity_flatten) WHERE (process_cmd_line LIKE '%powershell%ExecutionPolicy Bypass%' OR process_cmd_line LIKE '%cmd.exe /c%' OR process_cmd_line LIKE '%rundll32%' OR process_name IN ('psexec.exe', 'mimikatz.exe', 'procdump.exe')) AND _tp_time > now() - interval 15 minute ORDER BY _tp_time DESC LIMIT 20",
+    "viz_config": {
+      "chartType": "table"
+    }
+  },
+  {
+    "id": "ocsf-proc-privilege-mismatch",
+    "title": "Privilege-mismatch events (15m)",
+    "description": "Process events where process user type and actor user type differ, involving Admin.",
+    "position": {
+      "x": 12,
+      "y": 8,
+      "w": 12,
+      "h": 8,
+      "nextX": 24,
+      "nextY": 16
+    },
+    "viz_type": "chart",
+    "viz_content": "SELECT _tp_time, device_hostname, process_name, process_user_type, actor_user_type FROM table(ocsf.v_ocsf_process_activity_flatten) WHERE process_user_type != actor_user_type AND (process_user_type = 'Admin' OR actor_user_type = 'Admin') AND _tp_time > now() - interval 15 minute ORDER BY _tp_time DESC LIMIT 20",
+    "viz_config": {
+      "chartType": "table"
+    }
+  }
+]

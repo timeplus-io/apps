@@ -1,0 +1,97 @@
+[
+  {
+    "id": "ocsf-finding-severity-per-min",
+    "title": "Findings by severity / min",
+    "description": "Security findings by severity level in 1-minute tumbling windows.",
+    "position": {
+      "x": 0,
+      "y": 0,
+      "w": 24,
+      "h": 8,
+      "nextX": 24,
+      "nextY": 8
+    },
+    "viz_type": "chart",
+    "viz_content": "SELECT window_start AS time, severity, count() AS findings FROM tumble(ocsf.v_ocsf_security_finding_flatten, 1m) WHERE severity IN ('Critical','High','Medium') GROUP BY window_start, severity",
+    "viz_config": {
+      "chartType": "line",
+      "config": {
+        "xAxis": "time",
+        "yAxis": [
+          "findings"
+        ],
+        "color": "severity",
+        "xRange": "Infinity",
+        "xFormat": "",
+        "xTitle": "",
+        "yTitle": "",
+        "yRange": {
+          "min": null,
+          "max": null
+        },
+        "lineStyle": "curve",
+        "dataLabel": false,
+        "showAll": false,
+        "legend": true,
+        "points": false,
+        "gridlines": true,
+        "unit": {
+          "position": "left",
+          "value": ""
+        },
+        "fractionDigits": 0,
+        "colors": [
+          "#ED64A6",
+          "#F0BE3E",
+          "#DA4B36",
+          "#9A1563",
+          "#FF4A71",
+          "#D12D50",
+          "#8934D9",
+          "#D53F8C",
+          "#F7775A",
+          "#8934D9"
+        ],
+        "yTickLabel": {
+          "maxChar": 25
+        }
+      }
+    }
+  },
+  {
+    "id": "ocsf-finding-malware-by-classification",
+    "title": "Malware by classification (15m)",
+    "description": "Malware detection counts grouped by classification in the last 15 minutes.",
+    "position": {
+      "x": 0,
+      "y": 8,
+      "w": 12,
+      "h": 8,
+      "nextX": 12,
+      "nextY": 16
+    },
+    "viz_type": "chart",
+    "viz_content": "SELECT malware_classification, count() AS detections, count_distinct(malware_name) AS unique_malware FROM table(ocsf.v_ocsf_security_finding_flatten) WHERE malware_name != '' AND _tp_time > now() - interval 15 minute GROUP BY malware_classification ORDER BY detections DESC",
+    "viz_config": {
+      "chartType": "table"
+    }
+  },
+  {
+    "id": "ocsf-finding-top-titles",
+    "title": "Top finding titles (15m)",
+    "description": "Most frequently occurring security finding titles in the last 15 minutes.",
+    "position": {
+      "x": 12,
+      "y": 8,
+      "w": 12,
+      "h": 8,
+      "nextX": 24,
+      "nextY": 16
+    },
+    "viz_type": "chart",
+    "viz_content": "SELECT finding_title, count() AS occurrences, max(severity) AS max_severity FROM table(ocsf.v_ocsf_security_finding_flatten) WHERE _tp_time > now() - interval 15 minute GROUP BY finding_title ORDER BY occurrences DESC LIMIT 10",
+    "viz_config": {
+      "chartType": "table"
+    }
+  }
+]
