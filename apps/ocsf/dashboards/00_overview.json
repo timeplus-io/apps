@@ -14,10 +14,21 @@
     "viz_type": "chart",
     "viz_content": "SELECT count() / 60.0 AS events_per_sec FROM table(ocsf.ocsf_events) WHERE _tp_time > now() - interval 1 minute",
     "viz_config": {
-      "chartType": "single_value",
+      "chartType": "singleValue",
       "config": {
-        "updateMode": "replace",
-        "updateKey": ""
+        "value": "events_per_sec",
+        "sparkline": false,
+        "delta": false,
+        "unit": {
+          "value": "",
+          "position": "right"
+        },
+        "color": "blue",
+        "sparklineColor": "blue",
+        "increaseColor": "green",
+        "decreaseColor": "red",
+        "fractionDigits": 2,
+        "fontSize": 64
       }
     }
   },
@@ -36,10 +47,21 @@
     "viz_type": "chart",
     "viz_content": "SELECT count() AS failures FROM table(ocsf.v_ocsf_authentication_flatten) WHERE status = 'Failure' AND _tp_time > now() - interval 5 minute",
     "viz_config": {
-      "chartType": "single_value",
+      "chartType": "singleValue",
       "config": {
-        "updateMode": "replace",
-        "updateKey": ""
+        "value": "failures",
+        "sparkline": false,
+        "delta": false,
+        "unit": {
+          "value": "",
+          "position": "right"
+        },
+        "color": "blue",
+        "sparklineColor": "blue",
+        "increaseColor": "green",
+        "decreaseColor": "red",
+        "fractionDigits": 0,
+        "fontSize": 64
       }
     }
   },
@@ -58,10 +80,21 @@
     "viz_type": "chart",
     "viz_content": "SELECT count() AS findings FROM table(ocsf.v_ocsf_security_finding_flatten) WHERE severity IN ('High','Critical') AND _tp_time > now() - interval 5 minute",
     "viz_config": {
-      "chartType": "single_value",
+      "chartType": "singleValue",
       "config": {
-        "updateMode": "replace",
-        "updateKey": ""
+        "value": "findings",
+        "sparkline": false,
+        "delta": false,
+        "unit": {
+          "value": "",
+          "position": "right"
+        },
+        "color": "blue",
+        "sparklineColor": "blue",
+        "increaseColor": "green",
+        "decreaseColor": "red",
+        "fractionDigits": 0,
+        "fontSize": 64
       }
     }
   },
@@ -80,10 +113,21 @@
     "viz_type": "chart",
     "viz_content": "SELECT count_distinct(src_endpoint_ip) AS unique_sources FROM table(ocsf.v_ocsf_authentication_flatten) WHERE _tp_time > now() - interval 5 minute",
     "viz_config": {
-      "chartType": "single_value",
+      "chartType": "singleValue",
       "config": {
-        "updateMode": "replace",
-        "updateKey": ""
+        "value": "unique_sources",
+        "sparkline": false,
+        "delta": false,
+        "unit": {
+          "value": "",
+          "position": "right"
+        },
+        "color": "blue",
+        "sparklineColor": "blue",
+        "increaseColor": "green",
+        "decreaseColor": "red",
+        "fractionDigits": 0,
+        "fontSize": 64
       }
     }
   },
