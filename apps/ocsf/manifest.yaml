@@ -68,4 +68,7 @@ resources:
     type: view
     name: v_ocsf_security_finding_flatten
 
-dashboards: []
+dashboards:
+  - file: dashboards/main.json
+    name: OCSF Security Events
+    description: Real-time authentication, network, process, and security-finding analytics

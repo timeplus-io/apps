@@ -1,0 +1,290 @@
+[
+  {
+    "id": "ocsf-metric-events-per-sec",
+    "title": "Events / sec (1m)",
+    "description": "Total OCSF events per second over the last 1 minute.",
+    "position": { "x": 0, "y": 0, "w": 6, "h": 4, "nextX": 6, "nextY": 4 },
+    "viz_type": "chart",
+    "viz_content": "SELECT count() / 60.0 AS events_per_sec FROM table(ocsf.ocsf_events) WHERE _tp_time > now() - interval 1 minute",
+    "viz_config": {
+      "chartType": "single_value",
+      "config": {
+        "updateMode": "replace",
+        "updateKey": ""
+      }
+    }
+  },
+  {
+    "id": "ocsf-metric-auth-failures",
+    "title": "Auth failures (5m)",
+    "description": "Authentication failure count over the last 5 minutes.",
+    "position": { "x": 6, "y": 0, "w": 6, "h": 4, "nextX": 12, "nextY": 4 },
+    "viz_type": "chart",
+    "viz_content": "SELECT count() AS failures FROM table(ocsf.v_ocsf_authentication_flatten) WHERE status = 'Failure' AND _tp_time > now() - interval 5 minute",
+    "viz_config": {
+      "chartType": "single_value",
+      "config": {
+        "updateMode": "replace",
+        "updateKey": ""
+      }
+    }
+  },
+  {
+    "id": "ocsf-metric-high-critical-findings",
+    "title": "High+Critical findings (5m)",
+    "description": "High and Critical severity security findings in the last 5 minutes.",
+    "position": { "x": 12, "y": 0, "w": 6, "h": 4, "nextX": 18, "nextY": 4 },
+    "viz_type": "chart",
+    "viz_content": "SELECT count() AS findings FROM table(ocsf.v_ocsf_security_finding_flatten) WHERE severity IN ('High','Critical') AND _tp_time > now() - interval 5 minute",
+    "viz_config": {
+      "chartType": "single_value",
+      "config": {
+        "updateMode": "replace",
+        "updateKey": ""
+      }
+    }
+  },
+  {
+    "id": "ocsf-metric-active-source-ips",
+    "title": "Active source IPs (5m)",
+    "description": "Distinct source IPs seen in authentication events over the last 5 minutes.",
+    "position": { "x": 18, "y": 0, "w": 6, "h": 4, "nextX": 24, "nextY": 4 },
+    "viz_type": "chart",
+    "viz_content": "SELECT count_distinct(src_endpoint_ip) AS unique_sources FROM table(ocsf.v_ocsf_authentication_flatten) WHERE _tp_time > now() - interval 5 minute",
+    "viz_config": {
+      "chartType": "single_value",
+      "config": {
+        "updateMode": "replace",
+        "updateKey": ""
+      }
+    }
+  },
+  {
+    "id": "ocsf-auth-events-by-status",
+    "title": "Auth events by status / min",
+    "description": "Authentication events grouped by status in 1-minute tumbling windows.",
+    "position": { "x": 0, "y": 4, "w": 12, "h": 8, "nextX": 12, "nextY": 12 },
+    "viz_type": "chart",
+    "viz_content": "SELECT window_start AS time, status, count() AS auths FROM tumble(ocsf.v_ocsf_authentication_flatten, 1m) GROUP BY window_start, status",
+    "viz_config": {
+      "chartType": "line",
+      "config": {
+        "xAxis": "time",
+        "yAxis": ["auths"],
+        "color": "status",
+        "xRange": "Infinity",
+        "xFormat": "",
+        "xTitle": "",
+        "yTitle": "",
+        "yRange": { "min": null, "max": null },
+        "lineStyle": "curve",
+        "dataLabel": false,
+        "showAll": false,
+        "legend": true,
+        "points": false,
+        "gridlines": true,
+        "unit": { "position": "left", "value": "" },
+        "fractionDigits": 0,
+        "colors": ["#ED64A6", "#F0BE3E", "#DA4B36", "#9A1563", "#FF4A71", "#D12D50", "#8934D9", "#D53F8C", "#F7775A", "#8934D9"],
+        "yTickLabel": { "maxChar": 25 }
+      }
+    }
+  },
+  {
+    "id": "ocsf-auth-top-failed-sources",
+    "title": "Top failed sources (15m)",
+    "description": "Top source IPs with the most authentication failures in the last 15 minutes.",
+    "position": { "x": 12, "y": 4, "w": 6, "h": 8, "nextX": 18, "nextY": 12 },
+    "viz_type": "chart",
+    "viz_content": "SELECT src_endpoint_ip, src_location_country, count() AS failed FROM table(ocsf.v_ocsf_authentication_flatten) WHERE status = 'Failure' AND _tp_time > now() - interval 15 minute GROUP BY src_endpoint_ip, src_location_country ORDER BY failed DESC LIMIT 10",
+    "viz_config": {
+      "chartType": "table"
+    }
+  },
+  {
+    "id": "ocsf-auth-brute-force-candidates",
+    "title": "Brute-force candidates (5m)",
+    "description": "User/IP pairs with 3+ failures in 5-minute windows — potential brute-force attempts.",
+    "position": { "x": 18, "y": 4, "w": 6, "h": 8, "nextX": 24, "nextY": 12 },
+    "viz_type": "chart",
+    "viz_content": "SELECT window_start, user_name, src_endpoint_ip, count() AS failures FROM tumble(ocsf.v_ocsf_authentication_flatten, 5m) WHERE status = 'Failure' GROUP BY window_start, user_name, src_endpoint_ip HAVING failures >= 3 ORDER BY window_start DESC LIMIT 20",
+    "viz_config": {
+      "chartType": "table"
+    }
+  },
+  {
+    "id": "ocsf-net-bytes-by-protocol",
+    "title": "Bytes by protocol / min",
+    "description": "Network traffic bytes per protocol in 1-minute tumbling windows.",
+    "position": { "x": 0, "y": 12, "w": 12, "h": 8, "nextX": 12, "nextY": 20 },
+    "viz_type": "chart",
+    "viz_content": "SELECT window_start AS time, protocol_name, sum(traffic_bytes) AS bytes FROM tumble(ocsf.v_ocsf_network_activity_flatten, 1m) GROUP BY window_start, protocol_name",
+    "viz_config": {
+      "chartType": "line",
+      "config": {
+        "xAxis": "time",
+        "yAxis": ["bytes"],
+        "color": "protocol_name",
+        "xRange": "Infinity",
+        "xFormat": "",
+        "xTitle": "",
+        "yTitle": "",
+        "yRange": { "min": null, "max": null },
+        "lineStyle": "curve",
+        "dataLabel": false,
+        "showAll": false,
+        "legend": true,
+        "points": false,
+        "gridlines": true,
+        "unit": { "position": "left", "value": "" },
+        "fractionDigits": 0,
+        "colors": ["#ED64A6", "#F0BE3E", "#DA4B36", "#9A1563", "#FF4A71", "#D12D50", "#8934D9", "#D53F8C", "#F7775A", "#8934D9"],
+        "yTickLabel": { "maxChar": 25 }
+      }
+    }
+  },
+  {
+    "id": "ocsf-net-high-severity-events",
+    "title": "High-severity events (15m)",
+    "description": "High and Critical severity network events in the last 15 minutes.",
+    "position": { "x": 12, "y": 12, "w": 6, "h": 8, "nextX": 18, "nextY": 20 },
+    "viz_type": "chart",
+    "viz_content": "SELECT _tp_time, src_ip, dst_ip, protocol_name, severity, traffic_bytes FROM table(ocsf.v_ocsf_network_activity_flatten) WHERE severity IN ('High','Critical') AND _tp_time > now() - interval 15 minute ORDER BY _tp_time DESC LIMIT 20",
+    "viz_config": {
+      "chartType": "table"
+    }
+  },
+  {
+    "id": "ocsf-net-scanning-candidates",
+    "title": "Scanning candidates (2m)",
+    "description": "Source IPs with 20+ attempts to 10+ distinct targets in 2-minute windows.",
+    "position": { "x": 18, "y": 12, "w": 6, "h": 8, "nextX": 24, "nextY": 20 },
+    "viz_type": "chart",
+    "viz_content": "SELECT window_start, src_ip, count() AS attempts, count_distinct(dst_ip) AS targets FROM tumble(ocsf.v_ocsf_network_activity_flatten, 2m) GROUP BY window_start, src_ip HAVING attempts >= 20 AND targets >= 10 ORDER BY window_start DESC LIMIT 20",
+    "viz_config": {
+      "chartType": "table"
+    }
+  },
+  {
+    "id": "ocsf-proc-creates-per-min",
+    "title": "Process creates / min",
+    "description": "Count of process Create events in 1-minute tumbling windows.",
+    "position": { "x": 0, "y": 20, "w": 12, "h": 8, "nextX": 12, "nextY": 28 },
+    "viz_type": "chart",
+    "viz_content": "SELECT window_start AS time, count() AS creates FROM tumble(ocsf.v_ocsf_process_activity_flatten, 1m) WHERE activity_name = 'Create' GROUP BY window_start",
+    "viz_config": {
+      "chartType": "line",
+      "config": {
+        "xAxis": "time",
+        "yAxis": ["creates"],
+        "color": "",
+        "xRange": "Infinity",
+        "xFormat": "",
+        "xTitle": "",
+        "yTitle": "",
+        "yRange": { "min": null, "max": null },
+        "lineStyle": "curve",
+        "dataLabel": false,
+        "showAll": false,
+        "legend": true,
+        "points": false,
+        "gridlines": true,
+        "unit": { "position": "left", "value": "" },
+        "fractionDigits": 0,
+        "colors": ["#ED64A6", "#F0BE3E", "#DA4B36", "#9A1563", "#FF4A71", "#D12D50", "#8934D9", "#D53F8C", "#F7775A", "#8934D9"],
+        "yTickLabel": { "maxChar": 25 }
+      }
+    }
+  },
+  {
+    "id": "ocsf-proc-suspicious-cmdlines",
+    "title": "Suspicious command lines (15m)",
+    "description": "Process events matching suspicious command-line patterns in the last 15 minutes.",
+    "position": { "x": 12, "y": 20, "w": 6, "h": 8, "nextX": 18, "nextY": 28 },
+    "viz_type": "chart",
+    "viz_content": "SELECT _tp_time, device_hostname, process_name, process_cmd_line, process_user_name FROM table(ocsf.v_ocsf_process_activity_flatten) WHERE (process_cmd_line LIKE '%powershell%ExecutionPolicy Bypass%' OR process_cmd_line LIKE '%cmd.exe /c%' OR process_cmd_line LIKE '%rundll32%' OR process_name IN ('psexec.exe', 'mimikatz.exe', 'procdump.exe')) AND _tp_time > now() - interval 15 minute ORDER BY _tp_time DESC LIMIT 20",
+    "viz_config": {
+      "chartType": "table"
+    }
+  },
+  {
+    "id": "ocsf-proc-privilege-mismatch",
+    "title": "Privilege-mismatch events (15m)",
+    "description": "Process events where process user type and actor user type differ, involving Admin.",
+    "position": { "x": 18, "y": 20, "w": 6, "h": 8, "nextX": 24, "nextY": 28 },
+    "viz_type": "chart",
+    "viz_content": "SELECT _tp_time, device_hostname, process_name, process_user_type, actor_user_type FROM table(ocsf.v_ocsf_process_activity_flatten) WHERE process_user_type != actor_user_type AND (process_user_type = 'Admin' OR actor_user_type = 'Admin') AND _tp_time > now() - interval 15 minute ORDER BY _tp_time DESC LIMIT 20",
+    "viz_config": {
+      "chartType": "table"
+    }
+  },
+  {
+    "id": "ocsf-finding-severity-per-min",
+    "title": "Findings by severity / min",
+    "description": "Security findings by severity level in 1-minute tumbling windows.",
+    "position": { "x": 0, "y": 28, "w": 12, "h": 8, "nextX": 12, "nextY": 36 },
+    "viz_type": "chart",
+    "viz_content": "SELECT window_start AS time, severity, count() AS findings FROM tumble(ocsf.v_ocsf_security_finding_flatten, 1m) WHERE severity IN ('Critical','High','Medium') GROUP BY window_start, severity",
+    "viz_config": {
+      "chartType": "line",
+      "config": {
+        "xAxis": "time",
+        "yAxis": ["findings"],
+        "color": "severity",
+        "xRange": "Infinity",
+        "xFormat": "",
+        "xTitle": "",
+        "yTitle": "",
+        "yRange": { "min": null, "max": null },
+        "lineStyle": "curve",
+        "dataLabel": false,
+        "showAll": false,
+        "legend": true,
+        "points": false,
+        "gridlines": true,
+        "unit": { "position": "left", "value": "" },
+        "fractionDigits": 0,
+        "colors": ["#ED64A6", "#F0BE3E", "#DA4B36", "#9A1563", "#FF4A71", "#D12D50", "#8934D9", "#D53F8C", "#F7775A", "#8934D9"],
+        "yTickLabel": { "maxChar": 25 }
+      }
+    }
+  },
+  {
+    "id": "ocsf-finding-malware-by-classification",
+    "title": "Malware by classification (15m)",
+    "description": "Malware detection counts grouped by classification in the last 15 minutes.",
+    "position": { "x": 12, "y": 28, "w": 6, "h": 8, "nextX": 18, "nextY": 36 },
+    "viz_type": "chart",
+    "viz_content": "SELECT malware_classification, count() AS detections, count_distinct(malware_name) AS unique_malware FROM table(ocsf.v_ocsf_security_finding_flatten) WHERE malware_name != '' AND _tp_time > now() - interval 15 minute GROUP BY malware_classification ORDER BY detections DESC",
+    "viz_config": {
+      "chartType": "table"
+    }
+  },
+  {
+    "id": "ocsf-finding-top-titles",
+    "title": "Top finding titles (15m)",
+    "description": "Most frequently occurring security finding titles in the last 15 minutes.",
+    "position": { "x": 18, "y": 28, "w": 6, "h": 8, "nextX": 24, "nextY": 36 },
+    "viz_type": "chart",
+    "viz_content": "SELECT finding_title, count() AS occurrences, max(severity) AS max_severity FROM table(ocsf.v_ocsf_security_finding_flatten) WHERE _tp_time > now() - interval 15 minute GROUP BY finding_title ORDER BY occurrences DESC LIMIT 10",
+    "viz_config": {
+      "chartType": "table"
+    }
+  },
+  {
+    "id": "ocsf-about",
+    "title": "About",
+    "description": "",
+    "position": { "x": 0, "y": 36, "w": 24, "h": 6, "nextX": 24, "nextY": 42 },
+    "viz_type": "chart",
+    "viz_content": "SELECT 1",
+    "viz_config": {
+      "chartType": "md",
+      "config": {
+        "content": "### OCSF Security Event Analytics\n\nReal-time analytics over the [Open Cybersecurity Schema Framework](https://schema.ocsf.io/) event stream emitted by the [`timeplus-ocsf-simulator`](https://pypi.org/project/timeplus-ocsf-simulator/) package.\n\nFour event classes are flattened and surfaced above: **Authentication (3002)**, **Network Activity (4001)**, **Process Activity (1007)**, and **Security Finding (2001)**.\n\n> Heads-up: the simulator generates random IPs and user names for each event, so cross-class correlations (e.g. linking an authentication failure to a subsequent suspicious process by IP) will not match. Each section above is self-contained per class.",
+        "updateMode": "all",
+        "updateKey": ""
+      }
+    }
+  }
+]
