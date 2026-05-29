@@ -1,0 +1,97 @@
+[
+  {
+    "id": "ocsf-auth-events-by-status",
+    "title": "Auth events by status / min",
+    "description": "Authentication events grouped by status in 1-minute tumbling windows.",
+    "position": {
+      "x": 0,
+      "y": 0,
+      "w": 12,
+      "h": 8,
+      "nextX": 12,
+      "nextY": 8
+    },
+    "viz_type": "chart",
+    "viz_content": "SELECT window_start AS time, status, count() AS auths FROM tumble(ocsf.v_ocsf_authentication_flatten, 1m) GROUP BY window_start, status",
+    "viz_config": {
+      "chartType": "line",
+      "config": {
+        "xAxis": "time",
+        "yAxis": [
+          "auths"
+        ],
+        "color": "status",
+        "xRange": "Infinity",
+        "xFormat": "",
+        "xTitle": "",
+        "yTitle": "",
+        "yRange": {
+          "min": null,
+          "max": null
+        },
+        "lineStyle": "curve",
+        "dataLabel": false,
+        "showAll": false,
+        "legend": true,
+        "points": false,
+        "gridlines": true,
+        "unit": {
+          "position": "left",
+          "value": ""
+        },
+        "fractionDigits": 0,
+        "colors": [
+          "#ED64A6",
+          "#F0BE3E",
+          "#DA4B36",
+          "#9A1563",
+          "#FF4A71",
+          "#D12D50",
+          "#8934D9",
+          "#D53F8C",
+          "#F7775A",
+          "#8934D9"
+        ],
+        "yTickLabel": {
+          "maxChar": 25
+        }
+      }
+    }
+  },
+  {
+    "id": "ocsf-auth-top-failed-sources",
+    "title": "Top failed sources (15m)",
+    "description": "Top source IPs with the most authentication failures in the last 15 minutes.",
+    "position": {
+      "x": 0,
+      "y": 8,
+      "w": 6,
+      "h": 8,
+      "nextX": 6,
+      "nextY": 16
+    },
+    "viz_type": "chart",
+    "viz_content": "SELECT src_endpoint_ip, src_location_country, count() AS failed FROM table(ocsf.v_ocsf_authentication_flatten) WHERE status = 'Failure' AND _tp_time > now() - interval 15 minute GROUP BY src_endpoint_ip, src_location_country ORDER BY failed DESC LIMIT 10",
+    "viz_config": {
+      "chartType": "table"
+    }
+  },
+  {
+    "id": "ocsf-auth-brute-force-candidates",
+    "title": "Brute-force candidates (5m)",
+    "description": "User/IP pairs with 3+ failures in 5-minute windows \u2014 potential brute-force attempts.",
+    "position": {
+      "x": 6,
+      "y": 8,
+      "w": 6,
+      "h": 8,
+      "nextX": 12,
+      "nextY": 16
+    },
+    "viz_type": "chart",
+    "viz_content": "SELECT window_start, user_name, src_endpoint_ip, count() AS failures FROM tumble(ocsf.v_ocsf_authentication_flatten, 5m) WHERE status = 'Failure' GROUP BY window_start, user_name, src_endpoint_ip HAVING failures >= 3 ORDER BY window_start DESC LIMIT 20",
+    "viz_config": {
+      "chartType": "table"
+    }
+  }
+]
