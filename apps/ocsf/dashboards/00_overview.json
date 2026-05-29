@@ -6,9 +6,9 @@
     "position": {
       "x": 0,
       "y": 0,
-      "w": 6,
+      "w": 3,
       "h": 4,
-      "nextX": 6,
+      "nextX": 3,
       "nextY": 4
     },
     "viz_type": "chart",
@@ -37,11 +37,11 @@
     "title": "Auth failures (5m)",
     "description": "Authentication failure count over the last 5 minutes.",
     "position": {
-      "x": 6,
+      "x": 3,
       "y": 0,
-      "w": 6,
+      "w": 3,
       "h": 4,
-      "nextX": 12,
+      "nextX": 6,
       "nextY": 4
     },
     "viz_type": "chart",
@@ -70,11 +70,11 @@
     "title": "High+Critical findings (5m)",
     "description": "High and Critical severity security findings in the last 5 minutes.",
     "position": {
-      "x": 12,
+      "x": 6,
       "y": 0,
-      "w": 6,
+      "w": 3,
       "h": 4,
-      "nextX": 18,
+      "nextX": 9,
       "nextY": 4
     },
     "viz_type": "chart",
@@ -103,11 +103,11 @@
     "title": "Active source IPs (5m)",
     "description": "Distinct source IPs seen in authentication events over the last 5 minutes.",
     "position": {
-      "x": 18,
+      "x": 9,
       "y": 0,
-      "w": 6,
+      "w": 3,
       "h": 4,
-      "nextX": 24,
+      "nextX": 12,
       "nextY": 4
     },
     "viz_type": "chart",
@@ -138,9 +138,9 @@
     "position": {
       "x": 0,
       "y": 4,
-      "w": 24,
+      "w": 12,
       "h": 6,
-      "nextX": 24,
+      "nextX": 12,
       "nextY": 10
     },
     "viz_type": "chart",

@@ -6,9 +6,9 @@
     "position": {
       "x": 0,
       "y": 0,
-      "w": 24,
+      "w": 12,
       "h": 8,
-      "nextX": 24,
+      "nextX": 12,
       "nextY": 8
     },
     "viz_type": "chart",
@@ -65,9 +65,9 @@
     "position": {
       "x": 0,
       "y": 8,
-      "w": 12,
+      "w": 6,
       "h": 8,
-      "nextX": 12,
+      "nextX": 6,
       "nextY": 16
     },
     "viz_type": "chart",
@@ -81,11 +81,11 @@
     "title": "Brute-force candidates (5m)",
     "description": "User/IP pairs with 3+ failures in 5-minute windows \u2014 potential brute-force attempts.",
     "position": {
-      "x": 12,
+      "x": 6,
       "y": 8,
-      "w": 12,
+      "w": 6,
       "h": 8,
-      "nextX": 24,
+      "nextX": 12,
       "nextY": 16
     },
     "viz_type": "chart",
