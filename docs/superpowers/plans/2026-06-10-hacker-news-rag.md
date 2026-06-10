@@ -9,15 +9,17 @@
 **Tech Stack:** Timeplus DDL (Go-templated SQL), Python UDFs using `requests` against an OpenAI-compatible API, `.tpapp` packaging, dashboard JSON.
 
 **Prerequisites (ask the user if missing — do not fake these):**
-- A running Timeplus instance. Verify: `curl -s -m 3 "http://localhost:8123/"` returns `Ok.` and `curl -s -m 3 -o /dev/null -w '%{http_code}' http://localhost:8000/default/api/v1beta2/apps` returns a 2xx/4xx (not connection refused). If either is connection-refused, STOP and ask the user to start Timeplus.
-- `TIMEPLUS_USER`/`TIMEPLUS_PASSWORD` env vars (default `default` / empty if unset).
+- Timeplus Enterprise runs in docker container `sleepy_robinson` (`timeplus/timeplus-enterprise:3.3.1-rc.10`) with ONLY port 8000 published. SQL ports (8123/3218) are NOT reachable from the host — all SQL goes through `docker exec`. Credentials: user `proton`, password `timeplus@t+`.
+- The apps REST API on port 8000 requires the same basic auth: `-u 'proton:timeplus@t+'`.
 - `LLM_API_KEY` env var holding a real OpenAI-compatible API key for install-time config. If unset, STOP and ask the user.
 
-All SQL verification uses:
+All SQL verification uses (reads SQL from stdin, JSON output):
 
 ```bash
-run_sql() { curl -s "http://localhost:8123/?default_format=JSONEachRow" -u "${TIMEPLUS_USER:-default}:${TIMEPLUS_PASSWORD:-}" --data-binary @-; }
+run_sql() { docker exec -i sleepy_robinson timeplusd client --user proton --password 'timeplus@t+' --format JSONEachRow --query "$(cat)"; }
 ```
+
+**Status note:** Task 1 was already executed during planning — all probes passed (`cosine_distance` → 1, `array_string_concat(['a','b'],'---')` → `a---b`, float32 arrays accepted). The expected spellings are correct; use them as written everywhere.
 
 ---
 
@@ -371,13 +373,13 @@ git commit -m "hn: rag_answer UDF (OpenAI-compatible chat)"
 - [ ] **Step 1: Check for an existing install and remove it**
 
 ```bash
-curl -s http://localhost:8000/default/api/v1beta2/apps | python3 -m json.tool | head -50
+curl -s -u 'proton:timeplus@t+' http://localhost:8000/default/api/v1beta2/apps | python3 -m json.tool | head -50
 ```
 
 If `io.timeplus.hacker-news` is listed, uninstall (adjust to the id/endpoint shape the list response shows):
 
 ```bash
-curl -s -X DELETE "http://localhost:8000/default/api/v1beta2/apps/io.timeplus.hacker-news"
+curl -s -u 'proton:timeplus@t+' -X DELETE "http://localhost:8000/default/api/v1beta2/apps/io.timeplus.hacker-news"
 ```
 
 - [ ] **Step 2: Build**
@@ -392,7 +394,7 @@ Expected: archive lists `manifest.yaml`, 7 ddl files, `dashboards/` (dashboard a
 - [ ] **Step 3: Install with config**
 
 ```bash
-curl -s -X POST http://localhost:8000/default/api/v1beta2/apps/install \
+curl -s -u 'proton:timeplus@t+' -X POST http://localhost:8000/default/api/v1beta2/apps/install \
   -F "file=@apps/hacker-news/hacker-news.tpapp" \
   -F "config[llm_api_key]=$LLM_API_KEY"
 ```
@@ -572,11 +574,11 @@ for p in panels:
     if not q or p['viz_type'] == 'control':
         continue
     q = q.replace('[[ .DB ]]', 'hn').replace('{{filter_question}}', 'What is happening with AI?')
-    r = subprocess.run(['curl', '-s', '-w', '\n%{http_code}', 'http://localhost:8123/?default_format=JSONEachRow',
-                        '-u', 'default:', '--data-binary', q], capture_output=True, text=True)
-    body, code = r.stdout.rsplit('\n', 1)
-    print(p['id'], '->', code, body[:120].replace('\n', ' | '))
-    assert code == '200', f"panel {p['id']} failed: {body}"
+    r = subprocess.run(['docker', 'exec', 'sleepy_robinson', 'timeplusd', 'client',
+                        '--user', 'proton', '--password', 'timeplus@t+',
+                        '--format', 'JSONEachRow', '--query', q], capture_output=True, text=True)
+    print(p['id'], '->', r.returncode, (r.stdout or r.stderr)[:120].replace('\n', ' | '))
+    assert r.returncode == 0, f"panel {p['id']} failed: {r.stderr}"
 print('ALL PANELS OK')
 EOF
 ```
@@ -587,8 +589,8 @@ Expected: every panel prints `200` and plausible rows; `ALL PANELS OK`.
 
 ```bash
 cd apps/hacker-news && make build && cd ../..
-curl -s -X DELETE "http://localhost:8000/default/api/v1beta2/apps/io.timeplus.hacker-news"
-curl -s -X POST http://localhost:8000/default/api/v1beta2/apps/install \
+curl -s -u 'proton:timeplus@t+' -X DELETE "http://localhost:8000/default/api/v1beta2/apps/io.timeplus.hacker-news"
+curl -s -u 'proton:timeplus@t+' -X POST http://localhost:8000/default/api/v1beta2/apps/install \
   -F "file=@apps/hacker-news/hacker-news.tpapp" \
   -F "config[llm_api_key]=$LLM_API_KEY"
 ```
