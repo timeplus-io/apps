@@ -20,7 +20,7 @@ The existing app ingests raw HN items (JSON in `hn_post.message`) via a schedule
 hn_post (existing raw JSON stream, task-fed every 10s)
   └── mv_hn_story_embedding   MV: WHERE type='story' AND title != '' AND NOT deleted/dead
         │                      parses JSON fields, calls embed_text(title + ' ' + text)
-        └── hn_story           id, title, text, url, by, score, posted_at,
+        └── hn_story           id, title, text, url, by, score, time,
                                embedding array(float32) — TTL = stream_ttl_days
 
 Q&A (ad-hoc SQL / dashboard panel):
@@ -57,7 +57,7 @@ Append stream `{{ .DB }}.hn_story`:
 | `url` | `string` |
 | `by` | `string` |
 | `score` | `uint32` |
-| `posted_at` | `datetime` (from HN unix seconds) |
+| `time` | `datetime` (post time, from HN unix seconds) |
 | `embedding` | `array(float32)` |
 
 TTL `to_datetime(_tp_time) + INTERVAL {{ .Config.stream_ttl_days }} DAY`, same logstore retention settings pattern as `hn_post`.
