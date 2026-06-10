@@ -24,9 +24,21 @@ Requires a running Timeplus instance and an OpenAI-compatible API key.
       -F "file=@hacker-news.tpapp" \
       -F "config[llm_api_key]=sk-..."
 
-Optional config keys: `llm_base_url` (default `https://api.openai.com/v1`),
-`embedding_model` (default `text-embedding-3-small`), `chat_model`
-(default `gpt-4o-mini`) — so Ollama / vLLM / LM Studio endpoints work too.
+## Config
+
+| key | default | notes |
+|---|---|---|
+| `llm_api_key` | — (required) | API key for the OpenAI-compatible endpoint |
+| `llm_base_url` | `https://api.openai.com/v1` | Any OpenAI-compatible endpoint works (Ollama / vLLM / LM Studio) |
+| `embedding_model` | `text-embedding-3-small` | Embedding model for stories and questions |
+| `chat_model` | `gpt-4o-mini` | Chat model that answers questions |
+| `stream_ttl_days` | `7` | Retention for `hn_post` and `hn_story` |
+| `task_schedule` | `10s` | How often the ingestion task runs (e.g. `10s`, `1m`, `5m`) |
+| `task_timeout` | `30s` | Max runtime per task execution |
+| `lookback` | `3` | Items to look back on the very first run |
+| `fetch_limit` | `20` | Max new items per task run |
+| `logstore_retention_bytes` | `107374182` | Logstore size (~100 MB) |
+| `logstore_retention_ms` | `300000` | Logstore retention (5 min) |
 
 ## Ask a question in SQL
 
