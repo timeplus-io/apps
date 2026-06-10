@@ -22,6 +22,7 @@ def embed_text(inputs):
 
     for chunk_start in range(0, len(todo), 100):
         chunk = todo[chunk_start:chunk_start + 100]
+        # Timeplus passes string UDF args to Python as bytes — decode before JSON-serializing.
         texts = [(inputs[i].decode('utf-8') if isinstance(inputs[i], bytes) else inputs[i])[:2000] for i in chunk]
         for attempt in range(3):
             try:
