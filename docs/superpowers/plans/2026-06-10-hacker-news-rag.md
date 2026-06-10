@@ -150,6 +150,7 @@ def embed_text(inputs):
     todo = [i for i, t in enumerate(inputs) if t and t.strip()]
     if not todo:
         return out
+    # NOTE: Timeplus passes string UDF args to Python as bytes — decode before JSON-serializing.
 
     s = requests.Session()
     s.headers.update({
@@ -159,7 +160,7 @@ def embed_text(inputs):
 
     for chunk_start in range(0, len(todo), 100):
         chunk = todo[chunk_start:chunk_start + 100]
-        texts = [inputs[i][:2000] for i in chunk]
+        texts = [(inputs[i].decode('utf-8') if isinstance(inputs[i], bytes) else inputs[i])[:2000] for i in chunk]
         for attempt in range(3):
             try:
                 r = s.post(base_url + '/embeddings',
@@ -327,6 +328,10 @@ def rag_answer(questions, contexts):
         'Content-Type': 'application/json',
     })
     for q, ctx in zip(questions, contexts):
+        if isinstance(q, bytes):
+            q = q.decode('utf-8')
+        if isinstance(ctx, bytes):
+            ctx = ctx.decode('utf-8')
         try:
             r = s.post(base_url + '/chat/completions', json={
                 'model': model,
