@@ -11,7 +11,7 @@
 **Prerequisites (ask the user if missing — do not fake these):**
 - Timeplus Enterprise runs in docker container `quizzical_ganguly` (`timeplus/timeplus-enterprise:3.3.1-rc.10`) with ports 8000, 8123, and 3218 published to the host. Credentials: user `proton`, password `timeplus@t+`.
 - The apps REST API on port 8000 requires basic auth: `-u 'proton:timeplus@t+'`.
-- `LLM_API_KEY`: real OpenAI-compatible API key for install-time config. If unavailable, STOP and ask the user.
+- LLM provider: local **Ollama** at `http://localhost:11434` (verified running). Because Timeplus runs in docker, UDFs must reach it via `http://host.docker.internal:11434/v1` (reachability from inside the container verified). Install/test config values: `llm_base_url=http://host.docker.internal:11434/v1`, `llm_api_key=ollama` (dummy — Ollama ignores auth but the manifest key is required), `embedding_model=mxbai-embed-large` (1024 dims, batched OpenAI-compatible /v1/embeddings verified), `chat_model=gemma4:e2b` (non-thinking model — clean answers; verified via /v1/chat/completions).
 
 All SQL verification uses (reads SQL from stdin, JSON output):
 
@@ -184,14 +184,14 @@ Key behaviors: vectorized batch call (≤100 inputs per request), 2,000-char tru
 Render the template with test values and execute (uses the real key so the call path is verified):
 
 ```bash
-sed -e "s|{{ .Config.llm_base_url }}|https://api.openai.com/v1|" \
-    -e "s|{{ .Config.llm_api_key }}|$LLM_API_KEY|" \
-    -e "s|{{ .Config.embedding_model }}|text-embedding-3-small|" \
+sed -e "s|{{ .Config.llm_base_url }}|http://host.docker.internal:11434/v1|" \
+    -e "s|{{ .Config.llm_api_key }}|ollama|" \
+    -e "s|{{ .Config.embedding_model }}|mxbai-embed-large|" \
     apps/hacker-news/ddl/004_udf_embed_text.sql | run_sql
 echo "SELECT length(embed_text('hello world')) AS dims, length(embed_text('')) AS empty_dims" | run_sql
 ```
 
-Expected: first command silent (200 OK); second returns `{"dims":1536,"empty_dims":0}`.
+Expected: first command silent (200 OK); second returns `{"dims":1024,"empty_dims":0}`.
 
 - [ ] **Step 3: Drop the test UDF** (install will recreate it inside the `hn` db context)
 
@@ -347,9 +347,9 @@ $$;
 - [ ] **Step 2: Test the rendered SQL**
 
 ```bash
-sed -e "s|{{ .Config.llm_base_url }}|https://api.openai.com/v1|" \
-    -e "s|{{ .Config.llm_api_key }}|$LLM_API_KEY|" \
-    -e "s|{{ .Config.chat_model }}|gpt-4o-mini|" \
+sed -e "s|{{ .Config.llm_base_url }}|http://host.docker.internal:11434/v1|" \
+    -e "s|{{ .Config.llm_api_key }}|ollama|" \
+    -e "s|{{ .Config.chat_model }}|gemma4:e2b|" \
     apps/hacker-news/ddl/007_udf_rag_answer.sql | run_sql
 echo "SELECT rag_answer('What does the post say?', 'Title: Test Post\nBy: alice\nText: Timeplus ships vector search.') AS answer" | run_sql
 echo "DROP FUNCTION IF EXISTS rag_answer" | run_sql
@@ -396,7 +396,10 @@ Expected: archive lists `manifest.yaml`, 7 ddl files, `dashboards/` (dashboard a
 ```bash
 curl -s -u 'proton:timeplus@t+' -X POST http://localhost:8000/default/api/v1beta2/apps/install \
   -F "file=@apps/hacker-news/hacker-news.tpapp" \
-  -F "config[llm_api_key]=$LLM_API_KEY"
+  -F "config[llm_base_url]=http://host.docker.internal:11434/v1" \
+  -F "config[llm_api_key]=ollama" \
+  -F "config[embedding_model]=mxbai-embed-large" \
+  -F "config[chat_model]=gemma4:e2b"
 ```
 
 Expected: success response, no `provision <name>` error. (Reminder: only the `config[key]=value` bracket form works.)
@@ -592,7 +595,10 @@ cd apps/hacker-news && make build && cd ../..
 curl -s -u 'proton:timeplus@t+' -X DELETE "http://localhost:8000/default/api/v1beta2/apps/io.timeplus.hacker-news"
 curl -s -u 'proton:timeplus@t+' -X POST http://localhost:8000/default/api/v1beta2/apps/install \
   -F "file=@apps/hacker-news/hacker-news.tpapp" \
-  -F "config[llm_api_key]=$LLM_API_KEY"
+  -F "config[llm_base_url]=http://host.docker.internal:11434/v1" \
+  -F "config[llm_api_key]=ollama" \
+  -F "config[embedding_model]=mxbai-embed-large" \
+  -F "config[chat_model]=gemma4:e2b"
 ```
 
 Ask the user to open the dashboard in the console and confirm panels render (especially the singleValue and bar panels — per project memory, `viz_config` fields must be validated against the rendered panel, not just the query).
