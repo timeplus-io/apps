@@ -60,6 +60,7 @@ config:
   - key: llm_api_key
     type: string
     required: true
+    secret: true
     description: API key for the OpenAI-compatible endpoint
   - key: embedding_model
     type: string
