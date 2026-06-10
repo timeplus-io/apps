@@ -36,3 +36,6 @@ registry-index-github:
 
 registry-docker:
 	docker compose up --build
+
+run_timeplus:
+	docker run -p 8000:8000 --platform=linux/amd64 timeplus/timeplus-enterprise:3.3.1-rc.10
