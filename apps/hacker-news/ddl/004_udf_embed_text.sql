@@ -33,8 +33,9 @@ def embed_text(inputs):
                 for j, item in enumerate(r.json()['data']):
                     out[chunk[item.get('index', j)]] = item['embedding']
                 break
-            except Exception:
+            except Exception as e:
                 if attempt == 2:
+                    print('embed_text: chunk failed after retries: %s' % e)
                     break
                 time.sleep(0.5 * (2 ** attempt))
     return out
