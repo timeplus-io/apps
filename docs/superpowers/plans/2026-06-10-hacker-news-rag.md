@@ -9,14 +9,14 @@
 **Tech Stack:** Timeplus DDL (Go-templated SQL), Python UDFs using `requests` against an OpenAI-compatible API, `.tpapp` packaging, dashboard JSON.
 
 **Prerequisites (ask the user if missing — do not fake these):**
-- Timeplus Enterprise runs in docker container `sleepy_robinson` (`timeplus/timeplus-enterprise:3.3.1-rc.10`) with ONLY port 8000 published. SQL ports (8123/3218) are NOT reachable from the host — all SQL goes through `docker exec`. Credentials: user `proton`, password `timeplus@t+`.
-- The apps REST API on port 8000 requires the same basic auth: `-u 'proton:timeplus@t+'`.
-- `LLM_API_KEY` env var holding a real OpenAI-compatible API key for install-time config. If unset, STOP and ask the user.
+- Timeplus Enterprise runs in docker container `quizzical_ganguly` (`timeplus/timeplus-enterprise:3.3.1-rc.10`) with ports 8000, 8123, and 3218 published to the host. Credentials: user `proton`, password `timeplus@t+`.
+- The apps REST API on port 8000 requires basic auth: `-u 'proton:timeplus@t+'`.
+- `LLM_API_KEY`: real OpenAI-compatible API key for install-time config. If unavailable, STOP and ask the user.
 
 All SQL verification uses (reads SQL from stdin, JSON output):
 
 ```bash
-run_sql() { docker exec -i sleepy_robinson timeplusd client --user proton --password 'timeplus@t+' --format JSONEachRow --query "$(cat)"; }
+run_sql() { curl -s "http://localhost:8123/?default_format=JSONEachRow" -u "proton:timeplus@t+" --data-binary @-; }
 ```
 
 **Status note:** Task 1 was already executed during planning — all probes passed (`cosine_distance` → 1, `array_string_concat(['a','b'],'---')` → `a---b`, float32 arrays accepted). The expected spellings are correct; use them as written everywhere.
