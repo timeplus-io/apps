@@ -95,3 +95,8 @@ resources:
   - file: ddl/007_udf_rag_answer.sql
     type: udf
     name: rag_answer
+
+dashboards:
+  - file: dashboards/main.json
+    name: Hacker News RAG Q&A
+    description: Ask questions over live HN stories with vector search + LLM, plus embedding-pipeline health
