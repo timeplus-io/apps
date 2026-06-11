@@ -1,0 +1,103 @@
+[
+  {
+    "id": "hn-control-question",
+    "title": "Ask Hacker News",
+    "description": "",
+    "position": { "h": 1, "w": 12, "x": 0, "y": 0, "nextX": 12, "nextY": 1 },
+    "viz_type": "control",
+    "viz_content": "",
+    "viz_config": {
+      "chartType": "text",
+      "defaultValue": "What is happening with AI?",
+      "inlineValues": "",
+      "label": "Question",
+      "labelWidth": "10",
+      "target": "filter_question"
+    }
+  },
+  {
+    "id": "hn-rag-answer",
+    "title": "AI Answer",
+    "description": "Embeds the question, retrieves the 5 most similar stories by cosine distance, and asks the LLM to answer from them.",
+    "position": { "h": 5, "w": 8, "x": 0, "y": 1, "nextX": 8, "nextY": 6 },
+    "viz_type": "chart",
+    "viz_content": "WITH embed_text('{{filter_question}}') AS qvec, hits AS (SELECT title, url, by, score, left(text, 500) AS snippet, cosine_distance(embedding, qvec) AS dist FROM table([[ .DB ]].hn_story) WHERE length(embedding) > 0 ORDER BY dist ASC LIMIT 5) SELECT rag_answer('{{filter_question}}', array_string_concat(group_array(concat('Title: ', title, '\\nBy: ', by, '\\nURL: ', url, '\\nText: ', snippet)), '\\n---\\n')) AS answer FROM hits",
+    "viz_config": {
+      "chartType": "table"
+    }
+  },
+  {
+    "id": "hn-stories-embedded",
+    "title": "Stories Embedded",
+    "description": "Stories in the vector store with a non-empty embedding.",
+    "position": { "h": 2, "w": 4, "x": 8, "y": 1, "nextX": 12, "nextY": 3 },
+    "viz_type": "chart",
+    "viz_content": "SELECT count() AS embedded FROM table([[ .DB ]].hn_story) WHERE length(embedding) > 0",
+    "viz_config": {
+      "chartType": "singleValue",
+      "config": {
+        "value": "embedded",
+        "sparkline": false,
+        "delta": false,
+        "unit": { "value": "", "position": "right" },
+        "color": "blue",
+        "sparklineColor": "blue",
+        "increaseColor": "green",
+        "decreaseColor": "red",
+        "fractionDigits": 0,
+        "fontSize": 48
+      }
+    }
+  },
+  {
+    "id": "hn-stories-per-hour",
+    "title": "Stories per Hour (24h)",
+    "description": "",
+    "position": { "h": 3, "w": 4, "x": 8, "y": 3, "nextX": 12, "nextY": 6 },
+    "viz_type": "chart",
+    "viz_content": "SELECT to_start_of_hour(time) AS hour, count() AS stories FROM table([[ .DB ]].hn_story) WHERE time > now() - INTERVAL 24 HOUR GROUP BY hour ORDER BY hour",
+    "viz_config": {
+      "chartType": "bar",
+      "config": {
+        "xAxis": "hour",
+        "yAxis": "stories",
+        "color": "",
+        "xRange": "Infinity",
+        "xFormat": "",
+        "xTitle": "",
+        "yTitle": "",
+        "yRange": { "min": null, "max": null },
+        "dataLabel": false,
+        "showAll": false,
+        "legend": false,
+        "gridlines": true,
+        "unit": { "position": "left", "value": "" },
+        "fractionDigits": 0,
+        "colors": ["#D53F8C"],
+        "yTickLabel": { "maxChar": 25 }
+      }
+    }
+  },
+  {
+    "id": "hn-retrieved-stories",
+    "title": "Retrieved Stories (top-5 by similarity)",
+    "description": "The stories the answer above is based on. Lower distance = more similar.",
+    "position": { "h": 4, "w": 12, "x": 0, "y": 6, "nextX": 12, "nextY": 10 },
+    "viz_type": "chart",
+    "viz_content": "WITH embed_text('{{filter_question}}') AS qvec SELECT title, by, score, url, round(cosine_distance(embedding, qvec), 4) AS distance FROM table([[ .DB ]].hn_story) WHERE length(embedding) > 0 ORDER BY distance ASC LIMIT 5",
+    "viz_config": {
+      "chartType": "table"
+    }
+  },
+  {
+    "id": "hn-latest-stories",
+    "title": "Latest Stories",
+    "description": "Most recent stories ingested into the vector store.",
+    "position": { "h": 4, "w": 12, "x": 0, "y": 10, "nextX": 12, "nextY": 14 },
+    "viz_type": "chart",
+    "viz_content": "SELECT time, title, by, score, url FROM table([[ .DB ]].hn_story) ORDER BY time DESC LIMIT 20",
+    "viz_config": {
+      "chartType": "table"
+    }
+  }
+]
