@@ -40,6 +40,14 @@ Requires a running Timeplus instance and an OpenAI-compatible API key.
 | `logstore_retention_bytes` | `107374182` | Logstore size (~100 MB) |
 | `logstore_retention_ms` | `300000` | Logstore retention (5 min) |
 
+Note on `llm_api_key`: it is marked `secret` (masked in the UI), but Python
+UDFs bake config into their source, so the key is visible via
+`SHOW CREATE FUNCTION` to users with that privilege. The named-collection
+pattern used by `aws-cost` is external-stream-only — `CREATE FUNCTION` accepts
+the `named_collection` setting but silently ignores it (verified on 3.3.1).
+Prefer a low-privilege key, or a local endpoint (Ollama) where the key is a
+dummy value.
+
 ## Ask a question in SQL
 
     WITH embed_text('What is happening with AI?') AS qvec,
