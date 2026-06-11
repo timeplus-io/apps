@@ -35,7 +35,9 @@ def rag_answer(questions, contexts):
                 'temperature': 0.2,
             }, timeout=(5, 60))
             r.raise_for_status()
-            out.append(r.json()['choices'][0]['message']['content'])
+            choices = r.json().get('choices', [])
+            content = choices[0]['message'].get('content') if choices else None
+            out.append(content if content else 'LLM error: empty response from model')
         except Exception as e:
             out.append('LLM error: ' + str(e))
     return out
