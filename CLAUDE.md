@@ -75,7 +75,7 @@ The built `.tpapp` file is output to the app's own directory (`apps/my-app/my-ap
 - `resources` — list of DDL files with `file`, `type`, and `name`; executed in listed order
 - `config` — optional user-supplied parameters with `key`, `type`, `required`, `default`
 
-Resource types: `stream`, `external_stream`, `mutable_stream`, `materialized_view`, `view`, `external_table`, `udf`, `system`.
+Resource types: `stream`, `external_stream`, `mutable_stream`, `materialized_view`, `view`, `external_table`, `udf`, `task`, `system`.
 
 ## DDL Template Variables
 

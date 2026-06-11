@@ -1,7 +1,7 @@
 package_format_version: 1
 id: io.timeplus.hacker-news
 name: Hacker News Live Feed
-version: 1.0.0
+version: 1.1.0
 author: Timeplus
 icon: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJiZyIgeDE9IjAiIHkxPSIwIiB4Mj0iNDgiIHkyPSI0OCIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNENTNGOEMiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiM5RjJCQzAiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHJ4PSIxMSIgZmlsbD0idXJsKCNiZykiLz48cmVjdCB4PSIxMSIgeT0iMTIiIHdpZHRoPSIyNiIgaGVpZ2h0PSIyNCIgcng9IjIiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMS41IiBmaWxsPSJub25lIi8+PGxpbmUgeDE9IjE0IiB5MT0iMTciIHgyPSIzNCIgeTI9IjE3IiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjxsaW5lIHgxPSIxNCIgeTE9IjIxIiB4Mj0iMzQiIHkyPSIyMSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjxsaW5lIHgxPSIxNCIgeTE9IjI1IiB4Mj0iMzQiIHkyPSIyNSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjxsaW5lIHgxPSIxNCIgeTE9IjI5IiB4Mj0iMjYiIHkyPSIyOSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjwvc3ZnPg=="
 description: >
@@ -52,6 +52,26 @@ config:
     required: false
     default: "20"
     description: Maximum number of new items to fetch per task execution
+  - key: llm_base_url
+    type: string
+    required: false
+    default: "https://api.openai.com/v1"
+    description: Base URL of the OpenAI-compatible API used for embeddings and chat
+  - key: llm_api_key
+    type: string
+    required: true
+    secret: true
+    description: API key for the OpenAI-compatible endpoint
+  - key: embedding_model
+    type: string
+    required: false
+    default: "text-embedding-3-small"
+    description: Embedding model used to vectorize stories and questions
+  - key: chat_model
+    type: string
+    required: false
+    default: "gpt-4o-mini"
+    description: Chat model used to answer questions
 
 resources:
   - file: ddl/001_udf_get_hn_posts.sql
@@ -63,3 +83,20 @@ resources:
   - file: ddl/003_task_get_hn_post.sql
     type: task
     name: get_hn_post
+  - file: ddl/004_udf_embed_text.sql
+    type: udf
+    name: embed_text
+  - file: ddl/005_hn_story.sql
+    type: stream
+    name: hn_story
+  - file: ddl/006_mv_hn_story_embedding.sql
+    type: materialized_view
+    name: mv_hn_story_embedding
+  - file: ddl/007_udf_rag_answer.sql
+    type: udf
+    name: rag_answer
+
+dashboards:
+  - file: dashboards/main.json
+    name: Hacker News RAG Q&A
+    description: Ask questions over live HN stories with vector search + LLM, plus embedding-pipeline health
