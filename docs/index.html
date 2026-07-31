@@ -22,7 +22,13 @@
   }
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
-  html, body { margin: 0; padding: 0; }
+  html {
+    margin: 0;
+    padding: 0;
+    overflow-y: scroll;
+    scrollbar-gutter: stable;
+  }
+  body { margin: 0; padding: 0; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
     color: var(--fg);
@@ -32,8 +38,12 @@
   }
   a { color: inherit; }
   header {
-    border-bottom: 1px solid var(--border);
-    background: #fff;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    border-bottom: 1px solid rgba(247, 246, 246, 0.14);
+    background: #231F2B;
+    color: #F7F6F6;
   }
   .header-inner {
     max-width: 1200px;
@@ -60,13 +70,13 @@
     color: #fff;
   }
   .brand-title { font-size: 16px; font-weight: 700; }
-  .brand-sub { font-size: 12px; color: var(--muted-fg); }
+  .brand-sub { font-size: 12px; color: #F7F6F6; }
   .header-meta {
     font-size: 12px;
-    color: var(--muted-fg);
+    color: #F7F6F6;
     text-align: right;
   }
-  .header-meta a { text-decoration: none; color: var(--pink); }
+  .header-meta a { text-decoration: none; color: #FF73B6; }
   .header-meta a:hover { text-decoration: underline; }
 
   main {
@@ -81,6 +91,8 @@
     align-items: flex-start;
   }
   .sidebar {
+    position: sticky;
+    top: 92px;
     width: 208px;
     flex-shrink: 0;
     display: flex;
@@ -174,7 +186,7 @@
   }
   @media (max-width: 720px) {
     .layout { flex-direction: column; }
-    .sidebar { width: 100%; }
+    .sidebar { position: static; width: 100%; }
     .grid { grid-template-columns: 1fr; }
   }
 
@@ -197,6 +209,11 @@
     align-items: flex-start;
     justify-content: space-between;
     gap: 12px;
+  }
+  .card-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
   .card-icon {
     flex-shrink: 0;
@@ -230,6 +247,12 @@
     transition: background 0.15s, border-color 0.15s;
   }
   .btn:hover { background: #f9fafb; border-color: #d1d5db; }
+  .btn-icon {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    justify-content: center;
+  }
   .btn-primary {
     background: var(--pink);
     border-color: var(--pink);
@@ -280,6 +303,530 @@
     color: #9ca3af;
     margin-top: auto;
     padding-top: 4px;
+  }
+
+  .detail {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .detail-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--muted);
+  }
+  .detail-title {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  .detail-title .card-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+  }
+  .detail h1 {
+    margin: 0 0 8px;
+    font-size: 28px;
+    line-height: 1.15;
+  }
+  .detail-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+  .detail-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 280px;
+    gap: 24px;
+    align-items: start;
+  }
+  .detail-main, .detail-side {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .detail-side {
+    position: sticky;
+    top: 24px;
+    border: none;
+    border-radius: 0;
+    background: var(--bg);
+    padding: 24px;
+  }
+  .detail-tabs {
+    display: flex;
+    gap: 24px;
+    border-bottom: 1px solid var(--muted);
+  }
+  .detail-tab {
+    appearance: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    background: transparent;
+    color: var(--fg);
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 0 0 10px;
+  }
+  .detail-tab:hover {
+    color: var(--pink);
+  }
+  .detail-tab[aria-selected="true"] {
+    border-bottom-color: var(--pink);
+    color: var(--fg);
+  }
+  .detail-panel {
+    border: 1px solid var(--muted);
+    border-radius: 8px;
+    background: #fff;
+    padding: 24px;
+  }
+  .detail-section {
+    border-top: 1px solid var(--muted);
+    padding-top: 18px;
+  }
+  .detail-section:first-child { border-top: none; padding-top: 0; }
+  .detail-section h2 {
+    font-size: 14px;
+    margin: 0 0 12px;
+  }
+  .detail-list {
+    display: grid;
+    gap: 16px;
+    margin: 0;
+  }
+  .detail-row {
+    display: block;
+  }
+  .detail-key {
+    color: var(--fg);
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .detail-value {
+    color: var(--fg);
+    font-size: 14px;
+    word-break: break-word;
+  }
+  .detail-description {
+    color: var(--fg);
+    font-size: 13px;
+    white-space: pre-line;
+  }
+  .overview-description {
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .overview-intro {
+    padding-bottom: 24px;
+  }
+  .lineage-toolbar {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    margin-bottom: 8px;
+  }
+  .lineage-widget {
+    min-width: 0;
+    width: 100%;
+  }
+  .lineage-zoom {
+    align-items: center;
+    appearance: none;
+    background: #fff;
+    border: 1px solid var(--muted);
+    border-radius: 4px;
+    color: var(--fg);
+    cursor: pointer;
+    display: inline-flex;
+    font-size: 22px;
+    height: 32px;
+    justify-content: center;
+    line-height: 1;
+    padding: 0;
+    width: 32px;
+  }
+  .lineage-zoom:hover {
+    background: var(--muted-bg);
+  }
+  .lineage-zoom:focus-visible {
+    outline: 2px solid var(--pink);
+    outline-offset: 2px;
+  }
+  .lineage-scroll {
+    background: #ececed;
+    border: 1px solid var(--muted);
+    border-radius: 8px;
+    box-sizing: border-box;
+    cursor: grab;
+    height: 340px;
+    inline-size: 100%;
+    max-width: 100%;
+    overflow: auto;
+    user-select: none;
+    width: 100%;
+  }
+  .lineage-scroll.is-dragging {
+    cursor: grabbing;
+  }
+  .lineage-stage {
+    height: 320px;
+    min-height: 100%;
+    min-width: 100%;
+    position: relative;
+    width: 771px;
+  }
+  .lineage-canvas {
+    background: transparent;
+    border: 0;
+    height: 360px;
+    position: relative;
+    transform: scale(0.82);
+    transform-origin: top left;
+    width: 940px;
+  }
+  .lineage-canvas svg {
+    inset: 0;
+    height: 100%;
+    pointer-events: none;
+    position: absolute;
+    width: 100%;
+  }
+  .lineage-edge {
+    fill: none;
+    stroke: #6b7280;
+    stroke-dasharray: 5 5;
+    stroke-linecap: round;
+    stroke-width: 1.5;
+  }
+  .lineage-node {
+    background: #fff;
+    border: 1px solid var(--muted);
+    border-radius: 4px;
+    min-height: 54px;
+    padding: 8px 10px;
+    position: absolute;
+    width: 130px;
+  }
+  .lineage-type {
+    color: var(--muted-fg);
+    font-size: 12px;
+    line-height: 1.2;
+    margin-bottom: 4px;
+  }
+  .lineage-name {
+    color: var(--fg);
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+  }
+  .chips {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    background: var(--muted-bg);
+    color: #475569;
+    padding: 3px 8px;
+    font-size: 12px;
+  }
+  .resource-list {
+    display: grid;
+    gap: 8px;
+  }
+  .resource-item {
+    border: 1px solid var(--muted);
+    border-radius: 8px;
+    padding: 10px 12px;
+    background: #fff;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+    align-items: center;
+  }
+  .resource-name {
+    font-weight: 600;
+    font-size: 13px;
+  }
+  .resource-file {
+    color: var(--muted-fg);
+    font-size: 12px;
+    margin-top: 2px;
+    word-break: break-word;
+  }
+  .resource-type {
+    color: #475569;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  .dashboard-preview {
+    margin: 0;
+  }
+  .dashboard-preview-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 14px;
+  }
+  .dashboard-preview-title {
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .dashboard-preview-desc {
+    color: var(--muted-fg);
+    font-size: 12px;
+    margin-top: 2px;
+  }
+  .dashboard-preview-grid {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    grid-auto-rows: 44px;
+    gap: 8px;
+  }
+  .dashboard-panel {
+    border: 1px solid var(--muted);
+    border-radius: 8px;
+    background: #fff;
+    min-height: 44px;
+    overflow: hidden;
+    padding: 10px;
+    position: relative;
+  }
+  .kpi-label {
+    color: var(--muted-fg);
+    font-size: 11px;
+    margin-bottom: 8px;
+  }
+  .dashboard-panel-title {
+    color: var(--fg);
+    font-size: 12px;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .dashboard-panel-sub {
+    color: var(--muted-fg);
+    font-size: 11px;
+    margin-top: 2px;
+  }
+  .dashboard-control {
+    align-items: center;
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .dashboard-select {
+    border: 1px solid var(--muted);
+    border-radius: 4px;
+    color: var(--fg);
+    font-size: 12px;
+    padding: 4px 8px;
+    white-space: nowrap;
+  }
+  .dashboard-panel-body {
+    height: calc(100% - 22px);
+    margin-top: 8px;
+  }
+  .chart-bars {
+    align-items: end;
+    display: flex;
+    gap: 6px;
+    height: 100%;
+  }
+  .chart-bar {
+    animation: barPulse 2.6s ease-in-out infinite;
+    background: linear-gradient(180deg, var(--pink), #9F2BC0);
+    border-radius: 4px 4px 0 0;
+    flex: 1;
+    min-height: 18px;
+    opacity: 0.82;
+  }
+  .chart-bar:nth-child(2) { animation-delay: -0.5s; }
+  .chart-bar:nth-child(3) { animation-delay: -1.1s; }
+  .chart-bar:nth-child(4) { animation-delay: -0.8s; }
+  .chart-bar:nth-child(5) { animation-delay: -1.6s; }
+  .chart-bar:nth-child(6) { animation-delay: -0.2s; }
+  .chart-line {
+    height: 100%;
+    position: relative;
+  }
+  .chart-line svg {
+    height: 100%;
+    overflow: visible;
+    width: 100%;
+  }
+  .chart-line polyline {
+    animation: lineTrace 2.8s ease-in-out infinite;
+    fill: none;
+    stroke: var(--pink);
+    stroke-dasharray: 260;
+    stroke-dashoffset: 260;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 3;
+  }
+  .chart-candles {
+    align-items: center;
+    display: flex;
+    gap: 10px;
+    height: 100%;
+    justify-content: space-around;
+  }
+  .chart-candle {
+    animation: barPulse 2.8s ease-in-out infinite;
+    background: var(--pink);
+    border-radius: 3px;
+    height: 38%;
+    position: relative;
+    width: 8px;
+  }
+  .chart-candle::before {
+    background: currentColor;
+    content: "";
+    height: 160%;
+    left: 50%;
+    opacity: 0.45;
+    position: absolute;
+    top: -30%;
+    transform: translateX(-50%);
+    width: 1px;
+  }
+  .chart-candle:nth-child(even) {
+    background: #9F2BC0;
+  }
+  .chart-candle:nth-child(2) { animation-delay: -0.4s; }
+  .chart-candle:nth-child(3) { animation-delay: -1s; }
+  .chart-candle:nth-child(4) { animation-delay: -1.4s; }
+  .preview-table {
+    display: grid;
+    gap: 6px;
+  }
+  .preview-table-row {
+    animation: rowFade 2.8s ease-in-out infinite;
+    background: var(--muted-bg);
+    border-radius: 4px;
+    height: 10px;
+  }
+  .preview-table-row:nth-child(2) { animation-delay: -0.5s; width: 92%; }
+  .preview-table-row:nth-child(3) { animation-delay: -1s; width: 78%; }
+  .preview-table-row:nth-child(4) { animation-delay: -1.5s; width: 88%; }
+  .dashboard-preview-loading {
+    color: var(--muted-fg);
+    font-size: 12px;
+    padding: 16px 0;
+  }
+  .dashboard-preview-frame {
+    border-radius: 8px;
+    aspect-ratio: 1440 / 964;
+    background: #fff;
+    overflow: hidden;
+  }
+  .dashboard-preview-media {
+    display: block;
+    height: 100%;
+    object-fit: contain;
+    width: 100%;
+  }
+  @keyframes pulseDot {
+    0%, 100% { opacity: 0.35; transform: scale(0.85); }
+    50% { opacity: 1; transform: scale(1); }
+  }
+  @keyframes barPulse {
+    0%, 100% { transform: scaleY(0.72); }
+    50% { transform: scaleY(1); }
+  }
+  @keyframes lineTrace {
+    0% { stroke-dashoffset: 260; opacity: 0.45; }
+    55%, 100% { stroke-dashoffset: 0; opacity: 1; }
+  }
+  @keyframes rowFade {
+    0%, 100% { opacity: 0.45; }
+    50% { opacity: 1; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .chart-bar,
+    .chart-line polyline,
+    .chart-candle,
+    .preview-table-row {
+      animation: none;
+    }
+    .chart-line polyline {
+      stroke-dashoffset: 0;
+    }
+  }
+  .code-block {
+    position: relative;
+  }
+  .code-line {
+    display: block;
+    overflow-x: auto;
+    border-radius: 8px;
+    background: #0f172a;
+    color: #e2e8f0;
+    font-family: Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    padding: 12px 48px 12px 12px;
+    font-size: 12px;
+  }
+  .copy-code {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 1px solid rgba(226, 232, 240, 0.32);
+    border-radius: 4px;
+    background: rgba(15, 23, 42, 0.82);
+    color: #e2e8f0;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .copy-code:hover {
+    background: rgba(30, 41, 59, 0.92);
+    border-color: rgba(226, 232, 240, 0.56);
+  }
+  .copy-code:focus-visible {
+    outline: 2px solid var(--pink);
+    outline-offset: 2px;
+  }
+  .copy-code.is-copied {
+    border-color: var(--pink);
+    color: #fff;
+  }
+  .back-link {
+    color: var(--pink);
+    text-decoration: none;
+    font-weight: 500;
+  }
+  .back-link:hover { text-decoration: underline; }
+  @media (max-width: 860px) {
+    .detail-header { flex-direction: column; }
+    .detail-actions { justify-content: flex-start; }
+    .detail-grid { grid-template-columns: 1fr; }
+    .detail-side { position: static; }
+    .dashboard-preview-grid {
+      display: flex;
+      flex-direction: column;
+    }
+    .dashboard-panel {
+      min-height: 132px;
+    }
   }
 
   .empty, .loading, .error {
@@ -358,6 +905,7 @@
       </div>
       <div id="status" class="loading">Loading catalog…</div>
       <div id="grid" class="grid" hidden></div>
+      <div id="detail" class="detail" hidden></div>
     </section>
   </div>
 </main>
@@ -373,7 +921,7 @@
 // updated registry/index.json back to main on every release, so this stays
 // in sync automatically.
 const REGISTRY_URL = "https://raw.githubusercontent.com/timeplus-io/apps/main/registry/index.json";
-const PAGE_SIZE = 12;
+const PAGE_SIZE = 24;
 
 const state = {
   apps: [],
@@ -385,6 +933,8 @@ const state = {
 
 const PACKAGE_ICON_SVG = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="16.5" y1="9.4" x2="7.5" y2="4.21"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>`;
 const DOWNLOAD_ICON_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`;
+const VIEW_ICON_SVG = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.06 12.35a1 1 0 0 1 0-.7C3.7 7.6 7.6 5 12 5s8.3 2.6 9.94 6.65a1 1 0 0 1 0 .7C20.3 16.4 16.4 19 12 19s-8.3-2.6-9.94-6.65Z"/><circle cx="12" cy="12" r="3"/></svg>`;
+const COPY_ICON_SVG = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M3.98254 7.57538C3.9823 7.11122 4.16686 6.66626 4.49494 6.33794C4.82326 6.00986 5.26822 5.8253 5.73238 5.8253H14.7182C15.1824 5.8253 15.6273 6.00986 15.9557 6.33794C16.2837 6.66626 16.4681 7.11122 16.4681 7.57538V19.2454C16.4681 19.7095 16.2837 20.1545 15.9557 20.4828C15.6273 20.8109 15.1824 20.9955 14.7182 20.9955H5.73238C5.26822 20.9955 4.82326 20.8109 4.49494 20.4828C4.16686 20.1545 3.9823 19.7095 3.98254 19.2454V7.57538ZM5.48254 7.57538V19.2454C5.48254 19.3116 5.5087 19.3752 5.55574 19.4223C5.60254 19.4691 5.66614 19.4955 5.73238 19.4955H14.7182C14.7845 19.4955 14.8481 19.4691 14.8949 19.4223C14.9419 19.3752 14.9681 19.3116 14.9681 19.2454V7.57538C14.9681 7.50914 14.9419 7.44554 14.8949 7.39874C14.8481 7.3517 14.7845 7.3253 14.7182 7.3253H5.73238C5.66614 7.3253 5.60254 7.3517 5.55574 7.39874C5.5087 7.44554 5.48254 7.50914 5.48254 7.57538Z" fill="currentColor"/><path fill-rule="evenodd" clip-rule="evenodd" d="M8.73598 2.98466L8.77462 2.9837H18.2863C18.7505 2.9837 19.1957 3.16802 19.5237 3.49634C19.8521 3.82442 20.0364 4.26962 20.0364 4.73378V16.4115C20.0364 16.8756 19.8521 17.3208 19.5237 17.6489C19.1957 17.9772 18.7505 18.1615 18.2863 18.1615H18.0038C17.5898 18.1615 17.2538 17.8255 17.2538 17.4115C17.2538 16.9975 17.5898 16.6615 18.0038 16.6615H18.2863C18.3528 16.6615 18.4164 16.6351 18.4632 16.5883C18.51 16.5413 18.5364 16.4777 18.5364 16.4115V4.73378C18.5364 4.6673 18.51 4.60394 18.4632 4.5569C18.4164 4.5101 18.3528 4.4837 18.2863 4.4837H8.77462C8.36062 4.4837 8.02462 4.1477 8.02462 3.7337C8.02462 3.33266 8.33998 3.00482 8.73598 2.98466Z" fill="currentColor"/></svg>`;
 
 function escapeHTML(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({
@@ -396,35 +946,686 @@ function supportTypeOf(app) {
   return app.author === "Timeplus" ? "Timeplus" : "Community";
 }
 
+function displayText(value) {
+  return String(value).replace(/\bRealtime\b/g, "Real-Time");
+}
+
+function titleCaseCategory(category) {
+  return String(category)
+    .replace(/[-_]+/g, " ")
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((word) => {
+      const normalized = word.toLowerCase();
+      if (normalized === "devops") return "DevOps";
+      if (normalized === "finops") return "FinOps";
+      return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+    })
+    .join(" ");
+}
+
 function renderIcon(app) {
   if (app.icon) {
-    return `<div class="card-icon"><img src="${escapeHTML(app.icon)}" alt="${escapeHTML(app.name)}" /></div>`;
+    return `<div class="card-icon"><img src="${escapeHTML(app.icon)}" alt="${escapeHTML(displayText(app.name))}" /></div>`;
   }
   return `<div class="card-icon fallback">${PACKAGE_ICON_SVG}</div>`;
 }
 
+function appSlug(app) {
+  const downloadUrl = app.download_url || "";
+  const filename = downloadUrl.split("/").pop() || "";
+  if (filename.endsWith(".tpapp")) return filename.slice(0, -6);
+  return String(app.id || "").split(".").pop();
+}
+
+function appDetailHash(app) {
+  return `#app/${encodeURIComponent(app.id)}`;
+}
+
+function appByHash() {
+  const prefix = "#app/";
+  if (!window.location.hash.startsWith(prefix)) return null;
+  const appId = decodeURIComponent(window.location.hash.slice(prefix.length));
+  return state.apps.find((app) => app.id === appId) || null;
+}
+
 function renderCard(app) {
-  const cats = (app.categories || []).join(", ");
+  const cats = (app.categories || []).map(titleCaseCategory).join(", ");
   const downloadUrl = app.download_url || "#";
   const filename = downloadUrl.split("/").pop() || `${app.id}.tpapp`;
+  const appName = displayText(app.name);
+  const appDescription = app.description ? displayText(app.description) : "";
   return `
     <div class="card">
       <div class="card-top">
         ${renderIcon(app)}
+        <div class="card-actions">
+          <a class="btn btn-icon" href="${escapeHTML(appDetailHash(app))}" title="View details" aria-label="View details for ${escapeHTML(appName)}">
+            ${VIEW_ICON_SVG}
+          </a>
+          <a class="btn btn-primary" href="${escapeHTML(downloadUrl)}" download="${escapeHTML(filename)}">
+            ${DOWNLOAD_ICON_SVG}
+            Download
+          </a>
+        </div>
+      </div>
+      <p class="card-name">${escapeHTML(appName)}</p>
+      <div class="card-meta">
+        <span class="support-badge">${supportTypeOf(app) === "Timeplus" ? "TIMEPLUS" : "COMMUNITY"}</span>
+        <span class="version">v${escapeHTML(app.version || "")}</span>
+      </div>
+      ${appDescription ? `<p class="card-desc">${escapeHTML(appDescription)}</p>` : ""}
+      ${cats ? `<p class="card-categories">${escapeHTML(cats)}</p>` : ""}
+    </div>
+  `;
+}
+
+function renderDetailRows(rows) {
+  return rows
+    .filter((row) => row.value !== undefined && row.value !== null && row.value !== "")
+    .map((row) => `
+      <div class="detail-row">
+        <div class="detail-key">${escapeHTML(row.label)}</div>
+        <div class="detail-value">${row.html || escapeHTML(row.value)}</div>
+      </div>
+    `)
+    .join("");
+}
+
+function renderConfig(config) {
+  if (!config || config.length === 0) {
+    return `<p class="version">This app has no configuration fields.</p>`;
+  }
+  return `<div class="resource-list">${config.map((field) => {
+    const required = field.required ? "Required" : "Optional";
+    const secret = field.secret ? " · Secret" : "";
+    const defaultValue = field.secret && field.default ? "Masked" : field.default;
+    const options = field.options && field.options.length > 0
+      ? `<div class="resource-file">Options: ${escapeHTML(field.options.join(", "))}</div>`
+      : "";
+    const description = field.description
+      ? `<div class="resource-file">${escapeHTML(field.description)}</div>`
+      : "";
+    const defaultLine = defaultValue
+      ? `<div class="resource-file">Default: ${escapeHTML(defaultValue)}</div>`
+      : "";
+    return `
+      <div class="resource-item">
+        <div>
+          <div class="resource-name">${escapeHTML(field.key)}</div>
+          ${description}
+          ${defaultLine}
+          ${options}
+        </div>
+        <div class="resource-type">${escapeHTML(field.type || "string")} · ${required}${secret}</div>
+      </div>
+    `;
+  }).join("")}</div>`;
+}
+
+function renderResources(resources) {
+  if (!resources || resources.length === 0) {
+    return `<p class="version">No resources declared.</p>`;
+  }
+  return `<div class="resource-list">${resources.map((resource) => `
+    <div class="resource-item">
+      <div>
+        <div class="resource-name">${escapeHTML(resource.name || resource.file || "Resource")}</div>
+        ${resource.file ? `<div class="resource-file">${escapeHTML(resource.file)}</div>` : ""}
+      </div>
+      <div class="resource-type">${escapeHTML(titleCaseCategory(resource.type || "resource"))}</div>
+    </div>
+  `).join("")}</div>`;
+}
+
+function lineageEdgePath(from, to) {
+  const nodeWidth = 130;
+  const nodeHeight = 54;
+  const fromX = from.x + nodeWidth;
+  const fromY = from.y + nodeHeight / 2;
+  const toX = to.x;
+  const toY = to.y + nodeHeight / 2;
+  if (Math.abs(from.x - to.x) < 1) {
+    return `M ${from.x + nodeWidth / 2} ${from.y} L ${to.x + nodeWidth / 2} ${to.y + nodeHeight}`;
+  }
+  const curve = Math.max(60, (toX - fromX) / 2);
+  return `M ${fromX} ${fromY} C ${fromX + curve} ${fromY}, ${toX - curve} ${toY}, ${toX} ${toY}`;
+}
+
+function renderLineageNode(node) {
+  return `
+    <div class="lineage-node" style="left: ${node.x}px; top: ${node.y}px;">
+      <div class="lineage-type">${escapeHTML(node.type)}</div>
+      <div class="lineage-name">${escapeHTML(node.name)}</div>
+    </div>
+  `;
+}
+
+function renderLineageZoomControls() {
+  return `
+    <div class="lineage-toolbar" aria-label="Lineage zoom controls">
+      <button class="lineage-zoom" type="button" data-lineage-zoom="out" aria-label="Zoom out">−</button>
+      <button class="lineage-zoom" type="button" data-lineage-zoom="in" aria-label="Zoom in">+</button>
+    </div>
+  `;
+}
+
+function renderMarketDataLineage() {
+  const nodes = [
+    { id: "source", type: "External Stream", name: "coinbase_websocket_read_connector", x: 16, y: 250 },
+    { id: "extract", type: "Materialized View", name: "mv_coinbase_tickers_extracted", x: 210, y: 250 },
+    { id: "tickers", type: "Stream", name: "coinbase_tickers", x: 400, y: 250 },
+    { id: "mv1s", type: "Materialized View", name: "mv_coinbase_1s", x: 590, y: 90 },
+    { id: "oneSec", type: "Stream", name: "coinbase_1s", x: 760, y: 90 },
+    { id: "alpha", type: "Views", name: "Alpha signal views (11)", x: 760, y: 20 },
+    { id: "mvOhlc", type: "Materialized View", name: "mv_ohlc_by_symbol", x: 590, y: 250 },
+    { id: "ohlcStore", type: "Mutable Stream", name: "coinbase_ohlc_1m_vkv", x: 760, y: 250 },
+    { id: "btcOhlc", type: "View", name: "v_coinbase_btc_ohlc_1m", x: 590, y: 315 },
+    { id: "rsi", type: "Views", name: "Return + RSI views", x: 760, y: 315 },
+  ];
+  const byId = Object.fromEntries(nodes.map((node) => [node.id, node]));
+  const edges = [
+    ["source", "extract"],
+    ["extract", "tickers"],
+    ["tickers", "mv1s"],
+    ["mv1s", "oneSec"],
+    ["oneSec", "alpha"],
+    ["tickers", "mvOhlc"],
+    ["mvOhlc", "ohlcStore"],
+    ["tickers", "btcOhlc"],
+    ["btcOhlc", "rsi"],
+  ];
+  return `
+    <div class="lineage-widget" data-lineage-widget>
+      ${renderLineageZoomControls()}
+      <div class="lineage-scroll">
+        <div class="lineage-stage" data-lineage-stage data-lineage-zoom-value="0.82">
+          <div class="lineage-canvas" aria-label="Simplified data lineage for Coinbase Crypto Analytics">
+            <svg viewBox="0 0 940 360" aria-hidden="true">
+              <defs>
+                <marker id="lineage-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                  <path d="M 0 0 L 8 4 L 0 8 z" fill="#6b7280"></path>
+                </marker>
+              </defs>
+              ${edges.map(([from, to]) => `<path class="lineage-edge" d="${lineageEdgePath(byId[from], byId[to])}" marker-end="url(#lineage-arrow)"></path>`).join("")}
+            </svg>
+            ${nodes.map(renderLineageNode).join("")}
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderDataLineage(resources, slug) {
+  if (slug === "market-data") return renderMarketDataLineage();
+  if (!resources || resources.length < 2) {
+    return `<p class="version">No lineage diagram available.</p>`;
+  }
+  const visible = resources.slice(0, 5).map((resource, index) => ({
+    id: `resource-${index}`,
+    type: titleCaseCategory(resource.type || "resource"),
+    name: resource.name || resource.file || "Resource",
+    x: 20 + index * 180,
+    y: 150,
+  }));
+  const byId = Object.fromEntries(visible.map((node) => [node.id, node]));
+  const edges = visible.slice(0, -1).map((node, index) => [node.id, visible[index + 1].id]);
+  return `
+    <div class="lineage-widget" data-lineage-widget>
+      ${renderLineageZoomControls()}
+      <div class="lineage-scroll">
+        <div class="lineage-stage" data-lineage-stage data-lineage-zoom-value="0.82">
+          <div class="lineage-canvas" aria-label="Simplified data lineage">
+            <svg viewBox="0 0 940 360" aria-hidden="true">
+              <defs>
+                <marker id="lineage-arrow-generic" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                  <path d="M 0 0 L 8 4 L 0 8 z" fill="#6b7280"></path>
+                </marker>
+              </defs>
+              ${edges.map(([from, to]) => `<path class="lineage-edge" d="${lineageEdgePath(byId[from], byId[to])}" marker-end="url(#lineage-arrow-generic)"></path>`).join("")}
+            </svg>
+            ${visible.map(renderLineageNode).join("")}
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function dashboardJsonUrl(slug, file) {
+  return `https://raw.githubusercontent.com/timeplus-io/apps/main/apps/${encodeURIComponent(slug)}/${String(file || "").split("/").map(encodeURIComponent).join("/")}`;
+}
+
+function dashboardPreviewAsset(slug) {
+  if (slug === "alpha-101") return { src: "assets/real-time-alpha-dashboard.mp4", aspectRatio: "1440 / 1024" };
+  if (slug === "bluesky") return { src: "assets/bluesky-social-dashboard.mp4", aspectRatio: "1440 / 1024" };
+  if (slug === "cep") return { src: "assets/cep-dashboard.mp4", aspectRatio: "1440 / 1024" };
+  if (slug === "cisco-asa-ddos") return { src: "assets/cisco-asa-ddos-dashboard.mp4", aspectRatio: "1440 / 1024" };
+  if (slug === "market-data") return { src: "assets/crypto-app-dashboard.mp4", aspectRatio: "1440 / 960" };
+  return "";
+}
+
+function renderDashboardPreviewAsset(asset, dashboardName) {
+  const src = typeof asset === "string" ? asset : asset.src;
+  const frameStyle = typeof asset === "string" || !asset.aspectRatio
+    ? ""
+    : ` style="aspect-ratio: ${escapeHTML(asset.aspectRatio)}"`;
+  const safeSrc = escapeHTML(src);
+  const safeAlt = escapeHTML(`${displayText(dashboardName || "Dashboard")} dashboard preview`);
+  if (/\.(mp4|webm)$/i.test(src)) {
+    const mimeType = src.toLowerCase().endsWith(".webm") ? "video/webm" : "video/mp4";
+    return `<div class="dashboard-preview-frame"${frameStyle}>
+      <video class="dashboard-preview-media" autoplay muted loop playsinline preload="metadata" aria-label="${safeAlt}">
+        <source src="${safeSrc}" type="${mimeType}">
+      </video>
+    </div>`;
+  }
+  return `<div class="dashboard-preview-frame"${frameStyle}>
+    <img class="dashboard-preview-media" src="${safeSrc}" alt="${safeAlt}" loading="lazy" />
+  </div>`;
+}
+
+function renderDashboards(dashboards, slug) {
+  if (!dashboards || dashboards.length === 0) {
+    return `<p class="version">No dashboards declared.</p>`;
+  }
+  const primary = dashboards[0];
+  const previewUrl = primary.file ? dashboardJsonUrl(slug, primary.file) : "";
+  const previewAsset = dashboardPreviewAsset(slug);
+  const previewAssetSrc = typeof previewAsset === "string" ? previewAsset : previewAsset.src || "";
+  return `
+    <div class="dashboard-preview" aria-label="Dashboard preview animation" data-dashboard-preview="${escapeHTML(previewUrl)}" data-dashboard-preview-asset="${escapeHTML(previewAssetSrc)}">
+      <div class="dashboard-preview-head">
+        <div>
+          <div class="dashboard-preview-title">${escapeHTML(displayText(primary.name || "Dashboard Preview"))}</div>
+          ${primary.description ? `<div class="dashboard-preview-desc">${escapeHTML(displayText(primary.description))}</div>` : ""}
+        </div>
+      </div>
+      ${previewAsset
+        ? renderDashboardPreviewAsset(previewAsset, primary.name)
+        : `<div class="dashboard-preview-loading">Loading dashboard layout...</div>`}
+    </div>
+  `;
+}
+
+function panelChartType(panel) {
+  return panel.viz_config?.chartType || panel.viz_type || "chart";
+}
+
+function panelTitle(panel) {
+  if (panel.viz_type === "control") {
+    return panel.viz_config?.label || panel.title || "Control";
+  }
+  return panel.title && panel.title !== "new panel" ? panel.title : titleCaseCategory(panelChartType(panel));
+}
+
+function renderMiniChart(chartType) {
+  if (chartType === "selector") {
+    return "";
+  }
+  if (chartType === "column" || chartType === "bar") {
+    return `
+      <div class="chart-bars" aria-hidden="true">
+        <div class="chart-bar" style="height: 44%"></div>
+        <div class="chart-bar" style="height: 78%"></div>
+        <div class="chart-bar" style="height: 52%"></div>
+        <div class="chart-bar" style="height: 88%"></div>
+        <div class="chart-bar" style="height: 64%"></div>
+        <div class="chart-bar" style="height: 72%"></div>
+      </div>
+    `;
+  }
+  if (chartType === "ohlc") {
+    return `
+      <div class="chart-candles" aria-hidden="true">
+        <div class="chart-candle" style="height: 36%"></div>
+        <div class="chart-candle" style="height: 58%"></div>
+        <div class="chart-candle" style="height: 44%"></div>
+        <div class="chart-candle" style="height: 72%"></div>
+        <div class="chart-candle" style="height: 52%"></div>
+        <div class="chart-candle" style="height: 68%"></div>
+      </div>
+    `;
+  }
+  if (chartType === "table") {
+    return `
+      <div class="preview-table" aria-hidden="true">
+        <div class="preview-table-row"></div>
+        <div class="preview-table-row"></div>
+        <div class="preview-table-row"></div>
+        <div class="preview-table-row"></div>
+      </div>
+    `;
+  }
+  return `
+    <div class="chart-line" aria-hidden="true">
+      <svg viewBox="0 0 320 88" preserveAspectRatio="none">
+        <polyline points="0,66 40,58 80,62 120,38 160,44 200,24 240,32 280,18 320,12"></polyline>
+      </svg>
+    </div>
+  `;
+}
+
+function renderDashboardPanel(panel) {
+  const position = panel.position || {};
+  const colStart = Math.max(1, Number(position.x || 0) + 1);
+  const colSpan = Math.min(12, Math.max(2, Number(position.w || 4)));
+  const rowStart = Math.max(1, Number(position.y || 0) + 1);
+  const rowSpan = Math.max(1, Number(position.h || 2));
+  const chartType = panelChartType(panel);
+  const title = panelTitle(panel);
+  const style = `grid-column: ${colStart} / span ${colSpan}; grid-row: ${rowStart} / span ${rowSpan};`;
+  if (panel.viz_type === "control") {
+    const value = panel.viz_config?.defaultValue || "Select";
+    return `
+      <div class="dashboard-panel dashboard-control" style="${escapeHTML(style)}">
+        <div>
+          <div class="dashboard-panel-title">${escapeHTML(title)}</div>
+          <div class="dashboard-panel-sub">Selector</div>
+        </div>
+        <div class="dashboard-select">${escapeHTML(value)}</div>
+      </div>
+    `;
+  }
+  return `
+    <div class="dashboard-panel" style="${escapeHTML(style)}">
+      <div class="dashboard-panel-title">${escapeHTML(title)}</div>
+      <div class="dashboard-panel-sub">${escapeHTML(titleCaseCategory(chartType))}</div>
+      <div class="dashboard-panel-body">${renderMiniChart(chartType)}</div>
+    </div>
+  `;
+}
+
+function fallbackDashboardPanels(url) {
+  if (!url || !url.endsWith("/market-data/dashboards/coinbase.json")) return [];
+  return [
+    { title: "new panel", viz_type: "control", position: { h: 1, w: 3, x: 0, y: 0 }, viz_config: { chartType: "selector", label: "Product", defaultValue: "BTC-USD" } },
+    { title: "new panel", viz_type: "control", position: { h: 1, w: 3, x: 3, y: 0 }, viz_config: { chartType: "selector", label: "Window Size", defaultValue: "1m" } },
+    { title: "new panel", viz_type: "control", position: { h: 1, w: 3, x: 6, y: 0 }, viz_config: { chartType: "selector", label: "Time Range", defaultValue: "1h" } },
+    { title: "OHLC (Open, High, Low, Close)", viz_type: "chart", position: { h: 4, w: 6, x: 0, y: 1 }, viz_config: { chartType: "ohlc" } },
+    { title: "Real-time Returns", viz_type: "chart", position: { h: 4, w: 6, x: 6, y: 1 }, viz_config: { chartType: "column" } },
+    { title: "RSI (Relative Strength Index)", viz_type: "chart", position: { h: 4, w: 6, x: 0, y: 5 }, viz_config: { chartType: "line" } },
+    { title: "OHLC Trending Highlight", viz_type: "chart", position: { h: 4, w: 6, x: 6, y: 5 }, viz_config: { chartType: "table" } },
+  ];
+}
+
+function renderDashboardPreviewPanels(preview, panels) {
+  const visiblePanels = Array.isArray(panels) ? panels.slice(0, 8) : [];
+  const loading = preview.querySelector(".dashboard-preview-loading");
+  if (!loading) return;
+  if (visiblePanels.length === 0) {
+    loading.textContent = "Dashboard preview unavailable.";
+    return;
+  }
+  loading.outerHTML = `<div class="dashboard-preview-grid">${visiblePanels.map(renderDashboardPanel).join("")}</div>`;
+}
+
+async function wireDashboardPreviews(container) {
+  const previews = container.querySelectorAll("[data-dashboard-preview]");
+  previews.forEach(async (preview) => {
+    const url = preview.dataset.dashboardPreview;
+    const asset = preview.dataset.dashboardPreviewAsset;
+    if (asset) return;
+    if (!url) return;
+    try {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const panels = await response.json();
+      renderDashboardPreviewPanels(preview, panels);
+    } catch (err) {
+      renderDashboardPreviewPanels(preview, fallbackDashboardPanels(url));
+    }
+  });
+}
+
+function renderDetail(app) {
+  const detail = document.getElementById("detail");
+  const downloadUrl = app.download_url || "#";
+  const filename = downloadUrl.split("/").pop() || `${app.id}.tpapp`;
+  const slug = appSlug(app);
+  const categories = (app.categories || []).map(titleCaseCategory);
+  const sourceUrl = `https://github.com/timeplus-io/apps/tree/main/apps/${encodeURIComponent(slug)}`;
+  const installCommand = `curl -X POST http://localhost:8000/default/api/v1beta2/apps/install -F "file=@${filename}"`;
+  const resources = app.resources || [];
+  const dashboards = app.dashboards || [];
+  const showDashboardsTab = app.id !== "io.timeplus.game-feature-pipeline";
+  const appName = displayText(app.name);
+  const appDescription = displayText((app.description || "No description provided.").trim());
+  detail.innerHTML = `
+    <a class="back-link" href="#">← Back to catalog</a>
+    <div class="detail-header">
+      <div class="detail-title">
+        ${renderIcon(app)}
+        <div>
+          <h1>${escapeHTML(appName)}</h1>
+          <div class="card-meta">
+            ${categories.map((category) => `<span class="chip">${escapeHTML(category)}</span>`).join("")}
+          </div>
+        </div>
+      </div>
+      <div class="detail-actions">
+        <a class="btn" href="${escapeHTML(sourceUrl)}" target="_blank" rel="noopener">Source</a>
         <a class="btn btn-primary" href="${escapeHTML(downloadUrl)}" download="${escapeHTML(filename)}">
           ${DOWNLOAD_ICON_SVG}
           Download
         </a>
       </div>
-      <p class="card-name">${escapeHTML(app.name)}</p>
-      <div class="card-meta">
-        <span class="support-badge">${supportTypeOf(app) === "Timeplus" ? "TIMEPLUS" : "COMMUNITY"}</span>
-        <span class="version">v${escapeHTML(app.version || "")}</span>
+    </div>
+    <div class="detail-grid">
+      <div class="detail-main">
+        <div class="detail-tabs" role="tablist" aria-label="App details">
+          <button class="detail-tab" type="button" role="tab" aria-selected="true" aria-controls="overview-panel" id="overview-tab" data-detail-tab="overview">Overview</button>
+          <button class="detail-tab" type="button" role="tab" aria-selected="false" aria-controls="resources-panel" id="resources-tab" data-detail-tab="resources">Resources</button>
+          ${showDashboardsTab ? `<button class="detail-tab" type="button" role="tab" aria-selected="false" aria-controls="dashboards-panel" id="dashboards-tab" data-detail-tab="dashboards">Dashboards</button>` : ""}
+          <button class="detail-tab" type="button" role="tab" aria-selected="false" aria-controls="configuration-panel" id="configuration-tab" data-detail-tab="configuration">Configuration</button>
+        </div>
+        <section class="detail-panel" role="tabpanel" id="overview-panel" aria-labelledby="overview-tab" data-detail-panel="overview">
+          <section class="detail-section overview-intro">
+            <div class="detail-description overview-description">${escapeHTML(appDescription)}</div>
+          </section>
+          <section class="detail-section">
+            <h2>Data Lineage</h2>
+            ${renderDataLineage(resources, slug)}
+          </section>
+          <section class="detail-section">
+            <h2>Install API</h2>
+            <div class="code-block">
+              <code class="code-line">${escapeHTML(installCommand)}</code>
+              <button class="copy-code" type="button" data-copy-code="${escapeHTML(installCommand)}" title="Copy install command" aria-label="Copy install command">
+                ${COPY_ICON_SVG}
+              </button>
+            </div>
+          </section>
+        </section>
+        <section class="detail-panel" role="tabpanel" id="resources-panel" aria-labelledby="resources-tab" data-detail-panel="resources" hidden>
+          ${renderResources(resources)}
+        </section>
+        ${showDashboardsTab ? `<section class="detail-panel" role="tabpanel" id="dashboards-panel" aria-labelledby="dashboards-tab" data-detail-panel="dashboards" hidden>
+          ${renderDashboards(dashboards, slug)}
+        </section>` : ""}
+        <section class="detail-panel" role="tabpanel" id="configuration-panel" aria-labelledby="configuration-tab" data-detail-panel="configuration" hidden>
+          ${renderConfig(app.config)}
+        </section>
       </div>
-      ${app.description ? `<p class="card-desc">${escapeHTML(app.description)}</p>` : ""}
-      ${cats ? `<p class="card-categories">${escapeHTML(cats)}</p>` : ""}
+      <aside class="detail-side">
+        <section class="detail-section">
+          <h2>App Info</h2>
+          <div class="detail-list">
+            ${renderDetailRows([
+              { label: "Package ID", value: app.id },
+              { label: "Database", value: app.db_name },
+              { label: "Author", value: app.author },
+              { label: "Support", value: supportTypeOf(app) },
+              { label: "Version", value: app.version },
+            ])}
+          </div>
+        </section>
+      </aside>
     </div>
   `;
+  wireDetailTabs(detail);
+  wireLineageZoom(detail);
+  wireLineagePan(detail);
+  wireCopyButtons(detail);
+  wireDashboardPreviews(detail);
+}
+
+function wireDetailTabs(detail) {
+  const tabs = detail.querySelectorAll("[data-detail-tab]");
+  const panels = detail.querySelectorAll("[data-detail-panel]");
+  tabs.forEach((tab) => {
+    tab.addEventListener("click", () => {
+      const selected = tab.dataset.detailTab;
+      tabs.forEach((item) => {
+        item.setAttribute("aria-selected", item.dataset.detailTab === selected ? "true" : "false");
+      });
+      panels.forEach((panel) => {
+        panel.hidden = panel.dataset.detailPanel !== selected;
+      });
+    });
+  });
+}
+
+function applyLineageZoom(stage, zoom) {
+  const clamped = Math.max(0.65, Math.min(1.1, zoom));
+  const canvas = stage.querySelector(".lineage-canvas");
+  stage.dataset.lineageZoomValue = String(clamped);
+  stage.style.width = `${Math.round(940 * clamped)}px`;
+  stage.style.height = `${Math.round(390 * clamped)}px`;
+  if (canvas) canvas.style.transform = `scale(${clamped})`;
+}
+
+function wireLineageZoom(container) {
+  container.querySelectorAll("[data-lineage-widget]").forEach((widget) => {
+    const stage = widget.querySelector("[data-lineage-stage]");
+    if (!stage) return;
+    applyLineageZoom(stage, Number(stage.dataset.lineageZoomValue || 0.82));
+    widget.querySelectorAll("[data-lineage-zoom]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const current = Number(stage.dataset.lineageZoomValue || 0.82);
+        const delta = button.dataset.lineageZoom === "in" ? 0.1 : -0.1;
+        applyLineageZoom(stage, Math.round((current + delta) * 100) / 100);
+      });
+    });
+  });
+}
+
+function wireLineagePan(container) {
+  container.querySelectorAll(".lineage-scroll").forEach((scrollArea) => {
+    let isDragging = false;
+    let startX = 0;
+    let startY = 0;
+    let startScrollLeft = 0;
+    let startScrollTop = 0;
+
+    const startDragging = (event) => {
+      if (event.button !== 0) return;
+      isDragging = true;
+      startX = event.clientX;
+      startY = event.clientY;
+      startScrollLeft = scrollArea.scrollLeft;
+      startScrollTop = scrollArea.scrollTop;
+      scrollArea.classList.add("is-dragging");
+      event.preventDefault();
+    };
+
+    const drag = (event) => {
+      if (!isDragging) return;
+      scrollArea.scrollTo({
+        left: startScrollLeft - (event.clientX - startX),
+        top: startScrollTop - (event.clientY - startY),
+      });
+    };
+
+    const stopDragging = () => {
+      if (!isDragging) return;
+      isDragging = false;
+      scrollArea.classList.remove("is-dragging");
+    };
+
+    if ("PointerEvent" in window) {
+      scrollArea.addEventListener("pointerdown", (event) => {
+        startDragging(event);
+        if (!isDragging) return;
+        scrollArea.setPointerCapture(event.pointerId);
+      });
+      scrollArea.addEventListener("pointermove", drag);
+      scrollArea.addEventListener("pointerup", (event) => {
+        stopDragging();
+        if (scrollArea.hasPointerCapture(event.pointerId)) {
+          scrollArea.releasePointerCapture(event.pointerId);
+        }
+      });
+      scrollArea.addEventListener("pointercancel", stopDragging);
+      scrollArea.addEventListener("lostpointercapture", stopDragging);
+    } else {
+      scrollArea.addEventListener("mousedown", startDragging);
+      window.addEventListener("mousemove", drag);
+      window.addEventListener("mouseup", stopDragging);
+      window.addEventListener("blur", stopDragging);
+    }
+  });
+}
+
+async function copyText(text) {
+  if (navigator.clipboard && window.isSecureContext) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return;
+    } catch (err) {
+      // Fall back for browsers that expose clipboard but deny programmatic writes.
+    }
+  }
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.top = "-9999px";
+  textarea.style.left = "-9999px";
+  document.body.appendChild(textarea);
+  textarea.focus();
+  textarea.select();
+  textarea.setSelectionRange(0, text.length);
+  const copied = document.execCommand("copy");
+  textarea.remove();
+  if (!copied) throw new Error("Copy command was not accepted.");
+}
+
+function wireCopyButtons(container) {
+  container.querySelectorAll("[data-copy-code]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const originalLabel = button.getAttribute("aria-label") || "Copy install command";
+      const code = button.closest(".code-block")?.querySelector(".code-line");
+      try {
+        await copyText(button.dataset.copyCode || "");
+        button.classList.add("is-copied");
+        button.setAttribute("aria-label", "Copied install command");
+        button.setAttribute("title", "Copied");
+        window.setTimeout(() => {
+          button.classList.remove("is-copied");
+          button.setAttribute("aria-label", originalLabel);
+          button.setAttribute("title", "Copy install command");
+        }, 1200);
+      } catch (err) {
+        if (code) {
+          const range = document.createRange();
+          range.selectNodeContents(code);
+          const selection = window.getSelection();
+          selection.removeAllRanges();
+          selection.addRange(range);
+        }
+        button.classList.add("is-copied");
+        button.setAttribute("aria-label", "Install command selected");
+        button.setAttribute("title", "Command selected");
+        window.setTimeout(() => {
+          button.classList.remove("is-copied");
+          button.setAttribute("aria-label", originalLabel);
+          button.setAttribute("title", "Copy install command");
+        }, 1200);
+      }
+    });
+  });
 }
 
 function filteredApps() {
@@ -442,6 +1643,10 @@ function filteredApps() {
 }
 
 function render() {
+  if (appByHash()) {
+    renderRoute();
+    return;
+  }
   const items = filteredApps();
   const totalPages = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
   const currentPage = Math.min(state.page, totalPages);
@@ -469,6 +1674,30 @@ function render() {
   grid.innerHTML = pageItems.map(renderCard).join("");
 }
 
+function renderRoute() {
+  const grid = document.getElementById("grid");
+  const detail = document.getElementById("detail");
+  const status = document.getElementById("status");
+  const sidebar = document.getElementById("sidebar");
+  const toolbar = document.getElementById("toolbar");
+  const app = appByHash();
+
+  if (!app) {
+    detail.hidden = true;
+    sidebar.hidden = false;
+    toolbar.hidden = false;
+    render();
+    return;
+  }
+
+  sidebar.hidden = true;
+  toolbar.hidden = true;
+  status.hidden = true;
+  grid.hidden = true;
+  detail.hidden = false;
+  renderDetail(app);
+}
+
 function renderCategorySidebar() {
   const cats = new Set();
   state.apps.forEach((a) => (a.categories || []).forEach((c) => cats.add(c)));
@@ -485,7 +1714,7 @@ function renderCategorySidebar() {
   divider.hidden = false;
   container.innerHTML = sorted
     .map(
-      (c) => `<label><input type="checkbox" data-category="${escapeHTML(c)}" checked /> ${escapeHTML(c)}</label>`
+      (c) => `<label><input type="checkbox" data-category="${escapeHTML(c)}" checked /> ${escapeHTML(titleCaseCategory(c))}</label>`
     )
     .join("");
   container.querySelectorAll("input[type=checkbox]").forEach((cb) => {
@@ -527,6 +1756,7 @@ function wireToolbar() {
     state.page += 1;
     render();
   });
+  window.addEventListener("hashchange", renderRoute);
 }
 
 function deriveReleaseTag(apps) {
@@ -558,7 +1788,7 @@ async function load() {
     renderCategorySidebar();
     wireSupportTypes();
     wireToolbar();
-    render();
+    renderRoute();
   } catch (err) {
     status.className = "error";
     status.textContent = `Failed to load app registry: ${err.message}`;
