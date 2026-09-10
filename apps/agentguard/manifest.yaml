@@ -10,8 +10,8 @@ description: >
   events, normalizes them into a Common Information Model (agentguard_cim_event),
   computes per-call token/cost/latency metrics, and ships four Core Protection
   detection rules (prompt injection, DLP, privilege escalation, supply chain)
-  installed PAUSED. Resume a rule with:
-    SYSTEM RESUME MATERIALIZED VIEW <db>.mv_rule_rp001;
+  that run from install. Pause one with:
+    SYSTEM PAUSE MATERIALIZED VIEW <db>.mv_rule_rp001;
   Generated from the AgentGuard backend - do not hand-edit the SQL.
 db_name: ag
 categories:
@@ -166,30 +166,18 @@ resources:
   - file: ddl/045_mv_rule_rp001.sql
     type: materialized_view
     name: mv_rule_rp001
-  - file: ddl/046_pause_mv_rule_rp001.sql
-    type: system
-    name: pause_mv_rule_rp001
-  - file: ddl/047_ag_dlp_jwt_check.sql
+  - file: ddl/046_ag_dlp_jwt_check.sql
     type: udf
     name: ag_dlp_jwt_check
-  - file: ddl/048_mv_rule_rp002.sql
+  - file: ddl/047_mv_rule_rp002.sql
     type: materialized_view
     name: mv_rule_rp002
-  - file: ddl/049_pause_mv_rule_rp002.sql
-    type: system
-    name: pause_mv_rule_rp002
-  - file: ddl/050_mv_rule_rp003.sql
+  - file: ddl/048_mv_rule_rp003.sql
     type: materialized_view
     name: mv_rule_rp003
-  - file: ddl/051_pause_mv_rule_rp003.sql
-    type: system
-    name: pause_mv_rule_rp003
-  - file: ddl/052_mv_rule_rp004.sql
+  - file: ddl/049_mv_rule_rp004.sql
     type: materialized_view
     name: mv_rule_rp004
-  - file: ddl/053_pause_mv_rule_rp004.sql
-    type: system
-    name: pause_mv_rule_rp004
 
 dashboards:
   - file: dashboards/main.json

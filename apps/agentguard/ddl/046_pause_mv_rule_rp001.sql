@@ -1,1 +1,0 @@
-SYSTEM PAUSE MATERIALIZED VIEW {{ .DB }}.mv_rule_rp001
