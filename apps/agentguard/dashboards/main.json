@@ -1,0 +1,97 @@
+[
+  {
+    "id": "ag-control-time",
+    "title": "Time Range",
+    "description": "",
+    "position": { "h": 1, "w": 4, "x": 0, "y": 0, "nextX": 4, "nextY": 1 },
+    "viz_type": "control",
+    "viz_content": "",
+    "viz_config": {
+      "chartType": "selector",
+      "defaultValue": "1h",
+      "inlineValues": "5m,15m,1h,6h,24h",
+      "label": "Time Range",
+      "labelWidth": "80",
+      "target": "filter_time_range"
+    }
+  },
+  {
+    "id": "ag-events-per-minute",
+    "title": "Events per minute by agent type",
+    "description": "Normalized CIM events (sessions, LLM calls, tool calls) per minute.",
+    "position": { "h": 4, "w": 8, "x": 0, "y": 1, "nextX": 8, "nextY": 5 },
+    "viz_type": "chart",
+    "viz_content": "SELECT window_start AS time, agent_type, count() AS events FROM tumble(table([[ .DB ]].agentguard_cim_event), event_time, 1m) WHERE event_time > now() - {{filter_time_range}} GROUP BY window_start, agent_type ORDER BY time",
+    "viz_config": {
+      "chartType": "line",
+      "config": {
+        "xAxis": "time",
+        "yAxis": ["events"],
+        "color": "agent_type",
+        "xRange": "Infinity",
+        "xFormat": "",
+        "xTitle": "",
+        "yTitle": "",
+        "yRange": { "min": null, "max": null },
+        "lineStyle": "curve",
+        "dataLabel": false,
+        "showAll": false,
+        "legend": true,
+        "points": false,
+        "gridlines": true,
+        "unit": { "position": "left", "value": "" },
+        "fractionDigits": 0,
+        "colors": ["#ED64A6", "#F0BE3E", "#DA4B36", "#9A1563", "#FF4A71", "#D12D50", "#8934D9", "#D53F8C", "#F7775A", "#8934D9"],
+        "yTickLabel": { "maxChar": 25 }
+      }
+    }
+  },
+  {
+    "id": "ag-open-threats",
+    "title": "Open threats by severity",
+    "description": "Rows in agentguard_threats not yet acknowledged or cleared.",
+    "position": { "h": 4, "w": 4, "x": 8, "y": 1, "nextX": 12, "nextY": 5 },
+    "viz_type": "chart",
+    "viz_content": "SELECT severity, count() AS threats FROM table([[ .DB ]].agentguard_threats) WHERE status = '' OR status = 'open' GROUP BY severity ORDER BY severity",
+    "viz_config": {
+      "chartType": "column",
+      "config": {
+        "xAxis": "severity",
+        "yAxis": ["threats"],
+        "color": "",
+        "xTitle": "",
+        "yTitle": "",
+        "dataLabel": true,
+        "legend": false,
+        "gridlines": true,
+        "unit": { "position": "left", "value": "" },
+        "fractionDigits": 0,
+        "colors": ["#DA4B36", "#F0BE3E", "#ED64A6", "#8934D9"]
+      }
+    }
+  },
+  {
+    "id": "ag-tokens-by-model",
+    "title": "Tokens by model",
+    "description": "LLM calls and input/output tokens per model in the selected window.",
+    "position": { "h": 4, "w": 6, "x": 0, "y": 5, "nextX": 6, "nextY": 9 },
+    "viz_type": "chart",
+    "viz_content": "SELECT tags['model'] AS model, count_if(metric_name = 'llm.call') AS calls, to_int64(sum_if(metric_value, metric_name = 'llm.input_tokens')) AS input_tokens, to_int64(sum_if(metric_value, metric_name = 'llm.output_tokens')) AS output_tokens FROM table([[ .DB ]].agentguard_cim_metrics) WHERE event_time > now() - {{filter_time_range}} AND metric_name LIKE 'llm.%' GROUP BY model ORDER BY input_tokens DESC",
+    "viz_config": {
+      "chartType": "table",
+      "config": { "columns": [], "pageSize": 20 }
+    }
+  },
+  {
+    "id": "ag-recent-threats",
+    "title": "Recent threats",
+    "description": "Latest security detections across all agents.",
+    "position": { "h": 4, "w": 6, "x": 6, "y": 5, "nextX": 12, "nextY": 9 },
+    "viz_type": "chart",
+    "viz_content": "SELECT last_seen, severity, rule_name, agent_id, session_id, if(status = '', 'open', status) AS status FROM table([[ .DB ]].agentguard_threats) WHERE last_seen > now() - {{filter_time_range}} ORDER BY last_seen DESC LIMIT 50",
+    "viz_config": {
+      "chartType": "table",
+      "config": { "columns": [], "pageSize": 20 }
+    }
+  }
+]

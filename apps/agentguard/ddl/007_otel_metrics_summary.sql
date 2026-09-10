@@ -1,0 +1,22 @@
+CREATE STREAM IF NOT EXISTS {{ .DB }}.otel_metrics_summary
+(
+  resource_attributes          map(low_cardinality(string), string)  CODEC(ZSTD(1)),
+  resource_schema_url          string                                CODEC(ZSTD(1)),
+  scope_name                   string                                CODEC(ZSTD(1)),
+  scope_version                string                                CODEC(ZSTD(1)),
+  scope_attributes             map(low_cardinality(string), string)  CODEC(ZSTD(1)),
+  scope_dropped_attr_count     uint32                                CODEC(ZSTD(1)),
+  scope_schema_url             string                                CODEC(ZSTD(1)),
+  service_name                 low_cardinality(string)               CODEC(ZSTD(1)),
+  metric_name                  string                                CODEC(ZSTD(1)),
+  metric_description           string                                CODEC(ZSTD(1)),
+  metric_unit                  string                                CODEC(ZSTD(1)),
+  attributes                   map(low_cardinality(string), string)  CODEC(ZSTD(1)),
+  start_time_unix              datetime64(9)                         CODEC(Delta(8), ZSTD(1)),
+  time_unix                    datetime64(9)                         CODEC(Delta(8), ZSTD(1)),
+  count                        uint64                                CODEC(Delta(8), ZSTD(1)),
+  sum                          float64                               CODEC(ZSTD(1)),
+  `value_at_quantiles.quantile` array(float64)                       CODEC(ZSTD(1)),
+  `value_at_quantiles.value`    array(float64)                       CODEC(ZSTD(1)),
+  flags                        uint32                                CODEC(ZSTD(1))
+)

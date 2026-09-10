@@ -16,6 +16,7 @@ A collection of installable Timeplus apps (`.tpapp` packages). Each app bundles 
 | [invest-insights](apps/invest-insights/) | Real-time trading monitoring — order management, position tracking, continuous auction participation rate, and live P&L | ![Downloads](https://img.shields.io/github/downloads/timeplus-io/apps/latest/invest-insights.tpapp?label=downloads) |
 | [cisco-asa-ddos](apps/cisco-asa-ddos/) | Real-time DDoS detection from simulated Cisco ASA firewall logs — dynamic per-IP baselines, spike detection, and webhook alerting | ![Downloads](https://img.shields.io/github/downloads/timeplus-io/apps/latest/cisco-asa-ddos.tpapp?label=downloads) |
 | [game-feature-pipeline](apps/game-feature-pipeline/) | Real-time ML feature pipeline for game analytics — player actions, transactions, social engagement, and spend anomaly detection | ![Downloads](https://img.shields.io/github/downloads/timeplus-io/apps/latest/game-feature-pipeline.tpapp?label=downloads) |
+| [agentguard](apps/agentguard/README.md) | AgentGuard core telemetry pipeline for AI coding agents (Claude Code, OpenClaw, Hermes, OTLP) — OTLP input, CIM normalization, per-call token metrics, threats, and four Core Protection detection rules installed paused | ![Downloads](https://img.shields.io/github/downloads/timeplus-io/apps/latest/agentguard.tpapp?label=downloads) |
 
 ## Build & Install
 
