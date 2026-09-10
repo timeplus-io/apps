@@ -1,0 +1,197 @@
+package_format_version: 1
+id: io.timeplus.agentguard
+name: AgentGuard
+version: 0.1.0
+author: Timeplus
+icon: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJiZyIgeDE9IjAiIHkxPSIwIiB4Mj0iNDgiIHkyPSI0OCIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNENTNGOEMiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiM5RjJCQzAiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHJ4PSIxMSIgZmlsbD0idXJsKCNiZykiLz48cGF0aCBkPSJNMjQgMTEgTDM1IDE1LjUgVjI0IEMzNSAzMC41IDMwIDM2IDI0IDM4IEMxOCAzNiAxMyAzMC41IDEzIDI0IFYxNS41IFoiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBmaWxsPSJub25lIi8+PHBhdGggZD0iTTIxIDIwIEwxNy41IDI0LjUgTDIxIDI5IiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBmaWxsPSJub25lIi8+PHBhdGggZD0iTTI3IDIwIEwzMC41IDI0LjUgTDI3IDI5IiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBmaWxsPSJub25lIi8+PC9zdmc+"
+description: >
+  AgentGuard core telemetry pipeline for AI coding agents (Claude Code, OpenClaw,
+  Hermes, OpenInference/OTLP). Ingests OTLP traces/logs/metrics and agent hook
+  events, normalizes them into a Common Information Model (agentguard_cim_event),
+  computes per-call token/cost/latency metrics, and ships four Core Protection
+  detection rules (prompt injection, DLP, privilege escalation, supply chain)
+  installed PAUSED. Resume a rule with:
+    SYSTEM RESUME MATERIALIZED VIEW <db>.mv_rule_rp001;
+  Generated from the AgentGuard backend - do not hand-edit the SQL.
+db_name: ag
+categories:
+  - security
+  - observability
+
+config:
+  - key: otel_port
+    type: integer
+    required: false
+    default: "4318"
+    description: TCP port for the OTLP/HTTP input (agentguard_otel_input). Choose a free port on the Timeplus host.
+  - key: otel_listen_host
+    type: string
+    required: false
+    default: "0.0.0.0"
+    description: Bind address for the OTLP/HTTP input.
+
+resources:
+  - file: ddl/001_otel_traces.sql
+    type: stream
+    name: otel_traces
+  - file: ddl/002_otel_logs.sql
+    type: stream
+    name: otel_logs
+  - file: ddl/003_otel_metrics_gauge.sql
+    type: stream
+    name: otel_metrics_gauge
+  - file: ddl/004_otel_metrics_sum.sql
+    type: stream
+    name: otel_metrics_sum
+  - file: ddl/005_otel_metrics_histogram.sql
+    type: stream
+    name: otel_metrics_histogram
+  - file: ddl/006_otel_metrics_exponential_histogram.sql
+    type: stream
+    name: otel_metrics_exponential_histogram
+  - file: ddl/007_otel_metrics_summary.sql
+    type: stream
+    name: otel_metrics_summary
+  - file: ddl/008_agentguard_otel_input.sql
+    type: input
+    name: agentguard_otel_input
+  - file: ddl/009_agentguard_hook_events.sql
+    type: stream
+    name: agentguard_hook_events
+  - file: ddl/010_agentguard_cim_event.sql
+    type: stream
+    name: agentguard_cim_event
+  - file: ddl/011_mv_cim_claudecode.sql
+    type: materialized_view
+    name: mv_cim_claudecode
+  - file: ddl/012_mv_cim_openclaw.sql
+    type: materialized_view
+    name: mv_cim_openclaw
+  - file: ddl/013_mv_cim_hermes.sql
+    type: materialized_view
+    name: mv_cim_hermes
+  - file: ddl/014_mv_cim_openinference.sql
+    type: materialized_view
+    name: mv_cim_openinference
+  - file: ddl/015_mv_hook_bridge_openinference.sql
+    type: materialized_view
+    name: mv_hook_bridge_openinference
+  - file: ddl/016_agentguard_session_agents.sql
+    type: mutable_stream
+    name: agentguard_session_agents
+  - file: ddl/017_agentguard_run_latency.sql
+    type: mutable_stream
+    name: agentguard_run_latency
+  - file: ddl/018_agentguard_cim_metrics.sql
+    type: stream
+    name: agentguard_cim_metrics
+  - file: ddl/019_mv_session_agents.sql
+    type: materialized_view
+    name: mv_session_agents
+  - file: ddl/020_mv_run_latency.sql
+    type: materialized_view
+    name: mv_run_latency
+  - file: ddl/021_mv_cim_metrics_openclaw_llm.sql
+    type: materialized_view
+    name: mv_cim_metrics_openclaw_llm
+  - file: ddl/022_mv_cim_metrics_openclaw_tools.sql
+    type: materialized_view
+    name: mv_cim_metrics_openclaw_tools
+  - file: ddl/023_mv_cim_metrics_claudecode_otel.sql
+    type: materialized_view
+    name: mv_cim_metrics_claudecode_otel
+  - file: ddl/024_mv_cim_metrics_claudecode_tools.sql
+    type: materialized_view
+    name: mv_cim_metrics_claudecode_tools
+  - file: ddl/025_mv_cim_metrics_hermes_llm.sql
+    type: materialized_view
+    name: mv_cim_metrics_hermes_llm
+  - file: ddl/026_mv_cim_metrics_hermes_tools.sql
+    type: materialized_view
+    name: mv_cim_metrics_hermes_tools
+  - file: ddl/027_mv_cim_metrics_openinference_llm.sql
+    type: materialized_view
+    name: mv_cim_metrics_openinference_llm
+  - file: ddl/028_agentguard_security_events.sql
+    type: stream
+    name: agentguard_security_events
+  - file: ddl/029_agentguard_threats.sql
+    type: mutable_stream
+    name: agentguard_threats
+  - file: ddl/030_mv_threats.sql
+    type: materialized_view
+    name: mv_threats
+  - file: ddl/031_agentguard_pricing.sql
+    type: mutable_stream
+    name: agentguard_pricing
+  - file: ddl/032_agentguard_cost_budgets.sql
+    type: stream
+    name: agentguard_cost_budgets
+  - file: ddl/033_agentguard_skills.sql
+    type: stream
+    name: agentguard_skills
+  - file: ddl/034_mv_skills_invoked_claudecode.sql
+    type: materialized_view
+    name: mv_skills_invoked_claudecode
+  - file: ddl/035_mv_skills_invoked_openclaw.sql
+    type: materialized_view
+    name: mv_skills_invoked_openclaw
+  - file: ddl/036_mv_skills_invoked_hermes.sql
+    type: materialized_view
+    name: mv_skills_invoked_hermes
+  - file: ddl/037_mv_skills_loaded_claudecode.sql
+    type: materialized_view
+    name: mv_skills_loaded_claudecode
+  - file: ddl/038_mv_skills_loaded_openclaw.sql
+    type: materialized_view
+    name: mv_skills_loaded_openclaw
+  - file: ddl/039_agentguard_memory_ops.sql
+    type: stream
+    name: agentguard_memory_ops
+  - file: ddl/040_mv_memory_claudecode_automem.sql
+    type: materialized_view
+    name: mv_memory_claudecode_automem
+  - file: ddl/041_mv_memory_claudecode_mcp.sql
+    type: materialized_view
+    name: mv_memory_claudecode_mcp
+  - file: ddl/042_mv_memory_openclaw_file.sql
+    type: materialized_view
+    name: mv_memory_openclaw_file
+  - file: ddl/043_mv_memory_hermes.sql
+    type: materialized_view
+    name: mv_memory_hermes
+  - file: ddl/044_agentguard_rules.sql
+    type: stream
+    name: agentguard_rules
+  - file: ddl/045_mv_rule_rp001.sql
+    type: materialized_view
+    name: mv_rule_rp001
+  - file: ddl/046_pause_mv_rule_rp001.sql
+    type: system
+    name: pause_mv_rule_rp001
+  - file: ddl/047_ag_dlp_jwt_check.sql
+    type: udf
+    name: ag_dlp_jwt_check
+  - file: ddl/048_mv_rule_rp002.sql
+    type: materialized_view
+    name: mv_rule_rp002
+  - file: ddl/049_pause_mv_rule_rp002.sql
+    type: system
+    name: pause_mv_rule_rp002
+  - file: ddl/050_mv_rule_rp003.sql
+    type: materialized_view
+    name: mv_rule_rp003
+  - file: ddl/051_pause_mv_rule_rp003.sql
+    type: system
+    name: pause_mv_rule_rp003
+  - file: ddl/052_mv_rule_rp004.sql
+    type: materialized_view
+    name: mv_rule_rp004
+  - file: ddl/053_pause_mv_rule_rp004.sql
+    type: system
+    name: pause_mv_rule_rp004
+
+dashboards:
+  - file: dashboards/main.json
+    name: AgentGuard Overview
+    description: Events per minute by agent type, tokens and cost by model, open and recent threats.
