@@ -15,7 +15,7 @@ Installs the [AgentGuard](https://github.com/timeplus-io/AgentGuard) streaming p
 | Security | `agentguard_security_events`, `agentguard_threats` + `mv_threats` |
 | Derived | `agentguard_skills` + `mv_skills_*`, `agentguard_memory_ops` + `mv_memory_*` |
 | Cost | `agentguard_pricing`, `agentguard_cost_budgets` (schema only) |
-| Rules | `agentguard_rules` + four Core Protection detections `mv_rule_rp001..rp004`, **paused** on install |
+| Rules | `agentguard_rules` + four Core Protection detections `mv_rule_rp001..rp004`, running from install |
 
 Not included (they need the AgentGuard server): user management, notifications, approval holds, Sentry, Semantic DLP, and the rest of the rule catalog.
 
@@ -40,18 +40,25 @@ Or from the apps repo root: `make build APP=agentguard`.
 - **OTLP/HTTP** (Claude Code with `CLAUDE_CODE_ENABLE_TELEMETRY=1`, OpenInference exporters): point `OTEL_EXPORTER_OTLP_ENDPOINT` at `http://<timeplus-host>:<otel_port>`.
 - **Hook plugins** (AgentGuard Claude Code / OpenClaw / Hermes plugins): configure them to write to stream `ag.agentguard_hook_events`.
 
-## Enabling a detection rule
+## Detection rules
 
-Rules are installed paused so a fresh install never emits threats unexpectedly:
+The four Core Protection rules run from the moment the app is installed:
+
+| MV | Rule |
+|---|---|
+| `mv_rule_rp001` | Prompt Injection Shield |
+| `mv_rule_rp002` | DLP Sentinel |
+| `mv_rule_rp003` | Privilege Guard |
+| `mv_rule_rp004` | Supply Chain Watch |
+
+Matches land in `ag.agentguard_security_events`; `mv_threats` folds them into `ag.agentguard_threats` (one row per agent/session/rule). To switch a rule off or back on:
 
 ```sql
-SYSTEM RESUME MATERIALIZED VIEW ag.mv_rule_rp001;  -- Prompt Injection Shield
-SYSTEM RESUME MATERIALIZED VIEW ag.mv_rule_rp002;  -- DLP Sentinel
-SYSTEM RESUME MATERIALIZED VIEW ag.mv_rule_rp003;  -- Privilege Guard
-SYSTEM RESUME MATERIALIZED VIEW ag.mv_rule_rp004;  -- Supply Chain Watch
+SYSTEM PAUSE MATERIALIZED VIEW ag.mv_rule_rp002;
+SYSTEM RESUME MATERIALIZED VIEW ag.mv_rule_rp002;
 ```
 
-Matches land in `ag.agentguard_security_events`; `mv_threats` folds them into `ag.agentguard_threats` (one row per agent/session/rule).
+(The package deliberately does not pause rules at install time: a `SYSTEM PAUSE` issued right after a distributed `CREATE` fails on multi-node clusters, and re-running it on upgrade would re-pause rules you had enabled.)
 
 ## Attaching the AgentGuard UI
 
