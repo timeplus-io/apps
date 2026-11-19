@@ -1028,7 +1028,7 @@ function appUIs(app) {
 function renderUIBadge(app) {
   const uis = appUIs(app);
   if (uis.length === 0) return "";
-  const label = `Includes ${uis.length === 1 ? "a custom UI" : uis.length + " custom UIs"}: ${uis.map((ui) => ui.title).join(", ")}`;
+  const label = `Includes ${uis.length === 1 ? "a custom UI" : uis.length + " custom UIs"}: ${uis.map((ui) => ui.title).join(", ")}. Optional; shown on Timeplus app server ${CUSTOM_UI_MIN_SERVER} or later.`;
   return `<span class="ui-badge" title="${escapeHTML(label)}">${CUSTOM_UI_ICON_SVG}Custom UI</span>`;
 }
 
@@ -1049,7 +1049,7 @@ function renderCustomUIs(app) {
     </div>
   `).join("")}</div>
   <p class="ui-note">A custom UI is a web page shipped inside the app package. After install, open it in the Timeplus console: Apps → ${escapeHTML(displayText(app.name))} → Custom UI. It runs with your console session, so it asks for no credentials.</p>
-  <p class="ui-note">Requires Timeplus app server ${CUSTOM_UI_MIN_SERVER} or later. On an older server the app installs without ${uis.length === 1 ? "this page" : "these pages"}.</p>`;
+  <p class="ui-note">Optional: ${uis.length === 1 ? "this page is" : "these pages are"} available on Timeplus app server ${CUSTOM_UI_MIN_SERVER} or later. Older versions have no custom UI support; there the app still installs and its streams, views and dashboards work as usual, just without ${uis.length === 1 ? "the page" : "the pages"}.</p>`;
 }
 
 function renderCard(app) {

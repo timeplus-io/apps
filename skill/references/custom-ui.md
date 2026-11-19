@@ -4,7 +4,7 @@ An app can ship its own web pages ("custom UIs"): static bundles of HTML, JavaSc
 
 Use one when a dashboard cannot show what the app needs: a 3D scene, a custom layout, an interaction the built-in panel types do not have.
 
-**Version**: custom UIs are supported from Timeplus app server (neutron) **3.5.2**, which ships with Timeplus Web (the console) 3.5.3 ([release notes](https://github.com/timeplus-io/neutron/releases/tag/v3.5.2)). An older app server ignores the `uis:` key: the app installs, just without its pages. If an app's description promises a page, say which version it needs.
+**Version**: custom UIs are supported from Timeplus app server (neutron) **3.5.2**, which ships with Timeplus Web (the console) 3.5.3 ([release notes](https://github.com/timeplus-io/neutron/releases/tag/v3.5.2)). A custom UI is an optional part of an app: an older app server has no custom UI support and ignores the `uis:` key, so the app installs and its streams, views and dashboards work, just without its pages. Do not make the app depend on the page. If an app's description promises a page, say which version it needs.
 
 ## Declaring a UI
 

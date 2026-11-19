@@ -11,8 +11,9 @@ description: >
   events, normalizes them into a Common Information Model (agentguard_cim_event),
   computes per-call token/cost/latency metrics, and ships four Core Protection
   detection rules (prompt injection, DLP, privilege escalation, supply chain)
-  that run from install. Agent Rooms 3D is a custom UI and needs Timeplus app
-  server 3.5.2 or later. Pause a rule with:
+  that run from install. Agent Rooms 3D is an optional custom UI, shown on
+  Timeplus app server 3.5.2 or later; older versions install the app without
+  it. Pause a rule with:
     SYSTEM PAUSE MATERIALIZED VIEW <db>.mv_rule_rp001;
   Generated from the AgentGuard backend - do not hand-edit the SQL.
 db_name: ag
