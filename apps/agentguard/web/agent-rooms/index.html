@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Agent Rooms 3D · AgentGuard</title>
+<link rel="icon" href="data:,">
+<style>
+:root{--ff:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--pink:#D53F8C;--bg:#120F1A;--panel:#231F2B;--line:#3A3741;--line2:#514E58;--mut:#7D7B82;--dim:#B5B4B8;--fg:#F7F6F6}
+:root[data-theme=light]{--bg:#FFFFFF;--panel:#F7F6F6;--line:#DAD9DB;--line2:#B5B4B8;--mut:#7D7B82;--dim:#514E58;--fg:#120F1A}
+/* The 3D stage keeps the dark palette in both themes; only the page chrome follows the console theme. */
+#stage{--bg:#120F1A;--panel:#231F2B;--line:#3A3741;--line2:#514E58;--mut:#7D7B82;--dim:#B5B4B8;--fg:#F7F6F6;background:var(--bg);color:var(--fg)}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font:400 14px/1.5 var(--ff)}
+a{color:var(--pink)}a:hover{color:var(--fg)}
+#app{display:flex;flex-direction:column;height:100%}
+header{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;padding:10px 24px;border-bottom:1px solid var(--line)}
+.eyebrow{font:600 12px/1.3 var(--ff);color:var(--pink);letter-spacing:.06em;text-transform:uppercase}
+.tabs{display:flex;flex-wrap:wrap;gap:6px}
+button{font:600 12px/1 var(--ff);height:32px;padding:0 12px;border-radius:4px;border:1px solid var(--mut);background:var(--panel);color:var(--fg);cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;transition:background-color .15s}
+button:hover{background:var(--line)}button.on{background:var(--pink);border-color:var(--pink);color:#fff}
+button:focus-visible,select:focus-visible{outline:2px solid var(--pink);outline-offset:2px}
+main{flex:1;min-height:0;display:flex}
+#stage{position:relative;flex:1 1 0;min-width:0;min-height:0;overflow:hidden}
+#cv{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:pointer}
+#ov{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.lbl{position:absolute;left:0;top:0;white-space:nowrap;font:600 11px/1.2 var(--ff);color:var(--dim);padding:2px 5px;border-radius:4px;background:var(--bg);border:1px solid var(--line)}
+.lbl.title{font-size:12px;color:var(--fg);border-color:var(--line2);display:flex;gap:6px;align-items:center}
+.bub{position:absolute;left:0;top:0;max-width:240px;font:400 12px/1.4 var(--ff);color:var(--bg);background:var(--fg);padding:4px 8px;border-radius:4px}
+.bub.err{background:#D12D50;color:#fff;font-weight:600}
+.badge{padding:1px 4px;border-radius:3px;background:var(--fg);color:var(--bg);font:600 10px/1.3 var(--ff)}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--mut);flex:none}
+aside{flex:0 0 340px;max-width:100%;min-height:0;box-sizing:border-box;background:var(--panel);border-left:1px solid var(--line2);padding:20px 24px;overflow:auto;display:flex;flex-direction:column;gap:14px}
+@media(max-width:860px){html,body{height:auto}#app{height:auto}main{flex-direction:column}#stage{flex:none;height:62vh}aside{flex:none;border-left:none;border-top:1px solid var(--line2);overflow:visible}}
+aside h2{margin:0;font:600 18px/1.4 var(--ff);overflow-wrap:anywhere}
+.k{font:400 12px/1.4 var(--ff);color:var(--dim)}.v{font:600 14px/1.4 var(--ff);overflow-wrap:anywhere}
+.grid{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;align-items:baseline}
+.gauge{height:8px;border-radius:4px;background:var(--bg);border:1px solid var(--line2);overflow:hidden}.gauge i{display:block;height:100%;background:var(--mut)}
+.hr{height:1px;background:var(--line2);flex:none}
+.box{padding:10px 12px;border:1px solid var(--line);border-radius:4px;background:var(--bg);font:400 12px/1.5 var(--ff);overflow-wrap:anywhere;max-height:180px;overflow:auto;white-space:pre-wrap}
+.row{display:flex;align-items:baseline;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);font:400 12px/1.4 var(--ff)}
+.row span:nth-child(2){flex:1;min-width:0;overflow-wrap:anywhere}.row .k{flex:none}
+.spark{display:flex;align-items:flex-end;gap:2px;height:44px}.spark i{flex:1;background:var(--mut);border-radius:1px;min-height:2px}.spark i.last{background:var(--pink)}
+.hint{font:400 12px/1.5 var(--ff);color:var(--dim)}
+#cap{position:absolute;left:16px;right:16px;bottom:16px;display:flex;gap:10px;align-items:baseline;padding:8px 12px;border:1px solid var(--line2);border-radius:4px;background:var(--bg);font:600 14px/1.4 var(--ff);pointer-events:none}#cap .k{flex:none}#cap .rush{flex:none;margin-left:auto;padding:1px 6px;border-radius:4px;background:var(--pink);color:#fff;font-size:12px}
+#conn{display:inline-flex;align-items:center;gap:6px;font:400 12px/1 var(--ff);color:var(--dim)}
+.sub{font:600 14px/1.3 var(--ff)}
+#look{display:inline-flex;align-items:center;gap:6px;font:400 12px/1 var(--ff);color:var(--dim)}
+select{height:32px;padding:0 8px;border-radius:4px;border:1px solid var(--mut);background:var(--panel);color:var(--fg);font:600 12px/1 var(--ff)}
+#err{display:flex;align-items:center;gap:12px;padding:8px 24px;border-bottom:1px solid #D12D50;font:400 12px/1.5 var(--ff);overflow-wrap:anywhere}#err[hidden]{display:none}#errmsg{flex:1;min-width:0}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div><div class="eyebrow">Agent rooms · 3D</div><div class="sub">One room per session</div></div>
+    <div class="tabs" id="tabs"></div>
+    <div style="margin-left:auto;display:flex;gap:12px;align-items:center">
+      <span id="conn"></span>
+      <label id="look">Look back<select id="minutes"><option value="15">15 min</option><option value="30">30 min</option><option value="60">1 hour</option><option value="180">3 hours</option><option value="720">12 hours</option><option value="1440">24 hours</option></select></label>
+      <button id="pause">Pause</button>
+    </div>
+  </header>
+  <div id="err" hidden><span id="errmsg"></span><button id="retry">Try again</button></div>
+  <main>
+    <div id="stage"><canvas id="cv"></canvas><div id="ov"></div><div id="cap"></div></div>
+    <aside id="panel"></aside>
+  </main>
+</div>
+<script type="module" src="src/main.js"></script>
+</body>
+</html>

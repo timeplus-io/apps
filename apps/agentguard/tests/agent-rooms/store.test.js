@@ -1,0 +1,132 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { Store } from '../../web/agent-rooms/src/store.js';
+
+// Row shapes as returned by the queries in src/queries.js (captured from a real Claude Code session).
+const S = 'sess-1';
+const ev = (ts, event_type, x = {}) => ({ ts, event_type, session_id: S, agent_type: 'claudecode', agent_id: 'host.local', cwd: '/w/AgentGuard', tool_success: true, hook_decision: 'observe', ...x });
+
+function run() {
+  const st = new Store();
+  st.ingestEvents([ev(1000, 'session_start'), ev(1100, 'user_input', { user_message: 'Fix the login bug\nplease', user_chars: 24 })]);
+  const s = st.sessions.get(S); st.attach(s, 2000);
+  return { st, s };
+}
+
+test('a prompt sets the task and queues a prompt item', () => {
+  const { s } = run(); // attached after the prompt, so nothing is queued for it
+  assert.equal(s.task, 'Fix the login bug'); assert.equal(s.name, 'AgentGuard · sess-1'); assert.equal(s.badge, 'CC');
+  assert.equal(s.cards.length, 1); assert.equal(s.queue.length, 0); assert.equal(s.awaiting, true);
+});
+
+test('tool invoke and complete pair by call id and produce one card', () => {
+  const { st, s } = run();
+  st.event(ev(1200, 'tool_invoke', { tool_name: 'Read', tool_arg: '/w/src/a.ts', call_id: 't1' }));
+  assert.equal(s.open.size, 1); assert.equal(s.queue[0].call.kind, 'files'); assert.equal(st.resting(s, 1300), false);
+  st.event(ev(1290, 'tool_complete', { tool_name: 'Read', call_id: 't1', payload_chars: 4000 }));
+  const c = s.queue[0].call;
+  assert.equal(c.done, true); assert.equal(c.ok, true); assert.equal(c.tok, 1000); assert.equal(s.open.size, 0);
+  assert.equal(s.cards.at(-1), c.card); assert.equal(s.log.at(-1).kind, 'files'); assert.equal(s.calls, 1);
+  st.event(ev(1200, 'tool_invoke', { tool_name: 'Read', call_id: 't1' })); // replay after reconnect
+  assert.equal(s.calls, 1);
+});
+
+test('a failure hook closes the call as failed, even when it arrives first', () => {
+  const { st, s } = run();
+  st.event(ev(1200, 'tool_invoke', { tool_name: 'Bash', tool_arg: 'cat /nope', call_id: 't2' }));
+  st.hook({ ts: 1300, session_id: S, hook_name: 'tool_call_failure', tool_name: 'Bash', call_id: 't2', error: 'Exit code 1' });
+  assert.equal(s.failures, 1); assert.equal(s.cards.at(-1).ok, false); assert.match(s.log.at(-1).label, /Exit code 1/);
+  st.hook({ ts: 1400, session_id: S, hook_name: 'tool_call_failure', tool_name: 'Bash', call_id: 't3', error: 'late' });
+  st.event(ev(1390, 'tool_invoke', { tool_name: 'Bash', tool_arg: 'false', call_id: 't3' }));
+  assert.equal(s.failures, 2); assert.equal(s.open.size, 0);
+});
+
+test('sub-agent calls go to the sub-agent, and only its result reaches the main bench', () => {
+  const { st, s } = run(), before = s.cards.length;
+  st.event(ev(2000, 'tool_invoke', { tool_name: 'Agent', sub_type: 'Explore', call_id: 'a1' }));
+  st.event(ev(2100, 'session_start', { raw_hook_name: 'subagent_spawning', sub_id: 'sub9', sub_name: 'Explore' }));
+  const sub = s.subs.get('sub9'), agentCall = s.queue[0].call;
+  assert.equal(agentCall.kind, 'sub'); assert.equal(agentCall.sub, sub); assert.equal(sub.name, 'Explore');
+  st.event(ev(2200, 'tool_invoke', { tool_name: 'Grep', call_id: 'g1', sub_id: 'sub9' }));
+  st.event(ev(2300, 'tool_complete', { tool_name: 'Grep', call_id: 'g1', sub_id: 'sub9', payload_chars: 400 }));
+  assert.equal(sub.queue.length, 1); assert.equal(s.queue.length, 1); assert.equal(s.cards.length, before); assert.equal(sub.cards, 1);
+  st.hook({ ts: 2400, session_id: S, hook_name: 'subagent_ended', sub_id: 'sub9' });
+  st.event(ev(2500, 'tool_complete', { tool_name: 'Agent', call_id: 'a1', payload_chars: 1200 }));
+  assert.equal(sub.ended, true); assert.equal(s.cards.length, before + 1); assert.equal(s.cards.at(-1).type, 'subbench');
+});
+
+test('context size comes from token metrics of the main model only; a sharp drop is a compaction', () => {
+  const { st, s } = run();
+  const m = (ts, v, model = 'sonnet') => ['llm.input_tokens', 'llm.cache_read_tokens', 'llm.cache_write_tokens'].map((metric_name, i) => ({ ts, session_id: S, metric_name, metric_value: i === 1 ? v : 0, model }));
+  assert.equal(s.ctxReal, false);
+  st.ingestMetrics([...m(3000, 90000), ...m(3100, 14000, 'haiku'), ...m(3200, 120000), ...m(3300, 30000)]);
+  st.flush(Date.now() + 5000);
+  assert.equal(s.ctxReal, true); assert.equal(s.ctx, 30000); assert.deepEqual(s.hist.map(x => x.v), [90000, 120000, 30000]);
+  assert.equal(s.cards.length, 1); assert.match(s.cards[0].label, /summary of 1 cards/); assert.equal(s.queue.at(-1).t, 'compact'); assert.equal(s.queue.at(-1).job.done, true);
+  st.ingestMetrics(m(3400, 320000)); st.flush(Date.now() + 5000);
+  assert.equal(s.ctxLimit, 1000000);
+});
+
+test('a final answer ends the turn; session end puts the agent to rest', () => {
+  const { st, s } = run();
+  st.event(ev(4000, 'tool_invoke', { tool_name: 'Bash', call_id: 'x1' }));
+  st.event(ev(5000, 'llm_response', { assistant_message: 'Done.', model: 'claude-sonnet' }));
+  assert.equal(s.open.size, 0); assert.equal(s.queue.at(-1).t, 'say'); assert.equal(s.model, 'claude-sonnet'); assert.equal(st.resting(s, 5001), true);
+  st.event(ev(6000, 'session_end')); assert.equal(s.ended, true);
+  assert.deepEqual(st.top(5), [s]);
+});
+
+test('skill and memory rows name the call they share a timestamp with, in either arrival order', () => {
+  const { st, s } = run();
+  st.event(ev(7000, 'tool_invoke', { tool_name: 'Skill', tool_arg: 'tdd', call_id: 'k1' }));
+  st.skill({ ts: 7000, session_id: S, skill_name: 'tdd', skill_action: 'invoked', skill_source_type: 'user' });
+  st.event(ev(7090, 'tool_complete', { tool_name: 'Skill', call_id: 'k1', payload_chars: 80 }));
+  assert.equal(s.cards.at(-1).label, 'Load skill: tdd'); assert.equal(s.cards.at(-1).type, 'skill'); assert.equal(s.skillsUsed.get('tdd'), 1);
+  st.skill({ ts: 7000, session_id: S, skill_name: 'tdd', skill_action: 'invoked' }); // replay
+  assert.equal(s.skillsUsed.get('tdd'), 1);
+  st.skill({ ts: 7001, session_id: S, skill_name: 'pdf', skill_action: 'loaded' });
+  assert.equal(s.skillsAvailable.size, 1); assert.equal(s.skillsUsed.has('pdf'), false);
+
+  st.memory({ ts: 8000, session_id: S, memory_source: 'auto_memory', memory_op: 'read', tool_name: 'Read', memory_path: '/p/memory/MEMORY.md' }); // before the call
+  st.event(ev(8000, 'tool_invoke', { tool_name: 'Read', tool_arg: '/p/memory/MEMORY.md', call_id: 'm1' }));
+  st.event(ev(8080, 'tool_complete', { tool_name: 'Read', call_id: 'm1', payload_chars: 400 }));
+  st.event(ev(8100, 'tool_invoke', { tool_name: 'mcp__mem__search', call_id: 'm2' }));
+  st.event(ev(8200, 'tool_complete', { tool_name: 'mcp__mem__search', call_id: 'm2', payload_chars: 40 }));
+  st.memory({ ts: 8100, session_id: S, memory_source: 'mcp', memory_op: 'search', tool_name: 'mcp__mem__search', server_name: 'mem' }); // after completion
+  const labels = s.log.filter(x => x.kind === 'memory').map(x => x.label);
+  assert.deepEqual(labels, ['Read memory: MEMORY.md', 'Search memory · mem']); assert.deepEqual(s.memoryOps, { read: 1, search: 1 });
+  assert.equal(s.cards.at(-1).label, 'Search memory · mem');
+});
+
+test('instruction files loaded without a tool call show up as memory loads', () => {
+  const { st, s } = run(), n = s.cards.length;
+  const row = { ts: 900, session_id: S, hook_name: 'instructions_loaded', file_path: '/w/AgentGuard/CLAUDE.md', memory_type: 'Project', load_reason: 'session_start' };
+  st.hook(row); st.hook(row); // second is a replay
+  assert.equal(s.memoryOps.load, 1); assert.equal(s.cards.length, n + 1);
+  assert.equal(s.log.at(-1).label, 'Load AgentGuard/CLAUDE.md (Project, session start)'); assert.equal(s.queue.at(-1).t, 'load');
+});
+
+test('compaction is taken from real events when the agent reports them', () => {
+  const { st, s } = run();
+  st.hook({ ts: 9000, session_id: S, hook_name: 'pre_compact', compact_trigger: 'manual' });
+  const job = s.queue.at(-1).job; assert.equal(job.done, false); assert.equal(s.cards.length, 1);
+  st.event(ev(16000, 'session_start', { source: 'compact' }));
+  st.hook({ ts: 16010, session_id: S, hook_name: 'post_compact' }); // same compaction reported again
+  assert.equal(job.done, true); assert.equal(s.cards.length, 1); assert.equal(job.card, s.cards[0]); assert.match(job.card.label, /summary of 1 cards/);
+  assert.equal(s.queue.filter(x => x.t === 'compact').length, 1); assert.equal(s.ended, false);
+  const m = (ts, v) => ['llm.input_tokens', 'llm.cache_read_tokens', 'llm.cache_write_tokens'].map((metric_name, i) => ({ ts, session_id: S, metric_name, metric_value: i === 1 ? v : 0, model: 'sonnet' }));
+  st.ingestMetrics([...m(8000, 150000), ...m(17000, 30000)]); st.flush(Date.now() + 5000);
+  assert.equal(job.card.tok, 30000); assert.equal(s.cards.length, 1); // sized by the next call, not compacted a second time
+});
+
+test('task list and API-error turn ends come from raw hooks', () => {
+  const { st, s } = run();
+  st.hook({ ts: 9100, session_id: S, hook_name: 'task_created', task_id: '1', task_subject: 'check version' });
+  st.hook({ ts: 9200, session_id: S, hook_name: 'task_completed', task_id: '1', task_subject: 'check version' });
+  st.hook({ ts: 9200, session_id: S, hook_name: 'task_completed', task_id: '1', task_subject: 'check version' });
+  assert.deepEqual([...s.tasks.values()], [{ subject: 'check version', done: true }]);
+  assert.deepEqual(s.log.slice(-2).map(x => x.label), ['New task: check version', 'Done: check version']);
+  st.event(ev(9300, 'tool_invoke', { tool_name: 'Bash', call_id: 'z1' }));
+  st.hook({ ts: 9400, session_id: S, hook_name: 'stop_failure', error: 'rate_limit' });
+  assert.equal(s.open.size, 0); assert.equal(s.awaiting, false); assert.equal(st.resting(s, 9401), true);
+});

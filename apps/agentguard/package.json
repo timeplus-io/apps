@@ -1,0 +1,9 @@
+{
+  "name": "agentguard-app",
+  "private": true,
+  "type": "module",
+  "description": "Marks the custom UI sources under web/ as ES modules for the unit tests. Not part of the .tpapp.",
+  "scripts": {
+    "test": "node --test"
+  }
+}

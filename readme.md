@@ -16,7 +16,7 @@ A collection of installable Timeplus apps (`.tpapp` packages). Each app bundles 
 | [invest-insights](apps/invest-insights/) | Real-time trading monitoring — order management, position tracking, continuous auction participation rate, and live P&L | ![Downloads](https://img.shields.io/github/downloads/timeplus-io/apps/latest/invest-insights.tpapp?label=downloads) |
 | [cisco-asa-ddos](apps/cisco-asa-ddos/) | Real-time DDoS detection from simulated Cisco ASA firewall logs — dynamic per-IP baselines, spike detection, and webhook alerting | ![Downloads](https://img.shields.io/github/downloads/timeplus-io/apps/latest/cisco-asa-ddos.tpapp?label=downloads) |
 | [game-feature-pipeline](apps/game-feature-pipeline/) | Real-time ML feature pipeline for game analytics — player actions, transactions, social engagement, and spend anomaly detection | ![Downloads](https://img.shields.io/github/downloads/timeplus-io/apps/latest/game-feature-pipeline.tpapp?label=downloads) |
-| [agentguard](apps/agentguard/README.md) | AgentGuard core telemetry pipeline for AI coding agents (Claude Code, OpenClaw, Hermes, OTLP) — OTLP input, CIM normalization, per-call token metrics, threats, and four Core Protection detection rules installed paused | ![Downloads](https://img.shields.io/github/downloads/timeplus-io/apps/latest/agentguard.tpapp?label=downloads) |
+| [agentguard](apps/agentguard/README.md) | AgentGuard core telemetry pipeline for AI coding agents (Claude Code, OpenClaw, Hermes, OTLP) — OTLP input, CIM normalization, per-call token metrics, threats, and four Core Protection detection rules, plus Agent Rooms 3D, a live 3D view of agent sessions | ![Downloads](https://img.shields.io/github/downloads/timeplus-io/apps/latest/agentguard.tpapp?label=downloads) |
 
 ## Build & Install
 
@@ -35,5 +35,5 @@ make install APP=<name> NEUTRON_URL=http://my-host:8000 TENANT=my-tenant
 
 1. Create `apps/<your-app>/` with `manifest.yaml`, `ddl/`, and `dashboards/`
 2. Copy the `Makefile` from an existing app and update `APP_NAME`
-   (for an app with its own web page, see [skill/references/custom-ui.md](skill/references/custom-ui.md); custom UIs need Timeplus app server 3.5.2 or later)
+   (for an app with its own web page, copy `apps/agentguard/Makefile` and see [skill/references/custom-ui.md](skill/references/custom-ui.md); custom UIs need Timeplus app server 3.5.2 or later)
 3. Run `make build APP=<your-app>` from the repo root

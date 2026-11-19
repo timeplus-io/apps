@@ -287,6 +287,8 @@ The rules that matter most:
 - **Dependencies are vendored into the bundle.** The page's content security policy blocks every other host (CDNs, web fonts), inline `<script>` blocks, inline event handlers and `eval`.
 - **Files are served verbatim** — no `{{ .DB }}` rendering inside a bundle.
 
+Working example: `apps/agentguard` (`web/agent-rooms/`, three.js vendored, five streaming queries).
+
 ## Timeplus SQL Reference
 
 For writing correct Timeplus streaming SQL in DDL files, refer to the Timeplus SQL skill:
