@@ -68,7 +68,7 @@ build:
 - `-FS` makes zip drop entries whose files were deleted; plain `zip -r` onto an existing archive keeps them.
 - `-x '*.DS_Store'` keeps macOS folder metadata out of the bundle (it would be stored and served like any other file).
 
-The release workflow builds and checks every app the same way.
+`apps/agentguard/Makefile` is the working example. The release workflow builds and checks every app the same way.
 
 ## What the page receives
 
@@ -121,6 +121,8 @@ if (res.status === 401 || res.type === 'opaqueredirect') {
 - **Session ended**: the query API answers 401, or (password login) a redirect to the logout page. With `redirect: 'manual'` the redirect shows up as `res.type === 'opaqueredirect'` instead of being followed. Show a "sign in again" message; do not retry in a loop.
 - The response is Server-Sent Events: an `event: query` frame carrying `result.header` (column names and types), then unnamed `data:` frames, each a JSON array of rows (arrays in header order), plus `event: metrics` frames to ignore. A streaming query keeps the response open; cancel it with an `AbortController`. Leaving the page in the console removes the frame, which cancels its requests.
 - Backfill batches of a streaming query are not globally ordered by time. Sort by your own timestamp column before applying them.
+
+`apps/agentguard/web/agent-rooms/src/sse.js` and `timeplus.js` are a small parser and client that can be copied.
 
 ## What the browser allows
 

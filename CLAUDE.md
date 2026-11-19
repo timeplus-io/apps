@@ -101,17 +101,18 @@ Dashboard JSON uses `[[ ]]` delimiters (to avoid collision with frontend filter 
 
 ## Custom App UI
 
-An app can ship static web bundles that Timeplus serves on the console's origin (`/{workspace}/apps/{app_id}/ui/{name}/`) and lists under **Custom UI** on the app's page. Supported from Timeplus app server (neutron) 3.5.2 ([release](https://github.com/timeplus-io/neutron/releases/tag/v3.5.2)); an older server ignores `uis:` and installs the app without its pages. Full reference: `skill/references/custom-ui.md`.
+An app can ship static web bundles that Timeplus serves on the console's origin (`/{workspace}/apps/{app_id}/ui/{name}/`) and lists under **Custom UI** on the app's page. Supported from Timeplus app server (neutron) 3.5.2 ([release](https://github.com/timeplus-io/neutron/releases/tag/v3.5.2)); an older server ignores `uis:` and installs the app without its pages. Full reference: `skill/references/custom-ui.md`. Working example: `apps/agentguard/web/agent-rooms/`.
 
 - **Manifest**: top-level `uis:` list, parallel to `dashboards:`. It is not a resource type.
-- **Build**: the app's Makefile zips every `uis[].dir` (`scripts/check_tpapp.py --ui-dirs manifest.yaml`) and then runs `scripts/check_tpapp.py <app>.tpapp`, which applies the server's install rules (entry file exists; 8 MiB per file; 32 MiB and 2,000 files per UI; file names limited to `A-Z a-z 0-9 . _ - /`; no symlinks). The reference has the Makefile `build` target to use for an app with a UI.
-- **Bundle directory holds only what is served.** Tests, `package.json` and docs go outside it.
+- **Build**: the app's Makefile zips every `uis[].dir` (`scripts/check_tpapp.py --ui-dirs manifest.yaml`) and then runs `scripts/check_tpapp.py <app>.tpapp`, which applies the server's install rules (entry file exists; 8 MiB per file; 32 MiB and 2,000 files per UI; file names limited to `A-Z a-z 0-9 . _ - /`; no symlinks). Copy `apps/agentguard/Makefile` for a new app with a UI.
+- **Bundle directory holds only what is served.** Tests, `package.json` and docs go outside it (`apps/agentguard/tests/`).
 - **Page contract**: the console appends `workspace`, `app_id`, `db` and `theme` to the entry URL. The page queries `POST /{workspace}/api/v1beta2/queries` with the viewer's session — no `Authorization` header, no connection form.
 - **Vendor every dependency.** The served content security policy blocks other hosts, inline scripts, inline event handlers and `eval`.
 - Bundle files are served verbatim; there is no template rendering in them.
 
 ```bash
 python3 -m unittest discover -s scripts -p 'test_*.py'   # tests for the package check
+make -C apps/agentguard test                             # unit tests for the Agent Rooms page
 ```
 
 ## Architecture: market-data App

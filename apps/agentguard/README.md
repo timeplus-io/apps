@@ -16,6 +16,7 @@ Installs the [AgentGuard](https://github.com/timeplus-io/AgentGuard) streaming p
 | Derived | `agentguard_skills` + `mv_skills_*`, `agentguard_memory_ops` + `mv_memory_*` |
 | Cost | `agentguard_pricing`, `agentguard_cost_budgets` (schema only) |
 | Rules | `agentguard_rules` + four Core Protection detections `mv_rule_rp001..rp004`, running from install |
+| Custom UI | Agent Rooms 3D, a live 3D view of agent sessions (see below) |
 
 Not included (they need the AgentGuard server): user management, notifications, approval holds, Sentry, Semantic DLP, and the rest of the rule catalog.
 
@@ -68,6 +69,83 @@ Set `timeplus.database: ag` in AgentGuard's `config.yaml` (or `TIMEPLUS_DATABASE
 
 `dashboards/main.json` — AgentGuard Overview: events per minute by agent type, tokens by model, open threats by severity, recent threats.
 
+## Agent Rooms 3D
+
+A live 3D view of the agent sessions AgentGuard is collecting, shipped in the package as a custom UI. Each session is a room. A robot walks between labelled objects to show what the agent is doing right now: taking a user instruction, reading files, running commands, loading skills, delegating to sub-agents, and filling its context window. The side panel shows session status and the history of any object you click.
+
+Open it in the console: **Apps → AgentGuard → Custom UI → Agent Rooms 3D**. It needs Timeplus app server 3.5.2 or later; on an older release the app installs without the page.
+
+There is nothing to configure. The console tells the page the workspace, the app's database and the theme, and the page's queries run with your console session, so what you can see is what your user may read. The only setting is **Look back** (15 minutes to 24 hours, remembered per browser): how far back sessions are loaded from.
+
+The page follows the console theme for its header and side panel; the 3D stage is dark in both themes.
+
+### Where the data comes from
+
+Nothing is scripted or mocked. The page runs five streaming queries through the Timeplus REST API (`POST /{workspace}/api/v1beta2/queries`) as the signed-in user and keeps them open. Rows inside the look-back window build the current state; rows that arrive afterwards are animated.
+
+| On screen | Stream | Columns |
+|---|---|---|
+| Rooms, agent badge, model | `agentguard_cim_event` | `session_id`, `agent_type`, `agent_id`, `model`, `cwd` from `raw_event_data` |
+| Phone (user instruction), board (task) | `agentguard_cim_event`, `user_input` | `user_message` |
+| Trips to an object, result cards | `agentguard_cim_event`, `tool_invoke` / `tool_complete` | `tool_name`, `tool_input`, `tool_result` size, `tool_success`, `tool_use_id` |
+| Sub-agent robot | `agentguard_cim_event`, `session_start` from `subagent_spawning` | `agent_id`, `agent_type` in `raw_event_data` |
+| Final answer bubble | `agentguard_cim_event`, `llm_response` | `assistant_message` |
+| Failed and denied calls, sub-agent stop, turn ended by an API error | `agentguard_hook_events` | `tool_call_failure`, `permission_denied`, `subagent_ended`, `stop_failure` |
+| Instruction files loaded into context (no tool call) | `agentguard_hook_events` | `instructions_loaded`: `file_path`, `memory_type`, `load_reason` |
+| Compaction | `agentguard_hook_events`, `agentguard_cim_event` | `pre_compact` (start), `session_start` with `source = compact` or `post_compact` (done) |
+| Task list on the board | `agentguard_hook_events` | `task_created`, `task_completed` |
+| Skill names and use counts | `agentguard_skills` | `skill_name`, `skill_action`, `skill_source_type` |
+| Memory operations | `agentguard_memory_ops` | `memory_op`, `memory_source`, `server_name`, `memory_path` |
+| Context gauge and history | `agentguard_cim_metrics` | `llm.input_tokens` + `llm.cache_read_tokens` + `llm.cache_write_tokens` per LLM call |
+
+Tool families map to objects: Bash → Terminal; Read/Write/Edit/Grep/Glob → Local file; WebFetch/WebSearch → Search; Skill → Skill; memory tools and memory files → Memory; `mcp__*` → MCP; Agent/Task → sub-agent; anything else → Other tools. OpenClaw and Hermes tool names are mapped the same way (`web/agent-rooms/src/mapping.js`).
+
+### How behaviour is derived
+
+- **Operating** lasts as long as the real call: the robot stays at the object until `tool_complete` (or a failure hook) arrives. Calls open for 4 seconds or more show a `running m:ss` timer.
+- **Thinking** is inferred: a prompt or tool result has arrived and nothing has followed. Claude Code has no "LLM call started" event.
+- **Burst**: three or more queued calls to the same object become one trip with a `×N` counter and one thick card.
+- **Catching up**: shown when three or more events are waiting; walking and waits run 2.2× faster.
+- **Idle**: the turn has ended (`llm_response` or `session_end`), or nothing has happened for two minutes.
+- Up to six rooms are shown: the most recently active sessions in the look-back window.
+
+### Known gaps in the data
+
+Checked against real Claude Code sessions:
+
+- **System prompt text** is not reported, so the board shows the task only.
+- **Per-card token cost** is estimated from payload size (about 4 characters per token) and marked `≈`. The context gauge uses real token metrics, and needs Claude Code telemetry (`CLAUDE_CODE_ENABLE_TELEMETRY=1`) pointed at the app's OTel input; without it the gauge falls back to the estimate.
+- **Context limit** is not reported. The gauge assumes 200k, and switches to 1M once a session exceeds 200k.
+- **Compaction** is a real event for Claude Code (the session restarts with `source = compact`). For agents that report nothing, it is inferred from a drop of more than 40% (and 20k tokens) in context size. The summary card's size is filled in by the next LLM call.
+- **Token metrics do not say which agent made the call.** Calls by a different model or made while a sub-agent is running are left out of the context size.
+- **Memory loaded without a tool call**: `CLAUDE.md` and rules files are shown once the Claude Code plugin forwards `InstructionsLoaded` (AgentGuard#305). The auto-memory `MEMORY.md` injected at session start fires no hook and stays invisible; so does the size of any loaded file.
+- **Instruction loads, compaction start, the task list and API-error turn ends** need the hooks added in AgentGuard#305. With an older plugin those parts simply stay empty.
+- **Skill and memory rows carry no result.** They are matched to their tool call by timestamp; success or failure comes from the call.
+- **Tool failures, permission denials and sub-agent stop** are only in `agentguard_hook_events`; the CIM views drop them.
+
+OpenClaw and Hermes sessions are drawn from the same streams but have only been checked with Claude Code so far.
+
+### Files
+
+`web/agent-rooms/` is the bundle: everything in it is installed and served. Tests live in `tests/agent-rooms/` and are not packaged.
+
+| File | Purpose |
+|---|---|
+| `index.html` | Page shell and styles |
+| `src/context.js` | Workspace, database, theme and look-back from the entry URL |
+| `src/queries.js` | The five SQL queries |
+| `src/timeplus.js`, `src/sse.js` | Query client (session cookie, no credentials) and stream parsing |
+| `src/store.js` | Rows → per-session state and the queue of things to act out |
+| `src/mapping.js` | Tool → object mapping, labels |
+| `src/scene.js`, `src/icons.js` | three.js rooms, robot, animation |
+| `src/panel.js`, `src/main.js` | Side panel and wiring |
+| `vendor/` | three.js 0.184.0 (MIT), shipped in the bundle; `make vendor` refreshes it |
+
+```bash
+make test     # unit tests for the page logic (Node 20+)
+make build    # zips the bundle into the package and checks it (entry file, size limits, file names)
+```
+
 ## Uninstall
 
-Uninstalling drops database `ag` and **all telemetry stored in it**.
+Uninstalling drops database `ag` and **all telemetry stored in it**, and removes the Agent Rooms page.
