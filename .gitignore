@@ -1,2 +1,6 @@
 *.tpapp
 .DS_Store
+*.tpapp.tmp
+node_modules/
+__pycache__/
+.playwright-mcp/
