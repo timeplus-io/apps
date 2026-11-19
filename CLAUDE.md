@@ -101,7 +101,7 @@ Dashboard JSON uses `[[ ]]` delimiters (to avoid collision with frontend filter 
 
 ## Custom App UI
 
-An app can ship static web bundles that Timeplus serves on the console's origin (`/{workspace}/apps/{app_id}/ui/{name}/`) and lists under **Custom UI** on the app's page. Full reference: `skill/references/custom-ui.md`.
+An app can ship static web bundles that Timeplus serves on the console's origin (`/{workspace}/apps/{app_id}/ui/{name}/`) and lists under **Custom UI** on the app's page. Supported from Timeplus app server (neutron) 3.5.2 ([release](https://github.com/timeplus-io/neutron/releases/tag/v3.5.2)); an older server ignores `uis:` and installs the app without its pages. Full reference: `skill/references/custom-ui.md`.
 
 - **Manifest**: top-level `uis:` list, parallel to `dashboards:`. It is not a resource type.
 - **Build**: the app's Makefile zips every `uis[].dir` (`scripts/check_tpapp.py --ui-dirs manifest.yaml`) and then runs `scripts/check_tpapp.py <app>.tpapp`, which applies the server's install rules (entry file exists; 8 MiB per file; 32 MiB and 2,000 files per UI; file names limited to `A-Z a-z 0-9 . _ - /`; no symlinks). The reference has the Makefile `build` target to use for an app with a UI.

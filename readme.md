@@ -35,5 +35,5 @@ make install APP=<name> NEUTRON_URL=http://my-host:8000 TENANT=my-tenant
 
 1. Create `apps/<your-app>/` with `manifest.yaml`, `ddl/`, and `dashboards/`
 2. Copy the `Makefile` from an existing app and update `APP_NAME`
-   (for an app with its own web page, see [skill/references/custom-ui.md](skill/references/custom-ui.md))
+   (for an app with its own web page, see [skill/references/custom-ui.md](skill/references/custom-ui.md); custom UIs need Timeplus app server 3.5.2 or later)
 3. Run `make build APP=<your-app>` from the repo root

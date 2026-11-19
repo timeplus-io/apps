@@ -273,7 +273,7 @@ This covers:
 
 ## Custom UI
 
-An app can ship its own web pages: static bundles (HTML, JavaScript, CSS, assets) that Timeplus stores at install, serves on the console's origin, and lists under **Custom UI** on the app's page. Reach for one when a dashboard panel cannot show what the app needs. Full reference:
+An app can ship its own web pages: static bundles (HTML, JavaScript, CSS, assets) that Timeplus stores at install, serves on the console's origin, and lists under **Custom UI** on the app's page. Reach for one when a dashboard panel cannot show what the app needs. Supported from Timeplus app server (neutron) 3.5.2; an older server installs the app without its pages. Full reference:
 
 **`skill/references/custom-ui.md`**
 

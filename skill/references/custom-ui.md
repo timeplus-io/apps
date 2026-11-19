@@ -4,7 +4,7 @@ An app can ship its own web pages ("custom UIs"): static bundles of HTML, JavaSc
 
 Use one when a dashboard cannot show what the app needs: a 3D scene, a custom layout, an interaction the built-in panel types do not have.
 
-Needs a Timeplus Enterprise release with custom app UI support. An older server ignores the `uis:` key: the app installs, just without its pages.
+**Version**: custom UIs are supported from Timeplus app server (neutron) **3.5.2**, which ships with Timeplus Web (the console) 3.5.3 ([release notes](https://github.com/timeplus-io/neutron/releases/tag/v3.5.2)). An older app server ignores the `uis:` key: the app installs, just without its pages. If an app's description promises a page, say which version it needs.
 
 ## Declaring a UI
 
@@ -161,6 +161,7 @@ Files are served with `Cache-Control: no-cache` and an `ETag`, so an upgrade sho
 |---|---|---|
 | Install fails: `entry file "index.html" not found in web/live` | The bundle directory was not in the zip, or `entry` is wrong | Add `uis[].dir` to the zip command (use `--ui-dirs`); run the package check |
 | Install fails: `file "…" has characters outside A-Z a-z 0-9 . _ - /` | A space or non-ASCII character in a file name | Rename the file |
+| App installs but its page has no **Custom UI** entry, and `GET …/apps/{app_id}` has no `uis` | App server older than 3.5.2 ignores `uis:` | Upgrade to 3.5.2 or later, then upgrade or reinstall the app |
 | Blank page, console error `Refused to execute inline script` | Inline `<script>` or `onclick=` | Move the code to a `.js` file; attach handlers with `addEventListener` |
 | Library missing, `Refused to load the script 'https://…'` | Loaded from a CDN | Vendor it into the bundle |
 | Fonts fall back, `Refused to load the stylesheet` | Web font service | Ship the font files or use a system font stack |
