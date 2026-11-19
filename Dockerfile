@@ -9,6 +9,7 @@ RUN pip install --no-cache-dir -r registry/requirements.txt
 
 COPY apps/ apps/
 COPY registry/ registry/
+COPY scripts/ scripts/
 COPY Makefile .
 
 RUN make build-all && python3 registry/build.py

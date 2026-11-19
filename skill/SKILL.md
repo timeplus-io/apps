@@ -1,13 +1,13 @@
 ---
 name: creating-timeplus-apps
-description: Use when creating, packaging, or installing a Timeplus app (.tpapp) — converting existing SQL resources and dashboards into an installable app package, writing manifests, applying template variables, or debugging install failures
+description: Use when creating, packaging, or installing a Timeplus app (.tpapp) — converting existing SQL resources and dashboards into an installable app package, writing manifests, applying template variables, shipping a custom web UI with an app, or debugging install failures
 ---
 
 # Creating Timeplus Apps
 
 ## Overview
 
-A Timeplus app (`.tpapp`) is a zip archive that bundles a streaming data pipeline — DDL resources (streams, views, materialized views) plus dashboards — into a single installable unit. The installer provisions everything in order and rolls back on failure.
+A Timeplus app (`.tpapp`) is a zip archive that bundles a streaming data pipeline — DDL resources (streams, views, materialized views) plus dashboards, and optionally custom web pages — into a single installable unit. The installer provisions everything in order and rolls back on failure.
 
 ## Directory Structure
 
@@ -18,14 +18,19 @@ my-app/
 │   ├── 001_first.sql      # executed in filename order
 │   ├── 002_second.sql
 │   └── ...
-└── dashboards/
-    └── main.json          # array of panel objects
+├── dashboards/
+│   └── main.json          # array of panel objects
+└── web/                   # optional — custom UIs, one directory per page
+    └── live/
+        └── index.html
 ```
 
 Package it:
 ```bash
 cd my-app && zip -r ../my-app.tpapp manifest.yaml ddl/ dashboards/
 ```
+
+An app with custom UIs must also zip each UI directory and should run the package check — see [Custom UI](#custom-ui).
 
 Install via API:
 ```bash
@@ -120,6 +125,11 @@ dashboards:
   - file: dashboards/main.json
     name: My Dashboard
     description: Real-time view
+
+uis:                               # optional — custom web pages, see "Custom UI"
+  - name: live
+    title: Live View
+    dir: web/live
 ```
 
 ### Resource types
@@ -260,6 +270,22 @@ This covers:
 - `updateMode` (`"all"` / `"key"` / `"time"`) — when to use each
 - Default color palette
 - Common mistakes
+
+## Custom UI
+
+An app can ship its own web pages: static bundles (HTML, JavaScript, CSS, assets) that Timeplus stores at install, serves on the console's origin, and lists under **Custom UI** on the app's page. Reach for one when a dashboard panel cannot show what the app needs. Full reference:
+
+**`skill/references/custom-ui.md`**
+
+The rules that matter most:
+
+- **Manifest**: a top-level `uis:` list (`name`, `title`, `dir`, `entry`, `icon`), parallel to `dashboards:` — not a `resources[].type`.
+- **Build**: zip every `uis[].dir` and check the package. `python3 scripts/check_tpapp.py --ui-dirs manifest.yaml` prints the directories; `python3 scripts/check_tpapp.py my-app.tpapp` fails on a missing entry file, an oversized bundle (8 MiB per file, 32 MiB and 2,000 files per UI) or an unsafe file name, before any install.
+- **Everything under `dir` is shipped and served.** Tests, README and tooling live outside it.
+- **Context comes from the URL**: the console appends `?workspace=…&app_id=…&db=…&theme=light|dark` to the entry file. The page reads those; it has no connection form.
+- **Queries use the viewer's session**: `POST /{workspace}/api/v1beta2/queries` on the same origin, no `Authorization` header, no stored credentials.
+- **Dependencies are vendored into the bundle.** The page's content security policy blocks every other host (CDNs, web fonts), inline `<script>` blocks, inline event handlers and `eval`.
+- **Files are served verbatim** — no `{{ .DB }}` rendering inside a bundle.
 
 ## Timeplus SQL Reference
 

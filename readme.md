@@ -1,6 +1,6 @@
 # Timeplus Apps
 
-A collection of installable Timeplus apps (`.tpapp` packages). Each app bundles a streaming data pipeline — DDL SQL resources and dashboards — into a single zip archive.
+A collection of installable Timeplus apps (`.tpapp` packages). Each app bundles a streaming data pipeline — DDL SQL resources, dashboards, and optionally custom web pages — into a single zip archive.
 
 **Browse the catalog:** **<https://timeplus-io.github.io/apps/>** — searchable index of every app with descriptions, screenshots, and direct download links.
 
@@ -35,4 +35,5 @@ make install APP=<name> NEUTRON_URL=http://my-host:8000 TENANT=my-tenant
 
 1. Create `apps/<your-app>/` with `manifest.yaml`, `ddl/`, and `dashboards/`
 2. Copy the `Makefile` from an existing app and update `APP_NAME`
+   (for an app with its own web page, see [skill/references/custom-ui.md](skill/references/custom-ui.md))
 3. Run `make build APP=<your-app>` from the repo root

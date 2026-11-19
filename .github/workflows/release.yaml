@@ -32,24 +32,31 @@ jobs:
           fi
           echo "tag=$TAG" >> $GITHUB_OUTPUT
 
-      - name: Build all .tpapp packages
-        run: |
-          for app in apps/*/; do
-            name=$(basename "$app")
-            [ -f "$app/manifest.yaml" ] || continue
-            echo "Building $name..."
-            (cd "$app" && zip -r "${name}.tpapp" manifest.yaml \
-              $([ -d ddl ] && echo ddl) \
-              $([ -d dashboards ] && echo dashboards))
-          done
-
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
 
+      - run: pip install -q pyyaml
+
+      # Custom UI directories come from each manifest (uis[].dir); every package is
+      # checked after it is built, so a bad bundle fails the release, not an install.
+      - name: Build all .tpapp packages
+        run: |
+          set -euo pipefail
+          for app in apps/*/; do
+            name=$(basename "$app")
+            [ -f "$app/manifest.yaml" ] || continue
+            echo "Building $name..."
+            ui_dirs=$(python3 scripts/check_tpapp.py --ui-dirs "$app/manifest.yaml")
+            (cd "$app" && zip -r -X "${name}.tpapp" manifest.yaml \
+              $([ -d ddl ] && echo ddl) \
+              $([ -d dashboards ] && echo dashboards) \
+              $ui_dirs -x '*.DS_Store')
+            python3 scripts/check_tpapp.py "$app/${name}.tpapp"
+          done
+
       - name: Build registry index
         run: |
-          pip install -q pyyaml
           GITHUB_REPO=${{ github.repository }} \
           GITHUB_RELEASE_TAG=${{ steps.tag.outputs.tag }} \
           python3 registry/build.py
