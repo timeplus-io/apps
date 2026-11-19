@@ -73,7 +73,7 @@ Set `timeplus.database: ag` in AgentGuard's `config.yaml` (or `TIMEPLUS_DATABASE
 
 A live 3D view of the agent sessions AgentGuard is collecting, shipped in the package as a custom UI. Each session is a room. A robot walks between labelled objects to show what the agent is doing right now: taking a user instruction, reading files, running commands, loading skills, delegating to sub-agents, and filling its context window. The side panel shows session status and the history of any object you click.
 
-Open it in the console: **Apps → AgentGuard → Custom UI → Agent Rooms 3D**. It needs Timeplus app server 3.5.2 or later; on an older release the app installs without the page.
+Open it in the console: **Apps → AgentGuard → Custom UI → Agent Rooms 3D**. The page is optional: it is available on Timeplus app server 3.5.2 or later. Older versions have no custom UI support; there the app installs and works as before, without the page.
 
 There is nothing to configure. The console tells the page the workspace, the app's database and the theme, and the page's queries run with your console session, so what you can see is what your user may read. The only setting is **Look back** (15 minutes to 24 hours, remembered per browser): how far back sessions are loaded from.
 
