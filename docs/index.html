@@ -288,6 +288,37 @@
     font-size: 12px;
     color: #6b7280;
   }
+  .ui-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background: #fdf2f8;
+    color: #be3079;
+  }
+  .ui-badge svg { width: 11px; height: 11px; }
+  .ui-item-main {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+  }
+  .ui-item-main .card-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+  }
+  .ui-note {
+    margin: 12px 0 0;
+    font-size: 13px;
+    line-height: 1.55;
+    color: #6b7280;
+  }
   .card-desc {
     font-size: 13px;
     color: #6b7280;
@@ -984,6 +1015,43 @@ function appByHash() {
   return state.apps.find((app) => app.id === appId) || null;
 }
 
+// Custom UIs: web pages an app ships in its package (manifest `uis:`).
+const CUSTOM_UI_MIN_SERVER = "3.5.2";
+const CUSTOM_UI_ICON_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/></svg>';
+
+function appUIs(app) {
+  return (Array.isArray(app.uis) ? app.uis : [])
+    .filter((ui) => ui && typeof ui.name === "string" && ui.name)
+    .map((ui) => ({ name: ui.name, title: displayText(ui.title || ui.name), icon: typeof ui.icon === "string" && ui.icon.startsWith("data:image/") ? ui.icon : "" }));
+}
+
+function renderUIBadge(app) {
+  const uis = appUIs(app);
+  if (uis.length === 0) return "";
+  const label = `Includes ${uis.length === 1 ? "a custom UI" : uis.length + " custom UIs"}: ${uis.map((ui) => ui.title).join(", ")}`;
+  return `<span class="ui-badge" title="${escapeHTML(label)}">${CUSTOM_UI_ICON_SVG}Custom UI</span>`;
+}
+
+function renderCustomUIs(app) {
+  const uis = appUIs(app);
+  return `<div class="resource-list">${uis.map((ui) => `
+    <div class="resource-item">
+      <div class="ui-item-main">
+        ${ui.icon
+          ? `<div class="card-icon"><img src="${escapeHTML(ui.icon)}" alt="" /></div>`
+          : `<div class="card-icon fallback">${CUSTOM_UI_ICON_SVG}</div>`}
+        <div>
+          <div class="resource-name">${escapeHTML(ui.title)}</div>
+          <div class="resource-file">${escapeHTML(ui.name)}</div>
+        </div>
+      </div>
+      <div class="resource-type">Custom UI</div>
+    </div>
+  `).join("")}</div>
+  <p class="ui-note">A custom UI is a web page shipped inside the app package. After install, open it in the Timeplus console: Apps → ${escapeHTML(displayText(app.name))} → Custom UI. It runs with your console session, so it asks for no credentials.</p>
+  <p class="ui-note">Requires Timeplus app server ${CUSTOM_UI_MIN_SERVER} or later. On an older server the app installs without ${uis.length === 1 ? "this page" : "these pages"}.</p>`;
+}
+
 function renderCard(app) {
   const cats = (app.categories || []).map(titleCaseCategory).join(", ");
   const downloadUrl = app.download_url || "#";
@@ -1008,6 +1076,7 @@ function renderCard(app) {
       <div class="card-meta">
         <span class="support-badge">${supportTypeOf(app) === "Timeplus" ? "TIMEPLUS" : "COMMUNITY"}</span>
         <span class="version">v${escapeHTML(app.version || "")}</span>
+        ${renderUIBadge(app)}
       </div>
       ${appDescription ? `<p class="card-desc">${escapeHTML(appDescription)}</p>` : ""}
       ${cats ? `<p class="card-categories">${escapeHTML(cats)}</p>` : ""}
@@ -1384,6 +1453,7 @@ function renderDetail(app) {
   const resources = app.resources || [];
   const dashboards = app.dashboards || [];
   const showDashboardsTab = app.id !== "io.timeplus.game-feature-pipeline";
+  const uis = appUIs(app);
   const appName = displayText(app.name);
   const appDescription = displayText((app.description || "No description provided.").trim());
   detail.innerHTML = `
@@ -1395,6 +1465,7 @@ function renderDetail(app) {
           <h1>${escapeHTML(appName)}</h1>
           <div class="card-meta">
             ${categories.map((category) => `<span class="chip">${escapeHTML(category)}</span>`).join("")}
+            ${renderUIBadge(app)}
           </div>
         </div>
       </div>
@@ -1412,6 +1483,7 @@ function renderDetail(app) {
           <button class="detail-tab" type="button" role="tab" aria-selected="true" aria-controls="overview-panel" id="overview-tab" data-detail-tab="overview">Overview</button>
           <button class="detail-tab" type="button" role="tab" aria-selected="false" aria-controls="resources-panel" id="resources-tab" data-detail-tab="resources">Resources</button>
           ${showDashboardsTab ? `<button class="detail-tab" type="button" role="tab" aria-selected="false" aria-controls="dashboards-panel" id="dashboards-tab" data-detail-tab="dashboards">Dashboards</button>` : ""}
+          ${uis.length ? `<button class="detail-tab" type="button" role="tab" aria-selected="false" aria-controls="custom-ui-panel" id="custom-ui-tab" data-detail-tab="custom-ui">Custom UI</button>` : ""}
           <button class="detail-tab" type="button" role="tab" aria-selected="false" aria-controls="configuration-panel" id="configuration-tab" data-detail-tab="configuration">Configuration</button>
         </div>
         <section class="detail-panel" role="tabpanel" id="overview-panel" aria-labelledby="overview-tab" data-detail-panel="overview">
@@ -1438,6 +1510,9 @@ function renderDetail(app) {
         ${showDashboardsTab ? `<section class="detail-panel" role="tabpanel" id="dashboards-panel" aria-labelledby="dashboards-tab" data-detail-panel="dashboards" hidden>
           ${renderDashboards(dashboards, slug)}
         </section>` : ""}
+        ${uis.length ? `<section class="detail-panel" role="tabpanel" id="custom-ui-panel" aria-labelledby="custom-ui-tab" data-detail-panel="custom-ui" hidden>
+          ${renderCustomUIs(app)}
+        </section>` : ""}
         <section class="detail-panel" role="tabpanel" id="configuration-panel" aria-labelledby="configuration-tab" data-detail-panel="configuration" hidden>
           ${renderConfig(app.config)}
         </section>
@@ -1452,6 +1527,7 @@ function renderDetail(app) {
               { label: "Author", value: app.author },
               { label: "Support", value: supportTypeOf(app) },
               { label: "Version", value: app.version },
+              { label: "Custom UI", value: uis.map((ui) => ui.title).join(", ") },
             ])}
           </div>
         </section>
@@ -1626,7 +1702,8 @@ function filteredApps() {
   const q = state.search.trim().toLowerCase();
   return state.apps.filter((a) => {
     if (q) {
-      const hay = `${a.name} ${a.description || ""}`.toLowerCase();
+      const uis = appUIs(a);
+      const hay = `${a.name} ${a.description || ""} ${uis.length ? "custom ui " + uis.map((ui) => ui.title).join(" ") : ""}`.toLowerCase();
       if (!hay.includes(q)) return false;
     }
     if (state.excludedSupportTypes.has(supportTypeOf(a))) return false;
