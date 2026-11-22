@@ -8,23 +8,43 @@ import { renderPanel } from './panel.js';
 import { setIconInk } from './icons.js';
 import { getContext, onContextChange } from '../vendor/tp-context.js';
 import { readMinutes, LOOKBACKS } from './context.js';
+import { STYLES, LOOK, readStyle, lookKey } from './looks.js';
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 
 // ---------- context from the console ----------
 // Workspace and database are fixed for the life of the page. Theme and locale can change
-// while it is open: the helper keeps <html data-theme> and <html lang> current, so the
-// styles follow by themselves and the running queries are left alone.
+// while it is open: the helper keeps <html data-theme> and <html lang> current, so the page
+// styles follow by themselves, and applyLook() below recolours the 3D scene. The running
+// queries are left alone.
 const saved = (() => { try { return localStorage.getItem('agentRooms.minutes'); } catch { return null; } })();
 const cfg = { ...getContext({ db: 'ag', theme: 'dark' }), minutes: readMinutes(location.search, saved) };
-const inkFor = theme => setIconInk(theme === 'light' ? '#120F1A' : '#F7F6F6');
-inkFor(cfg.theme);
-onContextChange((next, prev) => { if (next.theme !== prev.theme) { inkFor(next.theme); panel(); } });
+
+// ---------- look: the viewer's style in the console's theme ----------
+// There is no light/dark control here: the theme is the console's, at load and on every change.
+let style = readStyle((() => { try { return localStorage.getItem('agentRooms.style'); } catch { return null; } })());
+document.documentElement.dataset.style = style;
+setIconInk(LOOK[lookKey(style, cfg.theme)].icon);
+function applyLook() {
+  document.documentElement.dataset.style = style;
+  setIconInk(LOOK[lookKey(style, cfg.theme)].icon);
+  scene.setLook(style, cfg.theme);
+  drawStyle(); panel();
+}
+function drawStyle() {
+  const box = $('#style'); box.innerHTML = '';
+  for (const [id, name] of STYLES) {
+    const b = document.createElement('button'); b.textContent = name; b.setAttribute('aria-pressed', String(style === id)); if (style === id) b.className = 'on';
+    b.onclick = () => { style = id; try { localStorage.setItem('agentRooms.style', id); } catch { /* storage unavailable */ } applyLook(); };
+    box.appendChild(b);
+  }
+}
+onContextChange((next, prev) => { if (next.theme !== prev.theme) { cfg.theme = next.theme; applyLook(); } });
 
 const store = new Store();
 let sel = { slot: -1, kind: 'room' }, stops = [], status = { events: 'connecting', metrics: 'connecting', hooks: 'connecting', skills: 'connecting', memory: 'connecting' }, errMsg = '';
-const scene = createScene(THREE, { stage: $('#stage'), canvas: $('#cv'), overlay: $('#ov'), store,
+const scene = createScene(THREE, { stage: $('#stage'), canvas: $('#cv'), overlay: $('#ov'), store, style, tone: cfg.theme,
   onSelect: (s, focused) => { sel = s; drawTabs(); panel(); if (!focused) $('#panel').scrollTop = 0; } });
 
 // ---------- header ----------
@@ -39,7 +59,7 @@ $('#pause').onclick = e => { scene.paused = !scene.paused; e.target.textContent 
 function drawStatus() {
   const v = Object.values(status), st = v.includes('signedout') ? 'signedout' : v.includes('error') ? 'error' : v.every(x => x === 'live') ? 'live' : v.includes('retrying') ? 'retrying' : 'connecting';
   const txt = { live: 'Live', signedout: 'Signed out', error: 'Query failed', retrying: 'Reconnecting', connecting: 'Connecting' }[st], bad = st === 'error' || st === 'signedout';
-  $('#conn').innerHTML = `<span class="dot" style="background:${st === 'live' ? '#D53F8C' : bad ? '#D12D50' : '#7D7B82'}"></span>${txt}`;
+  $('#conn').innerHTML = `<span class="dot" style="background:${st === 'live' ? 'var(--acc)' : bad ? 'var(--err)' : 'var(--fill)'}"></span>${txt}`;
   $('#conn').title = `workspace ${cfg.workspace} · database ${cfg.db}`;
   $('#err').hidden = !bad; $('#errmsg').textContent = bad ? (st === 'error' ? 'Query failed: ' : '') + errMsg : '';
   scene.emptyText = bad ? $('#errmsg').textContent : `No agent sessions in the last ${lookLabel(cfg.minutes)}. Waiting for events on ${cfg.db}.agentguard_cim_event.`;
@@ -115,4 +135,4 @@ look.value = String(cfg.minutes);
 look.onchange = () => { cfg.minutes = Number(look.value); try { localStorage.setItem('agentRooms.minutes', look.value); } catch { /* storage unavailable */ } connect(); };
 $('#retry').onclick = connect;
 
-drawTabs(); drawStatus(); connect();
+drawTabs(); drawStyle(); drawStatus(); connect();
