@@ -258,5 +258,5 @@ export class Store {
   /** A turn ended: anything still open will not report back (interrupted or lost). */
   closeOpen(s, ts) { for (const c of [...s.open.values()]) { c.done = true; c.unknown = true; c.endTs = ts; s.open.delete(c.id); if (c.sub) c.sub.ended = true; } for (const sp of s.subSpans) if (!sp.end) sp.end = ts; for (const sub of s.subs.values()) sub.ended = true; }
   card(s, c) { s.cards.push(c); if (s.cards.length > MAX_CARDS) s.cards.shift(); if (!s.ctxReal) s.ctx = s.cards.reduce((a, x) => a + x.tok, 0); return c; }
-  log(s, e) { s.log.push(e); if (s.log.length > MAX_LOG) s.log.shift(); }
+  log(s, e) { s.log.push(e); s.logN = (s.logN || 0) + 1; if (s.log.length > MAX_LOG) s.log.shift(); } // logN counts every entry, kept or not
 }
