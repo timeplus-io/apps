@@ -1,9 +1,8 @@
 // three.js scene: one room per session, a robot that acts out the session's event queue.
 // Rooms hold no data of their own beyond animation state; everything they show comes from the Store.
 import { META, iconCanvas } from './icons.js';
+import { P, GLOW, SLAB, LOOK, TAG, lookKey, matSpec, clock, calloutBox } from './looks.js';
 
-const P = { bg: 0x120F1A, floor: 0x231F2B, wall: 0x3A3741, f1: 0x514E58, f2: 0x7D7B82, lite: 0xB5B4B8, white: 0xF7F6F6, pink: 0xD53F8C, red: 0xD12D50 };
-const GLOW = 0xFFFFFE;
 // Stations: where a robot stands to use each object [x, z, faceX, faceZ].
 const ST = { bench: [0, 1.6, 0, -1], benchR: [1.3, 1.6, 0, -1], chair: [0, 2.4, 0, -1], skill: [-3.2, -3.5, 0, -1], memory: [-0.6, -3.5, 0, -1], files: [-4.5, -3.75, -1, 0], board: [3.6, -3.6, 0, -1], shell: [-4.0, -1.5, -1, 0], mcp: [-4.9, 2.6, -1, 0], web: [-3.9, .7, -1, 0], phone: [5.25, -3.35, 0, -1], other: [-4.0, 4.1, -1, 0], door: [5.2, 4.3, 0, 1], sub0: [4.1, -0.2, 0, -1], sub1: [5.1, -0.2, 0, -1] };
 // Aisle rectangle around the workbench that robots walk along.
@@ -17,28 +16,38 @@ const route = (a, b) => {
   pts.push(pb, { x: b.x, z: b.z }); return pts;
 };
 // Icon sign placement per object [x, y, z, orientation, size].
-const PL = { bench: [2.43, .72, 0, 'x', .62], skill: [0, 3.06, .05, 'z', .64], memory: [0, 2.6, -.42, 'z', .7], files: [0, 2.4, -.42, 'z', .7], board: [-1.05, 2.42, .1, 'z', .6], shell: [-.77, 2.62, 0, 'x', .7], mcp: [.08, 2.5, 0, 'x', .6], web: [.42, .45, 0, 'x', .6], phone: [.47, .42, 0, 'x', .6], other: [.69, .31, 0, 'x', .5], subbench: [-.75, 1.2, -.45, 'tent', .55] };
+const PL = { bench: [2.43, .72, 0, 'x', .62], skill: [0, 3.06, .05, 'z', .64], memory: [0, 2.6, -.42, 'z', .7], files: [0, 2.4, -.42, 'z', .7], board: [-1.05, 2.42, .1, 'z', .6], shell: [-.77, 2.62, 0, 'x', .7], mcp: [.08, 2.5, 0, 'x', .6], web: [.42, .45, 0, 'x', .6], phone: [.47, .42, 0, 'x', .6], other: [.69, .31, 0, 'x', .5], subbench: [1.18, .55, 0, 'x', .55] };
 export const SLOTS = 6;
 const STALE_MS = 600000;
 
-export function createScene(THREE, { stage, canvas: cv, overlay: ov, store, onSelect }) {
-  const renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true, preserveDrawingBuffer: true });
-  renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap; renderer.setClearColor(P.bg);
+export function createScene(THREE, { stage, canvas: cv, overlay: ov, store, onSelect, style = 'studio', tone = 'dark' }) {
+  // The look: a style in a tone (see looks.js). Outside Studio dark the canvas is transparent
+  // and the stage's CSS background shows through.
+  let look = lookKey(style, tone), sketch = look.startsWith('sketch');
+  const renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true, preserveDrawingBuffer: true, alpha: true });
+  renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap;
   const scene = new THREE.Scene();
-  scene.add(new THREE.HemisphereLight(0xffffff, 0x3A3741, 1.5));
+  const hemi = new THREE.HemisphereLight(0xffffff, 0x3A3741, 1.5); scene.add(hemi);
   const sun = new THREE.DirectionalLight(0xfff4ea, 2.6); sun.position.set(20, 34, 36); sun.target.position.set(12.5, 0, 20); scene.add(sun, sun.target);
   sun.castShadow = true; sun.shadow.mapSize.set(4096, 4096); sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.03;
   Object.assign(sun.shadow.camera, { left: -34, right: 34, top: 40, bottom: -40, near: 1, far: 130 }); sun.shadow.radius = 3;
-  const camera = new THREE.PerspectiveCamera(26, 1, 1, 800);
+  // Studio looks through a perspective camera, Sketchbook through an orthographic one.
+  const persp = new THREE.PerspectiveCamera(26, 1, 1, 800), ortho = new THREE.OrthographicCamera(-1, 1, 1, -1, .1, 600); let camera = sketch ? ortho : persp;
 
-  const mats = {}, M = c => mats[c] || (mats[c] = new THREE.MeshStandardMaterial(c === P.pink ? { color: c, emissive: c, emissiveIntensity: .55, roughness: .5 } : c === GLOW ? { color: c, emissive: 0xffffff, emissiveIntensity: 1 } : c === P.bg ? { color: c, roughness: .22, metalness: .5 } : c === P.f2 || c === P.lite ? { color: c, roughness: .42, metalness: .4 } : c === P.floor ? { color: 0x2E2A36, roughness: .7 } : { color: c, roughness: .85 }));
-  const B = (par, w, h, d, c, x, y, z) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), M(c)); m.position.set(x, y, z); m.userData.base = c; m.castShadow = m.receiveShadow = true; par.add(m); return m; };
+  // One shared material per model colour, restyled in place when the look changes.
+  const mats = {};
+  const styleMat = (c, m) => { const q = matSpec(c, look); m.color.setHex(q.color); m.roughness = q.roughness; m.metalness = q.metalness; m.emissive.setHex(q.emissive); m.emissiveIntensity = q.emissiveIntensity; return m; };
+  const M = c => mats[c] || (mats[c] = styleMat(c, new THREE.MeshStandardMaterial()));
+  // Sketchbook draws an ink outline on every box; the lines exist in both styles and are hidden in Studio.
+  const INK = new THREE.LineBasicMaterial({ color: 0x3B3631, transparent: true, opacity: .55 }), noRay = () => {};
+  const B = (par, w, h, d, c, x, y, z) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), M(c)); m.position.set(x, y, z); m.userData.base = c; m.castShadow = m.receiveShadow = true; const e = new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry), INK); e.raycast = noRay; m.add(e); par.add(m); return m; };
   const el = cls => { const d = document.createElement('div'); d.className = cls; ov.appendChild(d); return d; };
   const esc = s => String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 
+  const tex = (kind, [bg, fg]) => { const t = new THREE.CanvasTexture(iconCanvas(kind, bg, fg)); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; return t; };
+  const plateMats = kind => ({ mN: new THREE.MeshBasicMaterial({ map: tex(kind, LOOK[look].signs.n) }), mA: new THREE.MeshBasicMaterial({ map: tex(kind, LOOK[look].signs.a) }) });
   function plate(kind, s) {
-    const mk = (bg, fg) => { const t = new THREE.CanvasTexture(iconCanvas(kind, bg, fg)); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; return new THREE.MeshBasicMaterial({ map: t }); };
-    const mN = mk('#120F1A', '#F7F6F6'), mA = mk('#D53F8C', '#FFFFFF'), g = new THREE.Group();
+    const { mN, mA } = plateMats(kind), g = new THREE.Group();
     B(g, s + .08, s + .08, .04, P.lite, 0, 0, 0); const face = new THREE.Mesh(new THREE.PlaneGeometry(s, s), mN); face.position.z = .026; g.add(face);
     g.face = face; g.mN = mN; g.mA = mA; return g;
   }
@@ -128,6 +137,7 @@ export function createScene(THREE, { stage, canvas: cv, overlay: ov, store, onSe
     const g = new THREE.Group(); g.position.copy(slotPos(i)); scene.add(g);
     const room = { i, ses, g, f: {}, act: {}, subs: [], cards: [], placed: new Set(), subCards: [], slotTop: {}, state: 'Idle', detail: '', speech: '', ringing: false, answer: false, rush: false, sweep: null, clock: 0 };
     B(g, 12, .3, 10, P.floor, 0, -.15, 0).userData.pick = 'room';
+    room.slab = B(g, 12.4, 1.1, 10.4, SLAB, 0, -.86, 0); room.slab.visible = sketch;
     B(g, 12.3, 3.2, .3, P.wall, -.15, 1.6, -5.15); B(g, .3, 3.2, 10, P.wall, -6.15, 1.6, 0);
     const F = (kind, x, z, build) => { const o = new THREE.Group(); o.position.set(x, 0, z); o.userData.pick = kind; o.ind = []; g.add(o); build(o); room.f[kind] = o; const q = PL[kind], pl = plate(kind, q[4]); pl.position.set(q[0], q[1], q[2]); if (q[3] === 'x') pl.rotation.y = Math.PI / 2; else if (q[3] === 'tent') pl.rotation.x = -.32; o.add(pl); o.plate = pl; return o; };
     const I = (o, m) => { o.ind.push(m); return m; };
@@ -151,7 +161,7 @@ export function createScene(THREE, { stage, canvas: cv, overlay: ov, store, onSe
   const setState = (room, s, d = '') => { room.state = s; room.detail = d; };
   const setActive = (room, kind, on) => { room.act[kind] = Math.max(0, (room.act[kind] || 0) + (on ? 1 : -1)); const a = room.act[kind] > 0; room.f[kind].ind.forEach(m => m.material = M(a ? P.pink : m.userData.base)); const pl = room.f[kind].plate; pl.face.material = a ? pl.mA : pl.mN; };
   const GAUGE = [new THREE.MeshBasicMaterial({ color: 0xF7F6F6 }), new THREE.MeshBasicMaterial({ color: 0xD53F8C })];
-  const cardMats = {}, cardMat = (kind, st) => { const key = kind + st; if (!cardMats[key]) { const [bg, fg, side] = st === 'fresh' ? ['#D53F8C', '#FFFFFF', P.pink] : st === 'fail' ? ['#D12D50', '#FFFFFF', P.red] : ['#F7F6F6', '#120F1A', P.white]; const t = new THREE.CanvasTexture(iconCanvas(kind, bg, fg)); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; const top = new THREE.MeshStandardMaterial({ map: t, roughness: .9 }), s = M(side); cardMats[key] = [s, s, top, s, s, s]; } return cardMats[key]; };
+  const cardMats = {}, cardMat = (kind, st) => { const key = kind + st; if (!cardMats[key]) { const top = new THREE.MeshStandardMaterial({ map: tex(kind, LOOK[look].signs[st]), roughness: .9 }), s = M(st === 'fresh' ? P.pink : st === 'fail' ? P.red : P.white); cardMats[key] = [s, s, top, s, s, s]; } return cardMats[key]; };
 
   /** Put a context card on the workbench. Thickness is its token cost. */
   function place(room, card, fresh = true) {
@@ -261,14 +271,29 @@ export function createScene(THREE, { stage, canvas: cv, overlay: ov, store, onSe
   api.attach = (ses, i) => { if (rooms[i]) api.detach(i); store.attach(ses); rooms[i] = buildRoom(i, ses); layout(); return rooms[i]; };
   api.detach = i => { const r = rooms[i]; if (!r) return; store.detach(r.ses); [r.actor, ...r.subs].forEach(a => a.bub.remove()); r.title.remove(); r.g.traverse(o => o.geometry && o.geometry.dispose()); scene.remove(r.g); rooms[i] = null; if (api.focus === i) api.focus = -1; layout(); };
   api.setFocus = i => { api.focus = rooms[i] ? i : -1; aim(); };
+  /** Switch style and tone in place: recolour materials, lights, signs and cards; nothing is rebuilt. */
+  api.setLook = (st, tn) => {
+    look = lookKey(st, tn); sketch = look.startsWith('sketch'); const L = LOOK[look];
+    for (const c in mats) styleMat(+c, mats[c]);
+    INK.visible = sketch; INK.color.setHex(L.ink[0]); INK.opacity = L.ink[1]; GAUGE.forEach((m, i) => m.color.setHex(L.gauge[i]));
+    hemi.intensity = L.hemi[0]; hemi.groundColor.setHex(L.hemi[1]); sun.intensity = L.sun[0]; sun.color.setHex(L.sun[1]);
+    renderer.setClearColor(L.solid ? P.bg : 0x000000, L.solid ? 1 : 0); camera = sketch ? ortho : persp;
+    Object.values(cardMats).forEach(a => { a[2].map.dispose(); a[2].dispose(); }); for (const key in cardMats) delete cardMats[key];
+    rooms.forEach(r => {
+      if (!r) return; r.slab.visible = sketch;
+      for (const kd in r.f) { const pl = r.f[kd].plate; [pl.mN, pl.mA].forEach(m => { m.map.dispose(); m.dispose(); }); Object.assign(pl, plateMats(kd)); pl.face.material = r.act[kd] > 0 ? pl.mA : pl.mN; }
+      r.cards.forEach((k, j) => { k.mesh.material = cardMat(k.card.type, !k.card.ok ? 'fail' : j === r.cards.length - 1 ? 'fresh' : 'old'); });
+    });
+    capTxt = null;
+  };
 
   // vacant slot outline
   const vg = new THREE.Group(); scene.add(vg); [[0, -5, 12, .2], [0, 5, 12, .2], [-6, 0, .2, 10], [6, 0, .2, 10]].forEach(([x, z, w, d]) => B(vg, w, .1, d, P.wall, x, 0, z));
   const vacant = el('lbl'); vacant.textContent = 'vacant · next session'; const vacantPos = new THREE.Vector3();
-  let rows = 2;
+  let rows = 2, hasFree = true;
   function layout() {
     const free = rooms.findIndex(r => !r), last = rooms.reduce((a, r, i) => r ? i : a, -1);
-    vg.visible = free >= 0; if (free >= 0) { vg.position.copy(slotPos(free)); vacantPos.copy(vg.position).setY(.5); }
+    hasFree = free >= 0; if (free >= 0) { vg.position.copy(slotPos(free)); vacantPos.copy(vg.position).setY(.5); }
     rows = Math.max(2, Math.ceil((Math.max(last, free) + 1) / 2)); aim();
   }
 
@@ -288,16 +313,49 @@ export function createScene(THREE, { stage, canvas: cv, overlay: ov, store, onSe
   // ---------- picking ----------
   const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
   const pickAt = e => {
-    const live = rooms.filter(Boolean); if (!live.length) return null;
+    const live = rooms.filter(r => r && r.g.visible); if (!live.length) return null;
     const r = cv.getBoundingClientRect(); ndc.set((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1); ray.setFromCamera(ndc, camera);
     const hit = ray.intersectObjects(live.map(x => x.g), true)[0]; if (!hit) return null;
     let o = hit.object, kind = null; while (o) { if (!kind && o.userData.pick) kind = o.userData.pick; if (live.some(x => x.g === o)) break; o = o.parent; }
     const room = live.find(x => x.g === o); return room ? { room, card: hit.object.userData.card, kind: kind || 'room', x: e.clientX - r.left, y: e.clientY - r.top } : null;
   };
   cv.addEventListener('click', e => { const p = pickAt(e); if (!p) return; if (api.focus !== p.room.i) { api.setFocus(p.room.i); onSelect({ slot: p.room.i, kind: 'room' }, true); } else onSelect({ slot: p.room.i, kind: p.kind, card: p.card }, false); });
-  const tip = el('lbl'); tip.style.display = 'none'; tip.style.color = '#F7F6F6';
-  cv.addEventListener('pointermove', e => { const p = pickAt(e); if (p && p.room.i === api.focus && p.kind !== 'room') { tip.textContent = p.kind === 'card' ? p.card.label : META[p.kind][0]; tip.style.display = ''; tip.style.transform = `translate(${p.x + 14}px,${p.y - 30}px)`; } else tip.style.display = 'none'; });
-  cv.addEventListener('pointerleave', () => { tip.style.display = 'none'; });
+  const tip = el('lbl tip'); tip.style.display = 'none';
+  let hoverKind = null; // the object under the pointer, when it has a Sketchbook callout
+  cv.addEventListener('pointermove', e => { const p = pickAt(e); hoverKind = p && p.room.i === api.focus && TAG[p.kind] ? p.kind : null; if (p && p.room.i === api.focus && p.kind !== 'room' && !(sketch && hoverKind && W >= 640)) { tip.textContent = p.kind === 'card' ? p.card.label : META[p.kind][0]; tip.style.display = ''; tip.style.transform = `translate(${p.x + 14}px,${p.y - 30}px)`; } else tip.style.display = 'none'; });
+  cv.addEventListener('pointerleave', () => { tip.style.display = 'none'; hoverKind = null; });
+
+  // ---------- Sketchbook overlay ----------
+  // Session title, a clock with the narration, the trail of recent events, and a handwritten
+  // callout on a leader line for the object under the pointer.
+  const lead = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); lead.id = 'lead'; lead.setAttribute('aria-hidden', 'true'); ov.prepend(lead);
+  const skHd = el('sk-hd'), skNow = el('sk-now'), skTrail = el('sk-trail'), call = el('call'), wp = new THREE.Vector3();
+  call.setAttribute('aria-hidden', 'true');
+  const setHTML = (d, h) => { if (d._h !== h) { d._h = h; d.innerHTML = h; } };
+  const show = (d, on) => { const v = on ? '' : 'none'; if (d.style.display !== v) d.style.display = v; };
+  function drawOverlay(text, rush) {
+    const room = api.focus >= 0 ? rooms[api.focus] : null;
+    show(skHd, sketch); show(skNow, sketch); show(skTrail, sketch && !!room);
+    let svg = '', tag = false;
+    if (sketch) {
+      setHTML(skHd, room ? `<h1>${esc(room.ses.name)}</h1><div>every state it has been in · ${esc(room.ses.typeName)}</div>` : '<h1>Agent rooms</h1><div>one room per session</div>');
+      const s = room && room.ses, t0 = s && (s.startedTs || (s.log[0] && s.log[0].ts));
+      setHTML(skNow, (t0 ? `<b>${clock(((s.ended ? s.lastTs : Date.now()) - t0) / 1000)}</b>` : '') + `<span>${esc(text)}${rush ? ' · catching up' : ''}</span>`);
+      if (room) { const ls = s.log.slice(-5), b0 = (s.logN || s.log.length) - ls.length; setHTML(skTrail, '<div class="tt">The trail, in order</div>' + (ls.length ? ls.map((x, i) => `<div class="${i === ls.length - 1 ? 'now' : ''}">${b0 + i + 1}&nbsp; ${esc(x.label)}</div>`).join('') : '<div>nothing yet</div>')); }
+      const kd = hoverKind, o = room && W >= 640 && kd && room.f[kd];
+      if (o && o.visible) {
+        const act = room.act[kd] > 0, last = s.log.findLast(x => x.kind === kd || kd === 'subbench' && x.sub);
+        o.plate.getWorldPosition(wp).project(camera); const x = (wp.x * .5 + .5) * W, y = (-wp.y * .5 + .5) * H;
+        setHTML(call, `<span class="cn">${META[kd][0]}</span><span class="cs">${esc(last ? last.label : TAG[kd])}</span>`);
+        call.classList.toggle('act', act); show(call, true); tag = true;
+        const b = calloutBox(x, y, call.offsetWidth, call.offsetHeight, W, H), c = act ? ' a' : '', n = v => v.toFixed(1);
+        call.style.alignItems = b.left ? 'flex-end' : 'flex-start'; call.style.transform = `translate(${n(b.lx)}px,${n(b.ty)}px)`;
+        svg = `<path class="${c}" d="M${n(b.sx)} ${n(b.y0)}H${n(b.ex)}L${n(x)} ${n(y)}"/><circle class="${c}" cx="${n(b.sx)}" cy="${n(b.y0)}" r="3"/><circle class="d${c}" cx="${n(x)}" cy="${n(y)}" r="2.5"/>`;
+      }
+    }
+    if (!tag) show(call, false);
+    setHTML(lead, svg);
+  }
 
   // ---------- frame loop ----------
   const v3 = new THREE.Vector3(), v3b = new THREE.Vector3();
@@ -323,22 +381,28 @@ export function createScene(THREE, { stage, canvas: cv, overlay: ov, store, onSe
       if (room.act.web > 0) f.web.ring.rotation.y += dt * 5;
     });
     camT.lerp(camGoal, .08); camS += (camSGoal - camS) * .08;
-    camera.aspect = W / H; camera.updateProjectionMatrix();
-    camera.position.copy(camT).addScaledVector(camDir, Math.max(camS, need / (W / H)) / Math.tan(13 * Math.PI / 180)); camera.lookAt(camT);
-    renderer.render(scene, camera);
     const all = api.focus < 0;
+    // Sketchbook shows a focused room alone and smaller, leaving the margins to the overlay.
+    const half = Math.max(camS, need / (W / H)) * (sketch && !all && W >= 640 ? 1.45 : 1);
+    if (sketch) { Object.assign(ortho, { left: -half * W / H, right: half * W / H, top: half, bottom: -half }); ortho.updateProjectionMatrix(); ortho.position.copy(camT).addScaledVector(camDir, 150); ortho.lookAt(camT); }
+    else { persp.aspect = W / H; persp.updateProjectionMatrix(); persp.position.copy(camT).addScaledVector(camDir, half / Math.tan(13 * Math.PI / 180)); persp.lookAt(camT); }
+    rooms.forEach(r => { if (r) r.g.visible = !sketch || all || r.i === api.focus; }); vg.visible = hasFree && (!sketch || all);
+    renderer.render(scene, camera);
     rooms.forEach(room => {
       if (!room) return; const on = api.focus === room.i;
-      const html = `<span class="badge">${esc(room.ses.badge)}</span>${esc(room.ses.name)}<span style="color:#B5B4B8;font-weight:400">${room.state}</span>`;
+      const html = `<span class="badge">${esc(room.ses.badge)}</span>${esc(room.ses.name)}<span class="st">${room.state}</span>`;
       if (html !== room.titleHTML) room.title.innerHTML = room.titleHTML = html;
-      put(room.title, room.titlePos, true);
+      put(room.title, room.titlePos, all || !sketch);
       [room.actor, ...room.subs].forEach(S => { const b = S.bubble(); if (b) { S.bub.textContent = b[0]; S.bub.className = 'bub ' + b[1]; } put(S.bub, v3b.set(S.x, 2.3 * S.s + .3, S.z).add(room.g.position), !!b && (on || all && !S.sub)); });
     });
     put(vacant, vacantPos, all && vg.visible);
     const fr = all ? null : rooms[api.focus], any = rooms.some(Boolean);
-    const txt = (fr ? narr(fr) : any ? 'All rooms. Click a room to follow its agent.' : api.emptyText) + (fr && fr.rush ? '|r' : '');
+    const now = fr ? narr(fr) : any ? 'All rooms. Click a room to follow its agent.' : api.emptyText;
+    drawOverlay(fr || !any ? now : 'Click a room to follow its agent.', !!(fr && fr.rush));
+    const txt = now + (fr && fr.rush ? '|r' : '');
     if (txt !== capTxt) { capTxt = txt; const rush = txt.endsWith('|r'); cap.innerHTML = '<span class="k">Now</span><span>' + esc(rush ? txt.slice(0, -2) : txt) + '</span>' + (rush ? '<span class="rush">catching up</span>' : ''); }
   }
+  api.setLook(style, tone);
   frame();
   return api;
 }

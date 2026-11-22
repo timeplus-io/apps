@@ -75,9 +75,14 @@ A live 3D view of the agent sessions AgentGuard is collecting, shipped in the pa
 
 Open it in the console: **Apps → AgentGuard → Custom UI → Agent Rooms 3D**. The page is optional: it is available on Timeplus app server 3.5.2 or later. Older versions have no custom UI support; there the app installs and works as before, without the page.
 
-There is nothing to configure. The console tells the page the workspace, the app's database, the theme and the language, and the page's queries run with your console session, so what you can see is what your user may read. The only setting is **Look back** (15 minutes to 24 hours, remembered per browser): how far back sessions are loaded from.
+There is nothing to configure. The console tells the page the workspace, the app's database, the theme and the language, and the page's queries run with your console session, so what you can see is what your user may read. The settings are **Look back** (15 minutes to 24 hours): how far back sessions are loaded from, and the visual style (below). Both are remembered per browser.
 
-The page follows the console theme for its header and side panel, including a change made while it is open (Timeplus Web 3.5.4 or later); the 3D stage is dark in both themes. The page's text is English in every console language.
+The page has two visual styles, chosen with the **Studio / Sketchbook** switch in its header:
+
+- **Studio**: solid rooms under a perspective camera, with a caption bar saying what the agent is doing.
+- **Sketchbook**: an isometric drawing on paper, with ink outlines and handwritten labels. The stage carries the session name, the time since the session started, the current step, and the trail of the last five things the agent did. Hovering an object shows a callout with its name and its latest event.
+
+Each style has a light and a dark mode. There is no light/dark switch on the page: the mode is the console's theme, including a change made while the page is open (Timeplus Web 3.5.4 or later), and the 3D stage follows it too. The page's text is English in every console language.
 
 ### Where the data comes from
 
@@ -134,6 +139,7 @@ OpenClaw and Hermes sessions are drawn from the same streams but have only been 
 | `index.html` | Page shell and styles |
 | `vendor/tp-context.js` | Workspace, database, theme and locale from the console: entry URL, then live `timeplus:context` messages. A copy of `skill/assets/tp-context.js`; `make vendor-context` refreshes it |
 | `src/context.js` | The look-back setting |
+| `src/looks.js` | The four looks (Studio and Sketchbook, light and dark): scene colours, lights, sign colours; `index.html` has the matching CSS variables |
 | `src/queries.js` | The five SQL queries |
 | `src/timeplus.js`, `src/sse.js` | Query client (session cookie, no credentials) and stream parsing |
 | `src/store.js` | Rows → per-session state and the queue of things to act out |
@@ -141,6 +147,7 @@ OpenClaw and Hermes sessions are drawn from the same streams but have only been 
 | `src/scene.js`, `src/icons.js` | three.js rooms, robot, animation |
 | `src/panel.js`, `src/main.js` | Side panel and wiring |
 | `vendor/` | three.js 0.184.0 (MIT), shipped in the bundle; `make vendor` refreshes it |
+| `vendor/fonts/` | Fraunces 600 and Patrick Hand 400 (latin and latin-ext subsets, SIL OFL, license in `OFL.txt`) for the Sketchbook style |
 
 ```bash
 make test     # unit tests for the page logic (Node 20+)
