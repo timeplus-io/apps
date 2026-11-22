@@ -1,6 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { toolKind, toolLabel, agentInfo, estTokens, sessionName } from '../../web/agent-rooms/src/mapping.js';
+import { isAskTool, isQuestion } from '../../web/agent-rooms/src/mapping.js';
+import { arrow, META } from '../../web/agent-rooms/src/icons.js';
 
 test('tool families map to room objects', () => {
   const cases = { Bash: 'shell', Read: 'files', Edit: 'files', Grep: 'files', Glob: 'files', WebFetch: 'web', WebSearch: 'web', Skill: 'skill',
@@ -26,4 +28,20 @@ test('agent badges, token estimate, session name', () => {
   assert.equal(estTokens(4000), 1000); assert.equal(estTokens(0), 20);
   assert.equal(sessionName('1ffd9504-3100', '/Users/x/Code/AgentGuard'), 'AgentGuard · 1ffd9504');
   assert.equal(sessionName('1ffd9504-3100', '', 'host.local'), 'host · 1ffd9504');
+});
+
+test('a message is a question when its last line ends in a question mark', () => {
+  for (const t of ['Apply it now?', 'Two options.\n\nWhich do you prefer?\n', 'Should I continue?**', 'Proceed? "', '要继续吗？', 'Done. (Or should I also update the docs?)'])
+    assert.equal(isQuestion(t), true, t);
+  for (const t of ['', null, 'Done.', 'Why did it fail? A stale cookie.', 'What changed?\n- login.ts\n- session.ts'])
+    assert.equal(isQuestion(t), false, String(t));
+});
+test('ask-the-user tools are recognised by name', () => {
+  for (const t of ['AskUserQuestion', 'ask_user', 'ask_followup_question', 'clarify', 'AskHuman']) assert.equal(isAskTool(t), true, t);
+  for (const t of ['Bash', 'Task', 'ask', '', undefined, 'mcp__slack__ask_user']) assert.equal(isAskTool(t), false, String(t));
+});
+test('history entries are marked by direction', () => {
+  assert.equal(arrow({ kind: 'phone', dir: 'in' }), '↓ '); assert.equal(arrow({ kind: 'phone' }), '↓ ');
+  assert.equal(arrow({ kind: 'phone', dir: 'out' }), '↑ '); assert.equal(arrow({ kind: 'note' }), '· '); assert.equal(arrow({ kind: 'files' }), '');
+  assert.equal(META.phone[0], 'User'); assert.ok(META.reply && META.note);
 });

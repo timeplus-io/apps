@@ -9,7 +9,9 @@ export const META = {
   web: ['Search', 'Web searches and page fetches.'],
   mcp: ['MCP', 'MCP servers and external tools.'],
   other: ['Other tools', 'Any other tool call.'],
-  phone: ['User instruction', 'Incoming user messages.'],
+  phone: ['User', 'The conversation with the user. Instructions come in (↓); replies and questions go out (↑).'],
+  reply: ['Reply', 'A reply or question the agent wrote to the user.'],
+  note: ['Progress update', 'A short status message while working.'],
   board: ['System instruction', 'System prompt and the task in progress.'],
   subbench: ['Sub-agent context', 'Sub-agents work here with their own context. Only results cross to the main workbench.'],
   agent: ['Agent', '']
@@ -26,6 +28,7 @@ const ICONS = {
   mcp: ['M12 22v-5', 'M9 8V2', 'M15 8V2', 'M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z'],
   web: [['e', 11, 11, 8, 8], 'M21 21l-4.35-4.35'],
   phone: ['M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z'],
+  reply: ['M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z', 'm10 7-3 3 3 3', 'M17 13v-1a2 2 0 0 0-2-2H7'],
   other: ['M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z'],
   subbench: ['M12 8V4H8', ['r', 4, 8, 16, 12, 2], 'M2 14h2', 'M20 14h2', 'M15 13v2', 'M9 13v2'],
   agent: ['M12 8V4H8', ['r', 4, 8, 16, 12, 2], 'M2 14h2', 'M20 14h2', 'M15 13v2', 'M9 13v2']
@@ -46,4 +49,6 @@ let urls = {}, ink = '#F7F6F6';
 /** Line colour of the side-panel icons; follows the page theme. */
 export const setIconInk = c => { ink = c; urls = {}; };
 /** Data URL of an icon in line art, for the side panel. */
+/** Direction mark of a history entry: ↓ from the user, ↑ to the user, · a progress update. */
+export const arrow = x => (x.kind === 'phone' ? (x.dir === 'out' ? '↑ ' : '↓ ') : x.kind === 'note' ? '· ' : '');
 export const iconURL = kind => urls[kind] || (urls[kind] = iconCanvas(kind, null, ink).toDataURL());

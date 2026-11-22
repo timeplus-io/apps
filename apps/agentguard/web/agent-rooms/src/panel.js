@@ -1,6 +1,6 @@
 // Side panel: session status and the history of the selected object. Reads only from the Store session.
 // Colours are the page's CSS variables, so the markup is the same in every look.
-import { META, LEGEND, iconURL } from './icons.js';
+import { META, LEGEND, iconURL, arrow } from './icons.js';
 
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 export const k = n => (n / 1000).toFixed(n < 10000 ? 1 : 0) + 'k';
@@ -18,7 +18,8 @@ export function renderPanel(room, sel, narr, now = Date.now()) {
   <div class="gauge"><i style="width:${pct}%;background:${pct >= 80 ? 'var(--acc)' : 'var(--fill)'}"></i></div>
   ${s.ctxReal ? '' : '<div class="hint">Context size is estimated from payload sizes until token metrics arrive for this session.</div>'}
   <div><div class="k">Current task</div><div class="v">${esc(s.task || 'None yet')}</div></div>
-  <div><div class="k">Latest user prompt</div><div class="box">${esc(s.prompt || 'Waiting for a call')}</div></div>`;
+  <div><div class="k">Latest user prompt</div><div class="box">${esc(s.prompt || 'Waiting for a call')}</div></div>
+  <div><div class="k">Latest response</div><div class="box">${esc(s.reply || 'No reply yet')}</div></div>`;
   if (kind === 'room') return session + `<div class="hr"></div><div class="hint">Each object carries an icon sign. Hover for its name; click to open its history here.</div><div>${LEGEND.map(q => `<div class="row" style="align-items:center"><img src="${iconURL(q)}" width="20" height="20" alt=""><span style="font-weight:600">${META[q][0]}</span></div>`).join('')}</div>`;
 
   let h = '';
@@ -40,7 +41,7 @@ export function renderPanel(room, sel, narr, now = Date.now()) {
       ls.forEach(x => { const b = 11 - Math.floor((now - x.ts) / 8000); if (b >= 0 && b < 12) bins[b]++; }); const mx = Math.max(...bins, 1);
       h += `<div class="grid"><span class="k">Events</span><span class="v">${ls.length}</span><span class="k">Failures</span><span class="v">${fails}</span><span class="k">Tokens added</span><span class="v">≈ ${k(ls.reduce((a, x) => a + x.tok, 0))}</span></div>
       <div><div class="k">Activity, last 96 s</div><div class="spark">${bins.map((x, i) => `<i class="${i === 11 ? 'last' : ''}" style="height:${x / mx * 100}%"></i>`).join('')}</div></div>
-      <div><div class="k">History</div>${ls.length ? ls.slice(-8).reverse().map(x => `<div class="row">${dot(x.ok ? 'var(--ok)' : 'var(--err)')}<span>${esc(x.label)}</span><span class="k">${age(now - x.ts)}</span></div>`).join('') : '<div class="hint">Nothing yet in this session.</div>'}</div>`;
+      <div><div class="k">History</div>${ls.length ? ls.slice(-8).reverse().map(x => `<div class="row">${dot(x.ok ? 'var(--ok)' : 'var(--err)')}<span>${arrow(x)}${esc(x.label)}</span><span class="k">${age(now - x.ts)}</span></div>`).join('') : '<div class="hint">Nothing yet in this session.</div>'}</div>`;
     }
   }
   return h + '<div class="hr"></div>' + session;

@@ -130,3 +130,81 @@ test('task list and API-error turn ends come from raw hooks', () => {
   st.hook({ ts: 9400, session_id: S, hook_name: 'stop_failure', error: 'rate_limit' });
   assert.equal(s.open.size, 0); assert.equal(s.awaiting, false); assert.equal(st.resting(s, 9401), true);
 });
+
+// ---- the conversation with the user, both ways ----
+test('a reply at the end of a turn is logged to the user, with a reply card sized by its length', () => {
+  const { st, s } = run();
+  st.event(ev(5000, 'llm_response', { assistant_message: 'Fixed. A stale session cookie caused the redirect.', assistant_chars: 400 }));
+  const it = s.queue.at(-1), e = s.log.at(-1);
+  assert.equal(it.t, 'say'); assert.equal(it.card.type, 'reply'); assert.equal(it.card.label, 'reply to the user'); assert.equal(it.card.tok, 100);
+  assert.deepEqual([e.kind, e.dir, e.tok], ['phone', 'out', 100]);
+  assert.equal(s.reply, 'Fixed. A stale session cookie caused the redirect.'); assert.equal(s.waitingUser, null);
+  assert.equal(s.cards.at(-1), it.card);
+  st.event(ev(5000, 'llm_response', { assistant_message: 'Fixed. A stale session cookie caused the redirect.' })); // replay after reconnect
+  assert.equal(s.queue.filter(x => x.t === 'say').length, 1);
+});
+
+test('a turn that ends on a question blocks on the user until they answer; the answer keeps the task', () => {
+  const { st, s } = run();
+  st.event(ev(5000, 'llm_response', { assistant_message: 'I found two options.\n\nShould a stale cookie sign the user out?' }));
+  const ask = s.queue.at(-1);
+  assert.equal(ask.t, 'ask'); assert.equal(ask.card.label, 'question to the user');
+  assert.ok(s.waitingUser); assert.equal(s.waitingUser, ask.wait); assert.match(s.reply, /^Asked: I found two options/);
+  st.event(ev(9000, 'user_input', { user_message: 'Sign them out.' }));
+  const ans = s.queue.at(-1);
+  assert.equal(s.waitingUser, null); assert.equal(ans.t, 'prompt'); assert.equal(ans.answer, true); assert.equal(ans.card.label, 'user answer');
+  assert.equal(s.task, 'Fix the login bug'); assert.equal(s.prompt, 'Sign them out.');
+  assert.deepEqual([s.log.at(-1).kind, s.log.at(-1).dir], ['phone', 'in']); // no "Task:" entry for an answer
+  st.event(ev(9500, 'user_input', { user_message: 'Now add a test' }));
+  assert.equal(s.queue.at(-1).answer, false); assert.equal(s.task, 'Now add a test'); assert.equal(s.log.at(-1).kind, 'board');
+});
+
+test('an assistant message followed by more tool calls was a progress update, not a reply', () => {
+  const { st, s } = run();
+  st.event(ev(5000, 'llm_response', { assistant_message: 'Final answer one.' }));
+  st.event(ev(6000, 'user_input', { user_message: 'next' }));
+  st.event(ev(7000, 'llm_response', { assistant_message: 'Two tests fail. Bringing in helpers?' }));
+  const it = s.queue.at(-1), cards = s.cards.length;
+  assert.equal(it.t, 'ask'); assert.ok(s.waitingUser);
+  st.event(ev(7100, 'tool_invoke', { tool_name: 'Bash', call_id: 'n1' }));
+  assert.equal(it.t, 'note'); assert.equal(it.card, null); assert.equal(s.cards.length, cards - 1);
+  assert.equal(s.waitingUser, null); assert.equal(s.reply, 'Final answer one.');
+  const e = s.log.find(x => x.label.startsWith('Two tests fail'));
+  assert.deepEqual([e.kind, e.dir, e.tok], ['note', undefined, 0]);
+  assert.equal(s.queue.at(-1).t, 'call');
+});
+test('a message the robot already took to the phone stays a reply', () => {
+  const { st, s } = run();
+  st.event(ev(7000, 'llm_response', { assistant_message: 'Working on it.' }));
+  const it = s.queue.at(-1); it.taken = true; // the scene dequeued it
+  st.event(ev(7100, 'tool_invoke', { tool_name: 'Bash', call_id: 'n1' }));
+  assert.equal(it.t, 'say'); assert.ok(it.card); assert.equal(s.reply, 'Working on it.');
+});
+test('a sub-agent tool call does not turn the main agent\'s reply into a note', () => {
+  const { st, s } = run();
+  st.event(ev(7000, 'llm_response', { assistant_message: 'Done.' }));
+  const it = s.queue.at(-1);
+  st.event(ev(7100, 'tool_invoke', { tool_name: 'Read', call_id: 's1', sub_id: 'a9', sub_name: 'Explore' }));
+  assert.equal(it.t, 'say');
+});
+
+test('an ask-the-user tool call blocks on the user until the tool returns the answer', () => {
+  const { st, s } = run();
+  st.event(ev(5000, 'tool_invoke', { tool_name: 'AskUserQuestion', call_id: 'q1', ask_text: 'Apply migration 041 to production now?' }));
+  const it = s.queue.at(-1);
+  assert.equal(it.t, 'ask'); assert.equal(it.text, 'Apply migration 041 to production now?'); assert.equal(it.card.type, 'reply');
+  assert.equal(s.waitingUser.call, it.call); assert.equal(s.reply, 'Asked: Apply migration 041 to production now?');
+  assert.deepEqual([s.log.at(-1).kind, s.log.at(-1).dir], ['phone', 'out']);
+  assert.equal(st.resting(s, 5001), false);
+  st.event(ev(9000, 'tool_complete', { tool_name: 'AskUserQuestion', call_id: 'q1', payload_chars: 80 }));
+  assert.equal(s.waitingUser, null); assert.equal(it.call.done, true); assert.equal(it.call.card.label, 'user answer'); assert.equal(it.call.card.type, 'phone');
+  assert.deepEqual([s.log.at(-1).kind, s.log.at(-1).dir], ['phone', 'in']);
+  assert.equal(s.log.filter(x => x.kind === 'other').length, 0); // not also logged as an ordinary tool call
+});
+test('a session that is already blocked on the user is picked up holding the line', () => {
+  const { st, s } = run();
+  st.event(ev(5000, 'llm_response', { assistant_message: 'Which one?' }));
+  st.detach(s); st.attach(s, 6000);
+  assert.deepEqual(s.queue.map(x => [x.t, x.resume, x.wait === s.waitingUser]), [['ask', true, true]]);
+  st.event(ev(7000, 'session_end')); assert.equal(s.waitingUser, null);
+});

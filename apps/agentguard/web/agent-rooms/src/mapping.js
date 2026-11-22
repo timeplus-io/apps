@@ -54,6 +54,19 @@ export function agentInfo(agentType) {
 }
 
 /** Rough token estimate from a payload size in characters (about 4 chars per token). */
+// Tools whose whole purpose is to put a question to the user and wait for the answer.
+const ASK_TOOL = /^(ask_?user(_?question)?|ask_?followup_?question|ask_?human|clarify)$/i;
+export const isAskTool = tool => ASK_TOOL.test(String(tool || ''));
+
+/**
+ * Does a message the agent ended its turn with ask the user something? True when its last
+ * line, ignoring closing quotes, brackets and markdown emphasis, ends in a question mark.
+ */
+export function isQuestion(text) {
+  const lines = String(text || '').split('\n').map(l => l.trim()).filter(Boolean);
+  return lines.length > 0 && /[?？]$/.test(lines[lines.length - 1].replace(/[\s"'”’)\]*_`]+$/, ''));
+}
+
 export function estTokens(chars) { return Math.max(20, Math.ceil((Number(chars) || 0) / 4)); }
 
 /** Short room name from working directory + session id. */

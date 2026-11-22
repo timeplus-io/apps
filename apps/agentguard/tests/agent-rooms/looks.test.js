@@ -19,7 +19,8 @@ test('every look is complete', () => {
   assert.deepEqual(Object.keys(LOOK).sort(), [...KEYS].sort());
   for (const key of KEYS) {
     const L = LOOK[key];
-    assert.deepEqual(Object.keys(L.signs).sort(), ['a', 'fail', 'fresh', 'n', 'old'], key);
+    assert.deepEqual(Object.keys(L.signs).sort(), ['a', 'fail', 'fresh', 'n', 'o', 'old'], key);
+    assert.notDeepEqual(L.signs.o, L.signs.a, key); assert.notDeepEqual(L.signs.o, L.signs.n, key); // the outgoing phone sign is its own face
     for (const pair of Object.values(L.signs)) for (const c of pair) assert.match(c, /^#[0-9A-F]{6}$/i, key);
     assert.match(L.icon, /^#[0-9A-F]{6}$/i);
     for (const k of ['gauge', 'hemi', 'sun', 'ink']) assert.equal(L[k].length, 2, key + ' ' + k);
@@ -71,11 +72,12 @@ test('a callout sits on the roomier side of its object and stays on the stage', 
   assert.equal(far.lx, 1000 - 16 - 120); assert.equal(far.sx, far.lx - 6);
 });
 
-test('the page defines the palette for all four looks and ships the Sketchbook fonts', () => {
+test('the page defines the palette for all four looks and ships every font it names', () => {
   const html = readFileSync(new URL('../../web/agent-rooms/index.html', import.meta.url), 'utf8');
   for (const sel of [':root{', ':root[data-theme=light]{', ':root[data-style=sketch]{', ':root[data-style=sketch][data-theme=dark]{']) assert.ok(html.includes(sel), sel);
   const fonts = [...html.matchAll(/url\("(vendor\/fonts\/[^"]+)"\)/g)].map(m => m[1]);
-  assert.equal(fonts.length, 4);
+  assert.equal(fonts.length, 6); // Inter, Fraunces and Patrick Hand, latin and latin-ext each
+  for (const fam of ['Inter', 'Fraunces', 'Patrick Hand']) assert.ok(html.includes("font-family:'" + fam + "'"), fam);
   for (const f of fonts) assert.ok(readFileSync(new URL('../../web/agent-rooms/' + f, import.meta.url)).length > 1000, f);
   assert.ok(!/id="tone"|prefers-color-scheme/.test(html), 'no light/dark control: the theme is the console\'s');
 });

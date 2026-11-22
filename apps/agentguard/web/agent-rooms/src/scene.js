@@ -1,6 +1,6 @@
 // three.js scene: one room per session, a robot that acts out the session's event queue.
 // Rooms hold no data of their own beyond animation state; everything they show comes from the Store.
-import { META, iconCanvas } from './icons.js';
+import { META, iconCanvas, arrow } from './icons.js';
 import { P, GLOW, SLAB, LOOK, TAG, lookKey, matSpec, clock, calloutBox } from './looks.js';
 
 // Stations: where a robot stands to use each object [x, z, faceX, faceZ].
@@ -45,11 +45,13 @@ export function createScene(THREE, { stage, canvas: cv, overlay: ov, store, onSe
   const esc = s => String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 
   const tex = (kind, [bg, fg]) => { const t = new THREE.CanvasTexture(iconCanvas(kind, bg, fg)); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; return t; };
-  const plateMats = kind => ({ mN: new THREE.MeshBasicMaterial({ map: tex(kind, LOOK[look].signs.n) }), mA: new THREE.MeshBasicMaterial({ map: tex(kind, LOOK[look].signs.a) }) });
+  // The phone has a third face, shown while the agent is the one talking.
+  const plateMats = kind => ({ mN: new THREE.MeshBasicMaterial({ map: tex(kind, LOOK[look].signs.n) }), mA: new THREE.MeshBasicMaterial({ map: tex(kind, LOOK[look].signs.a) }), ...(kind === 'phone' ? { mO: new THREE.MeshBasicMaterial({ map: tex(kind, LOOK[look].signs.o) }) } : {}) });
+  const plateFace = (room, kind, pl) => (room.act[kind] > 0 ? (pl.mO && room.phoneOut ? pl.mO : pl.mA) : pl.mN);
   function plate(kind, s) {
-    const { mN, mA } = plateMats(kind), g = new THREE.Group();
+    const pm = plateMats(kind), mN = pm.mN, g = new THREE.Group();
     B(g, s + .08, s + .08, .04, P.lite, 0, 0, 0); const face = new THREE.Mesh(new THREE.PlaneGeometry(s, s), mN); face.position.z = .026; g.add(face);
-    g.face = face; g.mN = mN; g.mA = mA; return g;
+    g.face = face; Object.assign(g, pm); return g;
   }
   function makeBot(scale, parent) {
     const g = new THREE.Group(); parent.add(g); g.scale.setScalar(scale);
@@ -104,7 +106,7 @@ export function createScene(THREE, { stage, canvas: cv, overlay: ov, store, onSe
       else if (p === 'operate') { const o = this.op, s = Math.sin;
         if (o === 'skill') { b.armR.rotation.x = -2.6 + s(t * 3) * .1; b.head.rotation.x = -.25; }
         else if (o === 'memory' || o === 'files') { b.armL.rotation.x = b.armR.rotation.x = -1.25 + s(t * 3) * .2; b.head.rotation.x = .2; }
-        else if (o === 'phone') { b.armR.rotation.set(-2.5, 0, -.5); b.head.rotation.z = -.15; }
+        else if (o === 'phone') { b.armR.rotation.set(-2.5, 0, -.5); b.head.rotation.z = -.15; if (this.room.speech && !this.sub) b.tip.material = M(Math.sin(t * 9) > 0 ? P.pink : P.f1); }
         else if (o === 'web') { b.armR.rotation.set(-1.5, 0, s(t * 2.5) * .5); }
         else if (o === 'mcp') { b.armR.rotation.x = -1.45; }
         else if (o === 'board') { b.armR.rotation.set(-2.2 + s(t * 11) * .12, 0, s(t * 3) * .25); }
@@ -119,6 +121,7 @@ export function createScene(THREE, { stage, canvas: cv, overlay: ov, store, onSe
     }
     bubble() {
       const p = this.pose, r = this.room;
+      if (!this.sub && p === 'operate' && this.op === 'phone') { if (r.speech) return [r.speech, '']; if (r.holding) return ['waiting for the user…', '']; }
       if (p === 'operate' && this.run) {
         if (this.burst) return ['×' + this.burst.n, ''];
         const open = this.run.find(c => !c.done), sec = open ? (Date.now() - open.ts) / 1000 : 0;
@@ -135,7 +138,7 @@ export function createScene(THREE, { stage, canvas: cv, overlay: ov, store, onSe
 
   function buildRoom(i, ses) {
     const g = new THREE.Group(); g.position.copy(slotPos(i)); scene.add(g);
-    const room = { i, ses, g, f: {}, act: {}, subs: [], cards: [], placed: new Set(), subCards: [], slotTop: {}, state: 'Idle', detail: '', speech: '', ringing: false, answer: false, rush: false, sweep: null, clock: 0 };
+    const room = { i, ses, g, f: {}, act: {}, subs: [], cards: [], placed: new Set(), subCards: [], slotTop: {}, state: 'Idle', detail: '', speech: '', ringing: false, answer: false, holding: false, phoneDir: null, phoneOut: false, rush: false, sweep: null, clock: 0 };
     B(g, 12, .3, 10, P.floor, 0, -.15, 0).userData.pick = 'room';
     room.slab = B(g, 12.4, 1.1, 10.4, SLAB, 0, -.86, 0); room.slab.visible = sketch;
     B(g, 12.3, 3.2, .3, P.wall, -.15, 1.6, -5.15); B(g, .3, 3.2, 10, P.wall, -6.15, 1.6, 0);
@@ -159,7 +162,9 @@ export function createScene(THREE, { stage, canvas: cv, overlay: ov, store, onSe
     return room;
   }
   const setState = (room, s, d = '') => { room.state = s; room.detail = d; };
-  const setActive = (room, kind, on) => { room.act[kind] = Math.max(0, (room.act[kind] || 0) + (on ? 1 : -1)); const a = room.act[kind] > 0; room.f[kind].ind.forEach(m => m.material = M(a ? P.pink : m.userData.base)); const pl = room.f[kind].plate; pl.face.material = a ? pl.mA : pl.mN; };
+  const setActive = (room, kind, on) => { room.act[kind] = Math.max(0, (room.act[kind] || 0) + (on ? 1 : -1)); const a = room.act[kind] > 0; room.f[kind].ind.forEach(m => m.material = M(a ? P.pink : m.userData.base)); const pl = room.f[kind].plate; pl.face.material = plateFace(room, kind, pl); };
+  // The phone is one two-way line: 'in' = the user is talking, 'out' = the agent is talking or holding the line.
+  const setPhone = (room, dir) => { if (room.phoneDir) setActive(room, 'phone', false); room.phoneDir = dir; room.phoneOut = dir === 'out'; if (dir) setActive(room, 'phone', true); };
   const GAUGE = [new THREE.MeshBasicMaterial({ color: 0xF7F6F6 }), new THREE.MeshBasicMaterial({ color: 0xD53F8C })];
   const cardMats = {}, cardMat = (kind, st) => { const key = kind + st; if (!cardMats[key]) { const top = new THREE.MeshStandardMaterial({ map: tex(kind, LOOK[look].signs[st]), roughness: .9 }), s = M(st === 'fresh' ? P.pink : st === 'fail' ? P.red : P.white); cardMats[key] = [s, s, top, s, s, s]; } return cardMats[key]; };
 
@@ -202,7 +207,8 @@ export function createScene(THREE, { stage, canvas: cv, overlay: ov, store, onSe
 
   /** Apply an item without animating it (used when far behind). */
   function skip(room, it) {
-    if (it.t === 'prompt') place(room, it.card);
+    if (it.t === 'prompt' || it.t === 'say' || (it.t === 'ask' && !it.call)) place(room, it.card);
+    else if (it.t === 'ask') { if (!it.call.done) return false; place(room, it.card); place(room, it.call.card); }
     else if (it.t === 'call') { const c = it.call; if (c.kind === 'sub') spawnSub(room, c.sub || store.ensureSub(room.ses, c)); else if (c.done) place(room, c.card); else return false; }
     else if (it.t === 'sub') spawnSub(room, it.sub);
     else if (it.t === 'compact') { if (!it.job.done) return false; clearCards(room); place(room, it.job.card); }
@@ -215,10 +221,15 @@ export function createScene(THREE, { stage, canvas: cv, overlay: ov, store, onSe
     while (s.queue.length > 40 && skip(room, s.queue[0])) s.queue.shift(); // hopelessly behind: jump ahead
     const it = s.queue.shift(); room.rush = s.queue.length >= 3;
     if (!it) return rest(room);
-    if (it.t === 'prompt') {
+    it.taken = true; // the Store may no longer reclassify it
+    // The user answers a question the agent asked: taken at the phone and carried to the bench. The task on the board stands.
+    const takeAnswer = card => [{ go: 'phone' }, { pose: 'operate', op: 'phone', wait: 1.1, begin: () => { room.answer = true; setPhone(room, 'in'); setState(room, 'Listening', 'the user is answering'); }, end: () => { setPhone(room, null); room.answer = false; A.setCarry(P.pink); } },
+      { go: 'bench' }, { call: () => { A.setCarry(null); place(room, card); } }, { pose: 'think', wait: .8, begin: () => setState(room, 'Thinking') }];
+    if (it.t === 'prompt' && it.answer) A.q(...takeAnswer(it.card));
+    else if (it.t === 'prompt') {
       const asleep = A.pose === 'sleep';
-      A.q({ pose: asleep ? 'sleep' : 'idle', wait: 1.2, begin: () => { room.ringing = true; setActive(room, 'phone', true); setState(room, 'Listening', 'phone is ringing'); } }, { go: 'phone' },
-        { pose: 'operate', op: 'phone', wait: 1.3, begin: () => { room.answer = true; }, end: () => { room.answer = false; room.ringing = false; setActive(room, 'phone', false); A.setCarry(P.pink); } },
+      A.q({ pose: asleep ? 'sleep' : 'idle', wait: 1.2, begin: () => { room.ringing = true; setPhone(room, 'in'); setState(room, 'Listening', 'phone is ringing'); } }, { go: 'phone' },
+        { pose: 'operate', op: 'phone', wait: 1.3, begin: () => { room.answer = true; }, end: () => { room.answer = false; room.ringing = false; setPhone(room, null); A.setCarry(P.pink); } },
         { go: 'bench' }, { call: () => { A.setCarry(null); place(room, it.card); } }, { pose: 'think', wait: .8, begin: () => setState(room, 'Thinking') }, { go: 'board' },
         { pose: 'operate', op: 'board', wait: 1.2, begin: () => { setState(room, 'Operating', 'updating the board'); setActive(room, 'board', true); }, end: () => setActive(room, 'board', false) }, { go: 'bench' });
     } else if (it.t === 'call' && it.call.kind === 'sub' || it.t === 'sub') {
@@ -237,8 +248,18 @@ export function createScene(THREE, { stage, canvas: cv, overlay: ov, store, onSe
         { call: () => { if (bad()) A.q0({ pose: 'error', wait: .9, begin: () => setState(room, 'Error', group.find(c => c.ok === false).label) }); } },
         { go: 'bench' },
         { call: () => { A.setCarry(null); const cards = got().map(c => c.card).filter(Boolean); if (burst && cards.length > 1) { cards.forEach(c => room.placed.add(c)); place(room, { type: kind, label: cards.length + ' results from one burst', tok: cards.reduce((a, c) => a + c.tok, 0), ok: !bad(), ts: cards[cards.length - 1].ts, burst: cards.length }); } else cards.forEach(c => place(room, c)); } });
-    } else if (it.t === 'say') {
-      A.q({ go: 'bench' }, { call: () => A.face(.4, 1) }, { pose: 'talk', wait: 3.2, begin: () => { setState(room, 'Speaking'); room.speech = it.text; }, end: () => { room.speech = ''; A.face(0, -1); } });
+    } else if (it.t === 'note') { // a progress update: said at the bench, no trip to the phone
+      A.q({ go: 'bench' }, { pose: 'talk', wait: 2, begin: () => { setState(room, 'Updating'); room.speech = it.text; }, end: () => { room.speech = ''; } });
+    } else if (it.t === 'say' || it.t === 'ask') {
+      // The agent calls the user: writes a reply card at the bench, carries it to the phone and speaks, word by word.
+      // A question then holds the line, handset up, until the answer comes.
+      const ask = it.t === 'ask', text = it.text, w = text.split(' '), open = () => (it.call ? !it.call.done : s.waitingUser === it.wait && !s.ended); // a person may take any time to answer
+      if (!it.resume) A.q({ go: 'bench' }, { pose: 'think', wait: .7, begin: () => setState(room, 'Thinking') }, { call: () => { place(room, it.card); A.setCarry(P.pink, 'note'); } });
+      A.q({ go: 'phone' });
+      if (!it.resume) A.q({ pose: 'operate', op: 'phone', wait: Math.max(2.4, w.length * .15 + 1), begin: () => { room.answer = true; setPhone(room, 'out'); setState(room, ask ? 'Asking' : 'Replying', text); room.speech = ''; A.setCarry(null); },
+        tick: (dt, c) => { room.speech = w.slice(0, Math.ceil(c.el * 7)).join(' '); }, end: () => { room.speech = ''; } });
+      if (ask) A.q({ pose: 'operate', op: 'phone', min: .6, begin: () => { room.answer = true; setPhone(room, 'out'); room.holding = true; setState(room, 'Waiting on user', text); }, until: () => !open(), end: () => { room.holding = false; } });
+      A.q({ call: () => { setPhone(room, null); room.answer = false; if (it.call && it.call.done && !it.call.unknown) A.q0(...takeAnswer(it.call.card)); } });
     } else if (it.t === 'compact') {
       const job = it.job;
       A.q({ go: 'bench' }, { pose: 'operate', op: 'bench', min: 1.9, begin: () => { setState(room, 'Operating', 'tidying the workbench (compaction)'); room.sweep = { t: 0, from: room.cards.map(k => k.mesh.position.clone()) }; }, until: () => job.done || Date.now() - job.start > 300000, end: () => { clearCards(room); place(room, job.card); } });
@@ -252,7 +273,7 @@ export function createScene(THREE, { stage, canvas: cv, overlay: ov, store, onSe
 
   function narr(room) {
     const A = room.actor, c = A.cur, d = room.detail;
-    if (c && c.go) { if (c.go === 'bench') return A.bot.carry.visible ? 'Carrying the result back to Context.' : 'Walking back to Context.'; if (c.go === 'chair') return 'Nothing to do. Heading for the chair.'; if (META[c.go]) return 'Walking to ' + META[c.go][0] + (d ? ': ' + d : '') + '.'; }
+    if (c && c.go) { if (c.go === 'bench') return A.bot.carry.visible ? 'Carrying the result back to Context.' : 'Walking back to Context.'; if (c.go === 'chair') return 'Nothing to do. Heading for the chair.'; if (c.go === 'phone' && A.bot.carry.visible) return 'Taking the reply to the phone.'; if (META[c.go]) return 'Walking to ' + META[c.go][0] + (d ? ': ' + d : '') + '.'; }
     switch (room.state) {
       case 'Idle': return room.ses.ended ? 'Session ended. Asleep in the chair.' : 'Asleep in the chair. Nothing to do.';
       case 'Listening': return 'The phone is ringing: a new user instruction.';
@@ -260,7 +281,10 @@ export function createScene(THREE, { stage, canvas: cv, overlay: ov, store, onSe
       case 'Operating': { const open = A.run && A.run.find(x => !x.done); return (A.pose === 'operate' && META[A.op] ? META[A.op][0] + ': ' : '') + d + (open && Date.now() - open.ts > 4000 ? ' · still running' : ''); }
       case 'Delegating': return 'Handing a task to ' + d + '.';
       case 'Waiting': return 'Waiting ' + d + '.';
-      case 'Speaking': return 'Answering: ' + room.speech;
+      case 'Updating': return 'Progress update: ' + room.speech;
+      case 'Replying': return 'On the phone to the user: ' + d;
+      case 'Asking': return 'Asking the user: ' + d;
+      case 'Waiting on user': return 'Blocked, waiting for the user to answer: ' + d;
       case 'Error': return 'That failed: ' + d;
     }
     return '';
@@ -281,7 +305,7 @@ export function createScene(THREE, { stage, canvas: cv, overlay: ov, store, onSe
     Object.values(cardMats).forEach(a => { a[2].map.dispose(); a[2].dispose(); }); for (const key in cardMats) delete cardMats[key];
     rooms.forEach(r => {
       if (!r) return; r.slab.visible = sketch;
-      for (const kd in r.f) { const pl = r.f[kd].plate; [pl.mN, pl.mA].forEach(m => { m.map.dispose(); m.dispose(); }); Object.assign(pl, plateMats(kd)); pl.face.material = r.act[kd] > 0 ? pl.mA : pl.mN; }
+      for (const kd in r.f) { const pl = r.f[kd].plate; [pl.mN, pl.mA, pl.mO].forEach(m => { if (m) { m.map.dispose(); m.dispose(); } }); Object.assign(pl, plateMats(kd)); pl.face.material = plateFace(r, kd, pl); }
       r.cards.forEach((k, j) => { k.mesh.material = cardMat(k.card.type, !k.card.ok ? 'fail' : j === r.cards.length - 1 ? 'fresh' : 'old'); });
     });
     capTxt = null;
@@ -341,12 +365,12 @@ export function createScene(THREE, { stage, canvas: cv, overlay: ov, store, onSe
       setHTML(skHd, room ? `<h1>${esc(room.ses.name)}</h1><div>every state it has been in · ${esc(room.ses.typeName)}</div>` : '<h1>Agent rooms</h1><div>one room per session</div>');
       const s = room && room.ses, t0 = s && (s.startedTs || (s.log[0] && s.log[0].ts));
       setHTML(skNow, (t0 ? `<b>${clock(((s.ended ? s.lastTs : Date.now()) - t0) / 1000)}</b>` : '') + `<span>${esc(text)}${rush ? ' · catching up' : ''}</span>`);
-      if (room) { const ls = s.log.slice(-5), b0 = (s.logN || s.log.length) - ls.length; setHTML(skTrail, '<div class="tt">The trail, in order</div>' + (ls.length ? ls.map((x, i) => `<div class="${i === ls.length - 1 ? 'now' : ''}">${b0 + i + 1}&nbsp; ${esc(x.label)}</div>`).join('') : '<div>nothing yet</div>')); }
+      if (room) { const ls = s.log.slice(-5), b0 = (s.logN || s.log.length) - ls.length; setHTML(skTrail, '<div class="tt">The trail, in order</div>' + (ls.length ? ls.map((x, i) => `<div class="${i === ls.length - 1 ? 'now' : ''}">${b0 + i + 1}&nbsp; ${arrow(x)}${esc(x.label)}</div>`).join('') : '<div>nothing yet</div>')); }
       const kd = hoverKind, o = room && W >= 640 && kd && room.f[kd];
       if (o && o.visible) {
         const act = room.act[kd] > 0, last = s.log.findLast(x => x.kind === kd || kd === 'subbench' && x.sub);
         o.plate.getWorldPosition(wp).project(camera); const x = (wp.x * .5 + .5) * W, y = (-wp.y * .5 + .5) * H;
-        setHTML(call, `<span class="cn">${META[kd][0]}</span><span class="cs">${esc(last ? last.label : TAG[kd])}</span>`);
+        setHTML(call, `<span class="cn">${META[kd][0]}</span><span class="cs">${esc(last ? arrow(last) + last.label : TAG[kd])}</span>`);
         call.classList.toggle('act', act); show(call, true); tag = true;
         const b = calloutBox(x, y, call.offsetWidth, call.offsetHeight, W, H), c = act ? ' a' : '', n = v => v.toFixed(1);
         call.style.alignItems = b.left ? 'flex-end' : 'flex-start'; call.style.transform = `translate(${n(b.lx)}px,${n(b.ty)}px)`;
@@ -382,17 +406,17 @@ export function createScene(THREE, { stage, canvas: cv, overlay: ov, store, onSe
     });
     camT.lerp(camGoal, .08); camS += (camSGoal - camS) * .08;
     const all = api.focus < 0;
-    // Sketchbook shows a focused room alone and smaller, leaving the margins to the overlay.
+    // A focused room is shown alone; Sketchbook also draws it smaller, leaving the margins to the overlay.
     const half = Math.max(camS, need / (W / H)) * (sketch && !all && W >= 640 ? 1.45 : 1);
     if (sketch) { Object.assign(ortho, { left: -half * W / H, right: half * W / H, top: half, bottom: -half }); ortho.updateProjectionMatrix(); ortho.position.copy(camT).addScaledVector(camDir, 150); ortho.lookAt(camT); }
     else { persp.aspect = W / H; persp.updateProjectionMatrix(); persp.position.copy(camT).addScaledVector(camDir, half / Math.tan(13 * Math.PI / 180)); persp.lookAt(camT); }
-    rooms.forEach(r => { if (r) r.g.visible = !sketch || all || r.i === api.focus; }); vg.visible = hasFree && (!sketch || all);
+    rooms.forEach(r => { if (r) r.g.visible = all || r.i === api.focus; }); vg.visible = hasFree && all;
     renderer.render(scene, camera);
     rooms.forEach(room => {
       if (!room) return; const on = api.focus === room.i;
       const html = `<span class="badge">${esc(room.ses.badge)}</span>${esc(room.ses.name)}<span class="st">${room.state}</span>`;
       if (html !== room.titleHTML) room.title.innerHTML = room.titleHTML = html;
-      put(room.title, room.titlePos, all || !sketch);
+      put(room.title, room.titlePos, all || (on && !sketch));
       [room.actor, ...room.subs].forEach(S => { const b = S.bubble(); if (b) { S.bub.textContent = b[0]; S.bub.className = 'bub ' + b[1]; } put(S.bub, v3b.set(S.x, 2.3 * S.s + .3, S.z).add(room.g.position), !!b && (on || all && !S.sub)); });
     });
     put(vacant, vacantPos, all && vg.visible);
