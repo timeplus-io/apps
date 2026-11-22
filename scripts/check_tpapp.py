@@ -34,6 +34,9 @@ BUNDLE_PATH = re.compile(r"^[A-Za-z0-9._/-]+$")
 
 INLINE_SCRIPT = re.compile(rb"<script\b(?![^>]*\bsrc\s*=)[^>]*>\s*[^\s<]", re.I)
 INLINE_HANDLER = re.compile(rb"<[a-z][^>]*\son[a-z]+\s*=", re.I)
+# The console's own storage keys. A page is same-origin and can read them, but they are not
+# part of the page contract: theme and language come from the URL and the context message.
+CONSOLE_STORAGE = re.compile(rb"""localStorage\s*(?:\.\s*(?:theme|i18nextLng)\b|\[\s*["'`](?:theme|i18nextLng)["'`]\s*\]|\.\s*getItem\(\s*["'`](?:theme|i18nextLng)["'`])""")
 EXTERNAL_REF = re.compile(rb"<(?:script|link|img|iframe|source)\b[^>]*\b(?:src|href)\s*=\s*[\"']?(?:https?:)?//", re.I)
 
 
@@ -142,9 +145,14 @@ def check_package(path):
 
             # Things the server accepts but its content security policy stops in the browser.
             for i in members:
-                if not i.filename.lower().endswith((".html", ".htm")):
+                lower = i.filename.lower()
+                if not lower.endswith((".html", ".htm", ".js", ".mjs")):
                     continue
                 rel, body = i.filename[len(prefix):], z.read(i)
+                if CONSOLE_STORAGE.search(body):
+                    warnings.append(f'ui "{name}": {rel} reads the console\'s localStorage (theme or i18nextLng); those keys are internal, take theme and locale from the entry URL and the timeplus:context message')
+                if not lower.endswith((".html", ".htm")):
+                    continue
                 if INLINE_SCRIPT.search(body):
                     warnings.append(f'ui "{name}": {rel} has an inline <script>; the page policy only runs scripts loaded from files')
                 if INLINE_HANDLER.search(body):

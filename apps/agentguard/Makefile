@@ -8,7 +8,7 @@ CHECK         := python3 ../../scripts/check_tpapp.py
 THREE_VERSION ?= 0.184.0
 THREE_DIR     := web/agent-rooms/vendor
 
-.PHONY: build install test vendor
+.PHONY: build install test vendor vendor-context
 
 # The custom UI directories come from the manifest (`uis[].dir`). The package is built
 # under a temporary name and only becomes $(OUT) once it passes the check, so a bad
@@ -30,3 +30,7 @@ test:
 vendor:
 	curl -fsSL https://unpkg.com/three@$(THREE_VERSION)/build/three.module.min.js -o $(THREE_DIR)/three.module.min.js
 	curl -fsSL https://unpkg.com/three@$(THREE_VERSION)/build/three.core.min.js -o $(THREE_DIR)/three.core.min.js
+
+# Refresh the console-context helper shipped inside the Agent Rooms bundle (a test fails when it drifts).
+vendor-context:
+	cp ../../skill/assets/tp-context.js $(THREE_DIR)/tp-context.js

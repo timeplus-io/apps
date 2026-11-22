@@ -282,7 +282,7 @@ The rules that matter most:
 - **Manifest**: a top-level `uis:` list (`name`, `title`, `dir`, `entry`, `icon`), parallel to `dashboards:` — not a `resources[].type`.
 - **Build**: zip every `uis[].dir` and check the package. `python3 scripts/check_tpapp.py --ui-dirs manifest.yaml` prints the directories; `python3 scripts/check_tpapp.py my-app.tpapp` fails on a missing entry file, an oversized bundle (8 MiB per file, 32 MiB and 2,000 files per UI) or an unsafe file name, before any install.
 - **Everything under `dir` is shipped and served.** Tests, README and tooling live outside it.
-- **Context comes from the URL**: the console appends `?workspace=…&app_id=…&db=…&theme=light|dark` to the entry file. The page reads those; it has no connection form.
+- **Context comes from the console**: it appends `?workspace=…&app_id=…&db=…&theme=light|dark&locale=en-US|zh-CN` to the entry file, and posts a `timeplus:context` message to the frame when the theme or language changes; the page applies it without reloading. Copy `skill/assets/tp-context.js` into the bundle to handle both (`getContext()`, `onContextChange()`). `locale` and the message need Timeplus Web 3.5.4 (app server 3.5.3) and must be optional for the page. The page has no connection form.
 - **Queries use the viewer's session**: `POST /{workspace}/api/v1beta2/queries` on the same origin, no `Authorization` header, no stored credentials.
 - **Dependencies are vendored into the bundle.** The page's content security policy blocks every other host (CDNs, web fonts), inline `<script>` blocks, inline event handlers and `eval`.
 - **Files are served verbatim** — no `{{ .DB }}` rendering inside a bundle.
