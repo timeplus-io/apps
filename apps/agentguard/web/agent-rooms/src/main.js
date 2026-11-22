@@ -6,16 +6,21 @@ import { eventsSQL, metricsSQL, hooksSQL, skillsSQL, memorySQL } from './queries
 import { createScene, SLOTS } from './scene.js';
 import { renderPanel } from './panel.js';
 import { setIconInk } from './icons.js';
-import { readContext, LOOKBACKS } from './context.js';
+import { getContext, onContextChange } from '../vendor/tp-context.js';
+import { readMinutes, LOOKBACKS } from './context.js';
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 
 // ---------- context from the console ----------
+// Workspace and database are fixed for the life of the page. Theme and locale can change
+// while it is open: the helper keeps <html data-theme> and <html lang> current, so the
+// styles follow by themselves and the running queries are left alone.
 const saved = (() => { try { return localStorage.getItem('agentRooms.minutes'); } catch { return null; } })();
-const cfg = readContext(location.search, location.pathname, saved);
-document.documentElement.dataset.theme = cfg.theme;
-setIconInk(cfg.theme === 'light' ? '#120F1A' : '#F7F6F6');
+const cfg = { ...getContext({ db: 'ag', theme: 'dark' }), minutes: readMinutes(location.search, saved) };
+const inkFor = theme => setIconInk(theme === 'light' ? '#120F1A' : '#F7F6F6');
+inkFor(cfg.theme);
+onContextChange((next, prev) => { if (next.theme !== prev.theme) { inkFor(next.theme); panel(); } });
 
 const store = new Store();
 let sel = { slot: -1, kind: 'room' }, stops = [], status = { events: 'connecting', metrics: 'connecting', hooks: 'connecting', skills: 'connecting', memory: 'connecting' }, errMsg = '';

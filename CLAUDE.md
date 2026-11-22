@@ -18,7 +18,7 @@ apps/
 │       ├── manifest.yaml
 │       ├── ddl/
 │       └── dashboards/
-├── skill/                 # Claude Code skill for creating Timeplus apps
+├── skill/                 # Claude Code skill for creating Timeplus apps (assets/tp-context.js: custom UI helper)
 ├── scripts/               # check_tpapp.py — package check for custom UIs
 ├── Makefile               # root delegate — use APP=<name> to target an app
 └── CLAUDE.md
@@ -106,7 +106,7 @@ An app can ship static web bundles that Timeplus serves on the console's origin 
 - **Manifest**: top-level `uis:` list, parallel to `dashboards:`. It is not a resource type.
 - **Build**: the app's Makefile zips every `uis[].dir` (`scripts/check_tpapp.py --ui-dirs manifest.yaml`) and then runs `scripts/check_tpapp.py <app>.tpapp`, which applies the server's install rules (entry file exists; 8 MiB per file; 32 MiB and 2,000 files per UI; file names limited to `A-Z a-z 0-9 . _ - /`; no symlinks). Copy `apps/agentguard/Makefile` for a new app with a UI.
 - **Bundle directory holds only what is served.** Tests, `package.json` and docs go outside it (`apps/agentguard/tests/`).
-- **Page contract**: the console appends `workspace`, `app_id`, `db` and `theme` to the entry URL. The page queries `POST /{workspace}/api/v1beta2/queries` with the viewer's session — no `Authorization` header, no connection form.
+- **Page contract**: the console appends `workspace`, `app_id`, `db`, `theme` and `locale` to the entry URL, and posts a `timeplus:context` message to the frame when the theme or language changes (`locale` and the message from Timeplus Web 3.5.4, app server 3.5.3; both optional for the page). `skill/assets/tp-context.js` is the helper a bundle vendors for this; after editing it, run `make -C apps/agentguard vendor-context`. The page queries `POST /{workspace}/api/v1beta2/queries` with the viewer's session — no `Authorization` header, no connection form.
 - **Vendor every dependency.** The served content security policy blocks other hosts, inline scripts, inline event handlers and `eval`.
 - Bundle files are served verbatim; there is no template rendering in them.
 

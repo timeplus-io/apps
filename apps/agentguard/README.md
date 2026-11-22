@@ -75,9 +75,9 @@ A live 3D view of the agent sessions AgentGuard is collecting, shipped in the pa
 
 Open it in the console: **Apps → AgentGuard → Custom UI → Agent Rooms 3D**. The page is optional: it is available on Timeplus app server 3.5.2 or later. Older versions have no custom UI support; there the app installs and works as before, without the page.
 
-There is nothing to configure. The console tells the page the workspace, the app's database and the theme, and the page's queries run with your console session, so what you can see is what your user may read. The only setting is **Look back** (15 minutes to 24 hours, remembered per browser): how far back sessions are loaded from.
+There is nothing to configure. The console tells the page the workspace, the app's database, the theme and the language, and the page's queries run with your console session, so what you can see is what your user may read. The only setting is **Look back** (15 minutes to 24 hours, remembered per browser): how far back sessions are loaded from.
 
-The page follows the console theme for its header and side panel; the 3D stage is dark in both themes.
+The page follows the console theme for its header and side panel, including a change made while it is open (Timeplus Web 3.5.4 or later); the 3D stage is dark in both themes. The page's text is English in every console language.
 
 ### Where the data comes from
 
@@ -132,7 +132,8 @@ OpenClaw and Hermes sessions are drawn from the same streams but have only been 
 | File | Purpose |
 |---|---|
 | `index.html` | Page shell and styles |
-| `src/context.js` | Workspace, database, theme and look-back from the entry URL |
+| `vendor/tp-context.js` | Workspace, database, theme and locale from the console: entry URL, then live `timeplus:context` messages. A copy of `skill/assets/tp-context.js`; `make vendor-context` refreshes it |
+| `src/context.js` | The look-back setting |
 | `src/queries.js` | The five SQL queries |
 | `src/timeplus.js`, `src/sse.js` | Query client (session cookie, no credentials) and stream parsing |
 | `src/store.js` | Rows → per-session state and the queue of things to act out |

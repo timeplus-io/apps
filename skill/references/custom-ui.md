@@ -6,6 +6,11 @@ Use one when a dashboard cannot show what the app needs: a 3D scene, a custom la
 
 **Version**: custom UIs are supported from Timeplus app server (neutron) **3.5.2**, which ships with Timeplus Web (the console) 3.5.3 ([release notes](https://github.com/timeplus-io/neutron/releases/tag/v3.5.2)). A custom UI is an optional part of an app: an older app server has no custom UI support and ignores the `uis:` key, so the app installs and its streams, views and dashboards work, just without its pages. Do not make the app depend on the page. If an app's description promises a page, say which version it needs.
 
+| Feature | App server (neutron) | Timeplus Web (console) |
+|---|---|---|
+| Custom UIs; `workspace`, `app_id`, `db`, `theme` in the entry URL | 3.5.2 | 3.5.3 |
+| `locale` in the entry URL; the `timeplus:context` message | 3.5.3 ([release notes](https://github.com/timeplus-io/neutron/releases/tag/v3.5.3)) | 3.5.4 |
+
 ## Declaring a UI
 
 ```
@@ -17,7 +22,7 @@ my-app/
 │   └── live/              # one bundle: everything under it is shipped and served
 │       ├── index.html     # entry file
 │       ├── src/app.js
-│       └── vendor/…       # third-party code, copied in
+│       └── vendor/…       # third-party code and tp-context.js, copied in
 └── tests/                 # tests, package.json, tooling: outside the bundle
 ```
 
@@ -64,7 +69,7 @@ build:
 ```
 
 - `check_tpapp.py --ui-dirs manifest.yaml` prints each `uis[].dir`.
-- `check_tpapp.py app.tpapp` applies the table above to the built package and fails with the server's wording, for example `ui "live": entry file "index.html" not found in web/live`. It also warns about things the server accepts but the browser will block: an inline `<script>`, an inline `on…=` handler, a `src`/`href` pointing at another host.
+- `check_tpapp.py app.tpapp` applies the table above to the built package and fails with the server's wording, for example `ui "live": entry file "index.html" not found in web/live`. It also warns about things the server accepts but the browser will block (an inline `<script>`, an inline `on…=` handler, a `src`/`href` pointing at another host) and about a script that reads the console's own `localStorage` keys (`theme`, `i18nextLng`).
 - `-FS` makes zip drop entries whose files were deleted; plain `zip -r` onto an existing archive keeps them.
 - `-x '*.DS_Store'` keeps macOS folder metadata out of the bundle (it would be stored and served like any other file).
 
@@ -72,10 +77,14 @@ build:
 
 ## What the page receives
 
-The console opens the entry file in a frame and appends four query parameters:
+The console tells the page where it is running and how the console looks: in the entry URL when the page loads, and in a message whenever the theme or language changes afterwards.
+
+### At load: query parameters
+
+The console opens the entry file in a frame and appends five query parameters:
 
 ```
-/{workspace}/apps/{app_id}/ui/{name}/?workspace=default&app_id=io.example.my-app&db=my_app&theme=dark
+/{workspace}/apps/{app_id}/ui/{name}/?workspace=default&app_id=io.example.my-app&db=my_app&theme=dark&locale=zh-CN
 ```
 
 | Parameter | Value |
@@ -84,20 +93,54 @@ The console opens the entry file in a frame and appends four query parameters:
 | `app_id` | the installed app's id |
 | `db` | the app's database (`db_name`, as installed) |
 | `theme` | `light` or `dark`, the console's current theme |
+| `locale` | the console's language as a BCP 47 tag: `en-US` or `zh-CN` today. Missing, or a language the page has no strings for: use `en-US` |
+
+### After load: the `timeplus:context` message
+
+The console posts the current values to the frame once it has loaded, on every theme or language change, and in answer to a request from the page:
 
 ```js
-const p = new URLSearchParams(location.search);
-const ctx = {
-  workspace: p.get('workspace') || location.pathname.split('/')[1],
-  db: p.get('db') || 'my_app',
-  theme: p.get('theme') === 'light' ? 'light' : 'dark',
-};
-document.documentElement.dataset.theme = ctx.theme;
+// console -> page
+{ type: 'timeplus:context', version: 1, workspace, app_id, db, theme, locale }
+// page -> console: "send me the current values"
+window.parent.postMessage({ type: 'timeplus:context-request' }, location.origin);
 ```
 
-- Read them once at load. A theme switch reloads the console, and with it the frame.
-- Fall back to sensible defaults: the URL can be opened directly in a tab, with no parameters.
-- `db` ends up in SQL text. Accept it only if it matches `^[A-Za-z_][A-Za-z0-9_]*$`.
+Rules for the page:
+
+- **Accept a message only when `event.origin === location.origin` and `event.source === window.parent`.** The page is same-origin with the console, so this admits the console and nothing else.
+- **Apply it without reloading.** A reload restarts the page's streaming queries.
+- Treat every field as optional and ignore fields you do not know. `version` rises only for a change an existing page could not ignore.
+- Register the listener first, then send the request: the console may have posted its first message before the listener existed.
+- Send the request without testing `window.parent` against `window` first. Opened directly in a tab the request goes to the page itself and is ignored, and some test tools (the Cypress proxy) rewrite that comparison as frame-busting code, so a guarded request is never sent under them.
+
+### The helper
+
+`skill/assets/tp-context.js` does all of the above. Copy it into the bundle like any other dependency (the content security policy only runs scripts from the bundle) and import it by relative path:
+
+```js
+import { getContext, onContextChange } from './vendor/tp-context.js';
+
+const ctx = getContext({ db: 'my_app' });   // { workspace, appId, db, theme, locale }
+onContextChange((next, prev) => {
+  if (next.locale !== prev.locale) translate(next.locale);
+});
+```
+
+- `getContext(defaults)` reads the URL, with fallbacks: `workspace` from the serve path and then `default`, `theme` `light`, `locale` `en-US`, and `db` only when it is a plain identifier. `defaults` replaces those fallbacks; give the app's `db_name` as `db`.
+- It sets `<html data-theme>` and `<html lang>`, at load and on every change. **A page whose colours are CSS variables under `:root[data-theme=dark]` follows a theme change with no code of its own.** Pass `applyToDocument: false` in `defaults` to turn this off.
+- `onContextChange(fn)` calls `fn(next, prev)` for each valid message, including ones that repeat the current values (the console sends one when the frame has loaded). Compare before doing expensive work. Use it for what CSS cannot do: canvas colours, translated strings.
+- `matchLocale(locale, ['en-US', 'zh-CN'])` picks the string table for a locale: exact match, then same language, then the first.
+
+`apps/agentguard/web/agent-rooms/` uses it (`vendor/tp-context.js`, `src/main.js`); its Makefile has a `vendor-context` target and a test that fails when the copy drifts from `skill/assets/`.
+
+### Rules that hold either way
+
+- **Both mechanisms are optional for the page.** A console older than 3.5.4 sends no `locale` and no message. Opened directly in a tab, the page has no console around it: no parameters unless they are in the URL, no message. The URL values, or the fallbacks, stand.
+- **Do not read the console's `localStorage`** (`theme`, `i18nextLng`). The page can, being same-origin, but those keys are internal to the console and may change. The package check warns about it.
+- **Time zone, number format and date format are not passed.** The console has no global setting for them; use the browser's (`Intl.DateTimeFormat().resolvedOptions().timeZone`, `toLocaleString()`).
+- `workspace`, `app_id` and `db` do not change while a page is open. `theme` and `locale` can.
+- `db` ends up in SQL text. Accept it only if it matches `^[A-Za-z_][A-Za-z0-9_]*$` (the helper does).
 - Relative URLs (`src/app.js`, `assets/logo.svg`) resolve inside the bundle. There is no fallback to the entry file for unknown paths; use hash routes (`#/detail`) for client-side navigation.
 
 ## Running queries
@@ -155,7 +198,13 @@ Files are served with `Cache-Control: no-cache` and an `ETag`, so an upgrade sho
 2. `make install`, then open the app in the console → **Custom UI** → the page. The console fetches the entry file before framing it, so a missing bundle shows an error, not a blank frame.
 3. Open the browser's developer console: a policy violation is logged there and names the blocked resource.
 4. `curl -i http://host:8000/{workspace}/apps/{app_id}/ui/{name}/` (add `-u user:password` when authentication is on) shows the entry file and its headers; `GET /{workspace}/api/v1beta2/apps/{app_id}` lists `uis` with `entry_url`, `file_count` and `size_bytes`.
-5. Switch the console theme and check the page in both.
+5. Switch the console theme and language and check the page in each. The console (3.5.4) still reloads itself on a switch, so this exercises the URL values.
+6. Check a live change, which the console will send once it stops reloading. In the developer console of the console page (not the frame), with the page open:
+   ```js
+   const f = document.querySelector('iframe');
+   f.contentWindow.postMessage({ type: 'timeplus:context', version: 1, theme: 'light', locale: 'zh-CN' }, location.origin);
+   ```
+   The page must switch in place: same document, queries still running.
 
 ## Common mistakes
 
@@ -171,3 +220,6 @@ Files are served with `Cache-Control: no-cache` and an `ETag`, so an upgrade sho
 | Tests, README or `.DS_Store` reachable under the UI URL | They live inside `dir` | Move them out; exclude `.DS_Store` in the zip command |
 | Old files still served after deleting them locally | `zip -r` updated an existing archive | Use `zip -FS`, or build to a fresh file |
 | Page works when opened directly but queries the wrong database | Hard-coded database name | Read `db` from the URL |
+| Page always in English, `locale` missing from the frame URL | Console older than 3.5.4 | Upgrade; the page must still work without `locale` |
+| Theme or language is right at load but a later `timeplus:context` message changes nothing | No message listener, or the listener rejects the console (wrong `origin`/`source` check) | Use `tp-context.js`, or follow the rules under "After load" |
+| Context request never sent under Cypress | The page tests `window.parent` against `window` before sending; the Cypress proxy rewrites that | Send the request unconditionally |

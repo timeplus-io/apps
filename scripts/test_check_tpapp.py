@@ -82,6 +82,15 @@ class CheckTpapp(unittest.TestCase):
         _, warnings = c.check_package(self.pkg({"web/live/index.html": html}))
         self.assertEqual(len(warnings), 3)
 
+    def test_console_storage_warning(self):
+        for js in ["localStorage.getItem('theme')", 'localStorage["i18nextLng"]', "const t = localStorage.theme;", "window.localStorage . getItem( `i18nextLng` )"]:
+            _, warnings = c.check_package(self.pkg({"web/live/index.html": "x", "web/live/src/app.js": js}))
+            self.assertEqual(len(warnings), 1, js)
+            self.assertIn("src/app.js reads the console's localStorage", warnings[0])
+        for js in ["localStorage.getItem('myApp.minutes')", "localStorage.themeColor", "ctx.theme", "localStorage.setItem('myApp.theme', t)"]:
+            _, warnings = c.check_package(self.pkg({"web/live/index.html": "x", "web/live/src/app.js": js}))
+            self.assertEqual(warnings, [], js)
+
     def test_ui_dirs(self):
         self.assertEqual([u["dir"] for u in c.parse_uis(c.load_manifest(MANIFEST))], ["web/live"])
 
