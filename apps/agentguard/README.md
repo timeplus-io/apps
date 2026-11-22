@@ -82,6 +82,23 @@ The page has two visual styles, chosen with the **Studio / Sketchbook** switch i
 - **Studio**: solid rooms under a perspective camera, with a caption bar saying what the agent is doing.
 - **Sketchbook**: an isometric drawing on paper, with ink outlines and handwritten labels. The stage carries the session name, the time since the session started, the current step, and the trail of the last five things the agent did. Hovering an object shows a callout with its name and its latest event.
 
+Picking a session shows its room alone, in both styles; **All rooms** brings the others back.
+
+#### The conversation with the user
+
+The phone is the two-way line to the user, and its sign shows the direction: one face while the user is talking, a lighter one while the agent is.
+
+| What happened | What the room shows | How it is recognised |
+|---|---|---|
+| The user sends an instruction | The phone rings; the agent answers and carries the prompt card to the bench (↓ in the history) | `user_input` |
+| The agent replies | It writes a reply card at the bench, carries it to the phone and speaks, word by word (↑) | An assistant message at the end of a turn |
+| The agent asks the user something | It calls out the same way, then holds the line: **Waiting on user**, shown in the room title in the All rooms view too. When the answer comes it carries the answer card to the bench | A turn-ending message whose last line ends in a question mark, or a call to an ask-the-user tool (`AskUserQuestion`, `ask_user`, `ask_followup_question`, `clarify`). It lasts until the next user message, or until the tool returns |
+| A progress update | A short bubble at the bench, no walk to the phone (`·` in the trail) | An assistant message that is followed by more tool calls in the same turn |
+
+The side panel shows the **Latest response** under the latest user prompt ("Asked: …" for a question). A reply card is sized from the length of the message, like other cards before token metrics arrive.
+
+Two limits of this mapping: a reply that ends with a rhetorical question is shown as waiting on the user, and a message is only known to be a progress update once the next tool call arrives, so one the robot has already carried to the phone stays in the history as a reply.
+
 Each style has a light and a dark mode. There is no light/dark switch on the page: the mode is the console's theme, including a change made while the page is open (Timeplus Web 3.5.4 or later), and the 3D stage follows it too. The page's text is English in every console language.
 
 ### Where the data comes from
@@ -91,10 +108,11 @@ Nothing is scripted or mocked. The page runs five streaming queries through the 
 | On screen | Stream | Columns |
 |---|---|---|
 | Rooms, agent badge, model | `agentguard_cim_event` | `session_id`, `agent_type`, `agent_id`, `model`, `cwd` from `raw_event_data` |
-| Phone (user instruction), board (task) | `agentguard_cim_event`, `user_input` | `user_message` |
+| Phone, incoming (user instruction or answer), board (task) | `agentguard_cim_event`, `user_input` | `user_message` |
 | Trips to an object, result cards | `agentguard_cim_event`, `tool_invoke` / `tool_complete` | `tool_name`, `tool_input`, `tool_result` size, `tool_success`, `tool_use_id` |
 | Sub-agent robot | `agentguard_cim_event`, `session_start` from `subagent_spawning` | `agent_id`, `agent_type` in `raw_event_data` |
-| Final answer bubble | `agentguard_cim_event`, `llm_response` | `assistant_message` |
+| Phone, outgoing (reply, question), progress update | `agentguard_cim_event`, `llm_response` | `assistant_message` |
+| Question through an ask-the-user tool | `agentguard_cim_event`, `tool_invoke` / `tool_complete` of `AskUserQuestion` and similar | `tool_input` (`questions[0].question` or `question`) |
 | Failed and denied calls, sub-agent stop, turn ended by an API error | `agentguard_hook_events` | `tool_call_failure`, `permission_denied`, `subagent_ended`, `stop_failure` |
 | Instruction files loaded into context (no tool call) | `agentguard_hook_events` | `instructions_loaded`: `file_path`, `memory_type`, `load_reason` |
 | Compaction | `agentguard_hook_events`, `agentguard_cim_event` | `pre_compact` (start), `session_start` with `source = compact` or `post_compact` (done) |
@@ -147,7 +165,7 @@ OpenClaw and Hermes sessions are drawn from the same streams but have only been 
 | `src/scene.js`, `src/icons.js` | three.js rooms, robot, animation |
 | `src/panel.js`, `src/main.js` | Side panel and wiring |
 | `vendor/` | three.js 0.184.0 (MIT), shipped in the bundle; `make vendor` refreshes it |
-| `vendor/fonts/` | Fraunces 600 and Patrick Hand 400 (latin and latin-ext subsets, SIL OFL, license in `OFL.txt`) for the Sketchbook style |
+| `vendor/fonts/` | Inter (one variable file for all weights), and Fraunces 600 and Patrick Hand 400 for the Sketchbook style. Latin and latin-ext subsets, SIL OFL, license in `OFL.txt`. The page cannot use the console's fonts, so every font it names is shipped |
 
 ```bash
 make test     # unit tests for the page logic (Node 20+)

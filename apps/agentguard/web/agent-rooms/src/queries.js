@@ -22,7 +22,9 @@ export function eventsSQL(db, minutes, sinceMs) {
     `${jv('tool_input', 'subagent_type')} AS sub_type, ` +
     `length(tool_input) + length(tool_result) AS payload_chars, tool_success, tool_duration_ms, hook_decision, ` +
     `substring(user_message, 1, 2000) AS user_message, length(user_message) AS user_chars, ` +
-    `substring(assistant_message, 1, 600) AS assistant_message, raw_hook_name, ` +
+    `substring(assistant_message, 1, 600) AS assistant_message, length(assistant_message) AS assistant_chars, raw_hook_name, ` +
+    // what an ask-the-user tool asks: {questions: [{question}]} (Claude Code) or {question}
+    `substring(if(json_value(tool_input, '$.questions[0].question') != '', json_value(tool_input, '$.questions[0].question'), ${jv('tool_input', 'question')}), 1, 300) AS ask_text, ` +
     `json_value(raw_event_data, '$.cwd') AS cwd, json_value(raw_event_data, '$.source') AS source, json_value(raw_event_data, '$.tool_use_id') AS call_id, ` +
     `json_value(raw_event_data, '$.agent_id') AS sub_id, json_value(raw_event_data, '$.agent_type') AS sub_name ` +
     `FROM ${ident(db, 'database')}.agentguard_cim_event ` +

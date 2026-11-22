@@ -1,7 +1,13 @@
 // Session model: turns rows from the three AgentGuard queries into per-session state
 // (what the side panel shows) and a queue of scene items (what the robot acts out).
+//
+// The conversation with the user runs both ways. In: a prompt, or the answer to a question.
+// Out: what the agent says when its turn ends. That is a reply, or a question when it ends in
+// one or comes through an ask-the-user tool; the session is then `waitingUser` until the user
+// answers. An assistant message that turns out to be followed by more tool calls in the same
+// turn was a progress update, not a reply.
 // No rendering and no timers here, so it can be unit tested with plain rows.
-import { toolKind, toolLabel, agentInfo, estTokens, sessionName } from './mapping.js';
+import { toolKind, toolLabel, agentInfo, estTokens, sessionName, isAskTool, isQuestion } from './mapping.js';
 
 const short = (s, n) => { s = String(s || '').replace(/\s+/g, ' ').trim(); return s.length > n ? s.slice(0, n - 1) + '…' : s; };
 const MAX_LOG = 400, MAX_CARDS = 200, MAX_HIST = 120;
@@ -15,7 +21,7 @@ export class Store {
       const [badge, typeName] = agentInfo(row.agent_type);
       s = { id, agentType: row.agent_type || '', badge, typeName, agentId: '', model: '', cwd: '', name: sessionName(id),
         startedTs: 0, lastTs: 0, ended: false, active: false, awaiting: false,
-        prompt: '', task: '', calls: 0, failures: 0, log: [], cards: [], hist: [],
+        prompt: '', reply: '', waitingUser: null, lastSay: null, task: '', calls: 0, failures: 0, log: [], cards: [], hist: [],
         ctx: 0, ctxReal: false, ctxLimit: 200000, mainModel: '', pending: null,
         open: new Map(), byTs: new Map(), pendingEnrich: new Map(), enriched: new Set(), tasks: new Map(), skillsUsed: new Map(), skillsAvailable: new Set(), memoryOps: {}, seen: new Set(), promptTs: 0, subs: new Map(), subSpans: [], queue: [], attached: false };
       this.sessions.set(id, s);
@@ -35,12 +41,26 @@ export class Store {
   attach(s, now = Date.now()) {
     s.attached = true; s.queue = [];
     for (const sub of s.subs.values()) { sub.queue = []; if (!sub.ended && !(sub.call && sub.call.done) && !sub.call) s.queue.push({ t: 'sub', sub }); }
-    for (const c of s.open.values()) if (now - c.ts < 600000) (c.subId && s.subs.get(c.subId) ? s.subs.get(c.subId).queue : s.queue).push({ t: 'call', call: c });
+    for (const c of s.open.values()) if (now - c.ts < 600000) (c.subId && s.subs.get(c.subId) ? s.subs.get(c.subId).queue : s.queue).push(c.ask ? { t: 'ask', text: c.label, call: c, resume: true } : { t: 'call', call: c });
+    if (s.waitingUser && !s.waitingUser.call) s.queue.push({ t: 'ask', text: s.waitingUser.text, wait: s.waitingUser, resume: true }); // already blocked on the user: go and hold the line
   }
   detach(s) { s.attached = false; s.queue = []; for (const sub of s.subs.values()) sub.queue = []; }
 
   /** True when nothing is expected next: the robot should go and sleep. */
   resting(s, now = Date.now()) { return s.open.size === 0 && (s.ended || !s.awaiting || now - s.lastTs > 120000); }
+
+  /**
+   * The last thing the agent said turned out not to end its turn: it was a progress update.
+   * If the robot has not acted it out yet, the queued item becomes a note and its reply card goes.
+   */
+  demote(s) {
+    const it = s.lastSay; s.lastSay = null; if (!it || it.call) return;
+    if (s.waitingUser === it.wait) s.waitingUser = null;
+    if (it.taken) return; // already walked to the phone with it: leave the history as acted
+    it.t = 'note'; it.entry.kind = 'note'; delete it.entry.dir; it.entry.tok = 0;
+    const i = s.cards.indexOf(it.card); if (i >= 0) { s.cards.splice(i, 1); if (!s.ctxReal) s.ctx = s.cards.reduce((a, x) => a + x.tok, 0); }
+    it.card = null; s.reply = it.prevReply;
+  }
 
   // ---- lifecycle events (agentguard_cim_event) ----
   ingestEvents(rows) { for (const r of rows) this.event(r); }
@@ -54,30 +74,40 @@ export class Store {
         else { if (!s.startedTs) s.startedTs = ts; s.ended = false; if (r.source === 'compact') this.compacted(s, ts); } // Claude Code restarts the session after compacting
         break;
       case 'session_end':
-        s.ended = true; s.awaiting = false; this.closeOpen(s, ts);
+        s.ended = true; s.awaiting = false; s.waitingUser = null; s.lastSay = null; this.closeOpen(s, ts);
         if (s.attached) s.queue.push({ t: 'end' });
         break;
       case 'user_input': {
         const text = String(r.user_message || '');
         if (ts === s.promptTs && text === s.prompt) break; // replayed after a reconnect
         s.promptTs = ts;
-        s.active = true; s.ended = false; s.awaiting = true; s.prompt = text; s.task = short(text.split('\n').find(l => l.trim()) || text, 110);
+        // A message that follows the agent's question answers it; it does not replace the task.
+        const answer = !!s.waitingUser; s.waitingUser = null; s.lastSay = null;
+        s.active = true; s.ended = false; s.awaiting = true; s.prompt = text;
+        if (!answer) s.task = short(text.split('\n').find(l => l.trim()) || text, 110);
         const tok = estTokens(Number(r.user_chars) || text.length);
-        const card = this.card(s, { type: 'phone', label: 'user prompt', tok, ok: true, ts });
-        this.log(s, { ts, kind: 'phone', label: short(text, 160), ok: true, tok });
-        this.log(s, { ts, kind: 'board', label: 'Task: ' + s.task, ok: true, tok: 0 });
-        if (s.attached) s.queue.push({ t: 'prompt', text, card });
+        const card = this.card(s, { type: 'phone', label: answer ? 'user answer' : 'user prompt', tok, ok: true, ts });
+        this.log(s, { ts, kind: 'phone', dir: 'in', label: short(text, 160), ok: true, tok });
+        if (!answer) this.log(s, { ts, kind: 'board', label: 'Task: ' + s.task, ok: true, tok: 0 });
+        if (s.attached) s.queue.push({ t: 'prompt', text, card, answer });
         break;
       }
       case 'tool_invoke': {
         if (r.call_id && s.seen.has(r.call_id)) break; // replayed after a reconnect
         if (r.call_id) s.seen.add(r.call_id);
         s.active = true; s.ended = false;
-        const kind = toolKind(r.tool_name, r.tool_arg);
-        const call = { id: r.call_id || 'c' + (++this.seq), tool: r.tool_name, kind, ts, done: false, ok: true, tok: 0, error: '', subId: r.sub_id || '', sub: null,
-          label: kind === 'sub' ? short('Sub-agent: ' + (r.sub_type || r.tool_arg || r.tool_name), 80) : toolLabel(r.tool_name, r.tool_arg) };
+        if (!r.sub_id) this.demote(s); // the main agent carried on after speaking
+        const kind = toolKind(r.tool_name, r.tool_arg), ask = !r.sub_id && isAskTool(r.tool_name);
+        const call = { id: r.call_id || 'c' + (++this.seq), tool: r.tool_name, kind, ts, done: false, ok: true, tok: 0, error: '', subId: r.sub_id || '', sub: null, ask,
+          label: ask ? short(r.ask_text || r.tool_arg || 'a question for the user', 160) : kind === 'sub' ? short('Sub-agent: ' + (r.sub_type || r.tool_arg || r.tool_name), 80) : toolLabel(r.tool_name, r.tool_arg) };
         s.calls++; s.open.set(call.id, call); this.index(s, call);
         const sub = call.subId ? this.sub(s, call.subId, r.sub_name, ts) : null;
+        if (ask) { // a question put through a tool: the turn is blocked until the tool returns the answer
+          const tok = estTokens(call.label.length), card = this.card(s, { type: 'reply', label: 'question to the user', tok, ok: true, ts });
+          this.log(s, { ts, kind: 'phone', dir: 'out', label: call.label, ok: true, tok });
+          s.reply = 'Asked: ' + call.label; s.waitingUser = { text: call.label, ts, call };
+          if (s.attached) s.queue.push({ t: 'ask', text: call.label, card, call });
+        } else
         if (s.attached) (sub ? sub.queue : s.queue).push({ t: 'call', call });
         const orphan = this.orphans.get(call.id); if (orphan) { this.orphans.delete(call.id); this.hook(orphan); }
         break;
@@ -99,10 +129,21 @@ export class Store {
         this.finish(s, call, ok, estTokens(r.payload_chars), ts);
         break;
       }
-      case 'llm_response':
+      case 'llm_response': {
         s.active = true; s.awaiting = false; this.closeOpen(s, ts);
-        if (r.assistant_message && s.attached) s.queue.push({ t: 'say', text: short(r.assistant_message, 150) });
+        const text = String(r.assistant_message || ''); if (!text) break;
+        if (ts === s.replyTs && text === s.replyRaw) break; // replayed after a reconnect
+        this.demote(s); // two messages in one turn: the earlier one was a progress update
+        s.replyTs = ts; s.replyRaw = text;
+        const ask = isQuestion(text), tok = estTokens(Number(r.assistant_chars) || text.length), prevReply = s.reply;
+        const card = this.card(s, { type: 'reply', label: ask ? 'question to the user' : 'reply to the user', tok, ok: true, ts });
+        const entry = { ts, kind: 'phone', dir: 'out', label: short(text, 160), ok: true, tok }; this.log(s, entry);
+        s.reply = (ask ? 'Asked: ' : '') + short(text, 600);
+        const wait = ask ? { text: short(text, 160), ts } : null; s.waitingUser = wait;
+        s.lastSay = { t: ask ? 'ask' : 'say', text: short(text, 240), card, entry, wait, prevReply };
+        if (s.attached) s.queue.push(s.lastSay);
         break;
+      }
     }
   }
 
@@ -251,12 +292,17 @@ export class Store {
     if (!ok) s.failures++;
     if (call.sub) { call.sub.ended = true; const sp = s.subSpans.find(x => x.id === call.sub.id); if (sp && !sp.end) sp.end = ts; }
     const inSub = !!call.subId, kind = call.kind === 'sub' ? 'subbench' : call.kind;
-    call.logEntry = { ts, kind, label: call.label + (call.error ? ' · ' + call.error : ''), ok, tok, sub: inSub }; this.log(s, call.logEntry);
+    if (!call.ask) { call.logEntry = { ts, kind, label: call.label + (call.error ? ' · ' + call.error : ''), ok, tok, sub: inSub }; this.log(s, call.logEntry); }
     if (inSub) { const sub = s.subs.get(call.subId); if (sub) sub.cards++; }
+    else if (call.ask) { // the tool returned: that is the user's answer
+      if (s.waitingUser && s.waitingUser.call === call) s.waitingUser = null;
+      call.logEntry = { ts, kind: 'phone', dir: 'in', label: ok ? 'Answered: ' + call.label : 'No answer: ' + call.label, ok, tok }; this.log(s, call.logEntry);
+      call.card = this.card(s, { type: 'phone', label: 'user answer', tok, ok, ts }); s.awaiting = true;
+    }
     else { call.card = this.card(s, { type: kind, label: call.kind === 'sub' ? 'result: ' + call.label.replace(/^Sub-agent: /, '') : call.label, tok, ok, ts }); s.awaiting = true; }
   }
   /** A turn ended: anything still open will not report back (interrupted or lost). */
-  closeOpen(s, ts) { for (const c of [...s.open.values()]) { c.done = true; c.unknown = true; c.endTs = ts; s.open.delete(c.id); if (c.sub) c.sub.ended = true; } for (const sp of s.subSpans) if (!sp.end) sp.end = ts; for (const sub of s.subs.values()) sub.ended = true; }
+  closeOpen(s, ts) { for (const c of [...s.open.values()]) { c.done = true; c.unknown = true; c.endTs = ts; s.open.delete(c.id); if (c.sub) c.sub.ended = true; if (s.waitingUser && s.waitingUser.call === c) s.waitingUser = null; } for (const sp of s.subSpans) if (!sp.end) sp.end = ts; for (const sub of s.subs.values()) sub.ended = true; }
   card(s, c) { s.cards.push(c); if (s.cards.length > MAX_CARDS) s.cards.shift(); if (!s.ctxReal) s.ctx = s.cards.reduce((a, x) => a + x.tok, 0); return c; }
   log(s, e) { s.log.push(e); s.logN = (s.logN || 0) + 1; if (s.log.length > MAX_LOG) s.log.shift(); } // logN counts every entry, kept or not
 }
