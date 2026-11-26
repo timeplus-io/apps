@@ -1,12 +1,12 @@
 package_format_version: 1
 id: io.timeplus.agentguard
 name: AgentGuard
-version: 0.4.0
+version: 0.5.0
 author: Timeplus
 icon: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJiZyIgeDE9IjAiIHkxPSIwIiB4Mj0iNDgiIHkyPSI0OCIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNENTNGOEMiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiM5RjJCQzAiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHJ4PSIxMSIgZmlsbD0idXJsKCNiZykiLz48cGF0aCBkPSJNMjQgMTEgTDM1IDE1LjUgVjI0IEMzNSAzMC41IDMwIDM2IDI0IDM4IEMxOCAzNiAxMyAzMC41IDEzIDI0IFYxNS41IFoiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBmaWxsPSJub25lIi8+PHBhdGggZD0iTTIxIDIwIEwxNy41IDI0LjUgTDIxIDI5IiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBmaWxsPSJub25lIi8+PHBhdGggZD0iTTI3IDIwIEwzMC41IDI0LjUgTDI3IDI5IiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBmaWxsPSJub25lIi8+PC9zdmc+"
 description: >
-  AgentGuard core telemetry pipeline for AI coding agents (Claude Code, OpenClaw,
-  Hermes, OpenInference/OTLP), with Agent Rooms 3D, a live 3D view of agent
+  AgentGuard core telemetry pipeline for AI coding agents (Claude Code, Codex,
+  OpenClaw, Hermes, OpenInference/OTLP), with Agent Rooms 3D, a live 3D view of agent
   sessions. Ingests OTLP traces/logs/metrics and agent hook
   events, normalizes them into a Common Information Model (agentguard_cim_event),
   computes per-call token/cost/latency metrics, and ships four Core Protection
@@ -15,7 +15,6 @@ description: >
   Timeplus app server 3.5.2 or later; older versions install the app without
   it. Pause a rule with:
     SYSTEM PAUSE MATERIALIZED VIEW <db>.mv_rule_rp001;
-  Generated from the AgentGuard backend - do not hand-edit the SQL.
 db_name: ag
 categories:
   - security
@@ -181,6 +180,15 @@ resources:
   - file: ddl/049_mv_rule_rp004.sql
     type: materialized_view
     name: mv_rule_rp004
+  - file: ddl/050_mv_cim_openinference_hooks.sql
+    type: materialized_view
+    name: mv_cim_openinference_hooks
+  - file: ddl/051_mv_hook_bridge_openinference_hooks.sql
+    type: materialized_view
+    name: mv_hook_bridge_openinference_hooks
+  - file: ddl/052_mv_skills_invoked_codex.sql
+    type: materialized_view
+    name: mv_skills_invoked_codex
 
 dashboards:
   - file: dashboards/main.json

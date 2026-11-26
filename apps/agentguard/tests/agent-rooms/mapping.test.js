@@ -45,3 +45,37 @@ test('history entries are marked by direction', () => {
   assert.equal(arrow({ kind: 'phone', dir: 'out' }), '↑ '); assert.equal(arrow({ kind: 'note' }), '· '); assert.equal(arrow({ kind: 'files' }), '');
   assert.equal(META.phone[0], 'User'); assert.ok(META.reply && META.note);
 });
+
+// Codex (timeplus-io/apps#69)
+import { isReadCommand, patchPath, planSteps } from '../../web/agent-rooms/src/mapping.js';
+test('Codex tool names map to room objects', () => {
+  const cases = { webrun: 'web', spawn_agent: 'sub', update_plan: 'other', mcp__github__create_pr: 'mcp' };
+  for (const [tool, kind] of Object.entries(cases)) assert.equal(toolKind(tool, '', 'codex'), kind, tool);
+  assert.deepEqual(agentInfo('codex'), ['CX', 'Codex']);
+});
+test('a Codex shell command that only reads goes to the files, any other to the terminal', () => {
+  for (const c of ['cat src/a.py', 'rg --files -g "!.git" | head -180', 'sed -n 1,80p README.md', 'ls -d .codex/hooks.json 2>/dev/null', 'find . -name "*.md"'])
+    assert.equal(toolKind('Bash', c, 'codex'), 'files', c);
+  for (const c of ['git remote -v', 'python3 -B - <<PY', 'sed -i s/a/b/ x.txt', 'cat a.txt > b.txt', 'echo hi >> log', 'pnpm test'])
+    assert.equal(toolKind('Bash', c, 'codex'), 'shell', c);
+  assert.equal(toolKind('Bash', 'cat src/a.py', 'claudecode'), 'shell'); // agents with a Read tool keep the shell as the shell
+  assert.equal(toolKind('Bash', 'cat src/a.py'), 'shell');
+  assert.equal(toolKind('Bash', 'cat /h/.codex/skills/.system/openai-docs/SKILL.md', 'codex'), 'skill'); // reading a skill is using it
+  assert.equal(toolKind('Bash', 'sed -n 1,40p /h/.codex/memories/MEMORY.md', 'codex'), 'memory');
+  assert.equal(isReadCommand('  ls'), true); assert.equal(isReadCommand('lsof -i'), false);
+});
+test('apply_patch is labelled with the file it touches', () => {
+  const patch = '*** Begin Patch\n*** Add File: /w/repo/docs/notes/issue.md\n+hello\n*** End Patch';
+  assert.equal(patchPath(patch), '/w/repo/docs/notes/issue.md'); assert.equal(patchPath('no header'), '');
+  assert.equal(toolLabel('apply_patch', patch), 'apply_patch …/notes/issue.md');
+  assert.equal(toolKind('apply_patch', patch, 'codex'), 'files');
+  assert.equal(toolKind('apply_patch', '*** Begin Patch\n*** Update File: /h/.codex/memories/MEMORY.md\n', 'codex'), 'memory');
+  assert.ok(toolLabel('apply_patch', 'garbage '.repeat(40)).length <= 80);
+});
+test('a plan tool call gives the steps of the plan', () => {
+  const plan = { explanation: 'x', plan: [{ step: 'Read the code', status: 'completed' }, { step: 'Fix it', status: 'in_progress' }, { step: 'Test', status: 'pending' }] };
+  const want = [{ subject: 'Read the code', done: true }, { subject: 'Fix it', done: false }, { subject: 'Test', done: false }];
+  assert.deepEqual(planSteps(JSON.stringify(plan)), want);
+  assert.deepEqual(planSteps(JSON.stringify([plan])), want);
+  for (const bad of ['', '{"plan": [{"step": "cut sho', '{"plan": "no"}', '{"command": "ls"}', 'null']) assert.deepEqual(planSteps(bad), []);
+});

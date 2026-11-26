@@ -208,3 +208,71 @@ test('a session that is already blocked on the user is picked up holding the lin
   assert.deepEqual(s.queue.map(x => [x.t, x.resume, x.wait === s.waitingUser]), [['ask', true, true]]);
   st.event(ev(7000, 'session_end')); assert.equal(s.waitingUser, null);
 });
+
+// ---- Codex (timeplus-io/apps#69). Row shapes from spans sent by the AgentGuard Codex plugin 0.2.0. ----
+const C = 'codex-1';
+const cx = (ts, event_type, x = {}) => ({ ts, event_type, session_id: C, agent_type: 'codex', agent_id: 'host.local', cwd: '/w/demo-repo', model: 'gpt-5-codex', tool_success: true, hook_decision: '', ...x });
+function codex() {
+  const st = new Store();
+  st.ingestEvents([cx(1000, 'session_start', { raw_hook_name: 'session_start' }), cx(1100, 'user_input', { user_message: 'say hello and list files', user_chars: 24, raw_hook_name: 'user_prompt_submit' })]);
+  const s = st.sessions.get(C); st.attach(s, 1200);
+  return { st, s };
+}
+test('a Codex session has a badge, a model, a name from its directory, and its prompt', () => {
+  const { s } = codex();
+  assert.deepEqual([s.badge, s.typeName, s.model, s.name], ['CX', 'Codex', 'gpt-5-codex', 'demo-repo · codex-1']);
+  assert.equal(s.task, 'say hello and list files'); assert.equal(s.awaiting, true); assert.equal(s.cards[0].type, 'phone');
+});
+test('a Codex model request does not end the turn; its stop does, with the reply', () => {
+  const { st, s } = codex();
+  st.event(cx(1900, 'llm_response', { raw_hook_name: 'post_model_request' }));
+  assert.equal(s.awaiting, true); assert.equal(st.resting(s, 2000), false);
+  st.event(cx(2000, 'tool_invoke', { tool_name: 'Bash', tool_arg: 'ls', call_id: 'c1' }));
+  st.event(cx(2100, 'tool_complete', { tool_name: 'Bash', tool_arg: 'ls', call_id: 'c1', payload_chars: 400 }));
+  assert.equal(s.cards.at(-1).type, 'files'); // a read through the shell
+  st.event(cx(2500, 'llm_response', { raw_hook_name: 'post_model_request' }));
+  st.event(cx(2600, 'llm_response', { raw_hook_name: 'stop', assistant_message: 'hello, README.md', assistant_chars: 16 }));
+  assert.equal(s.awaiting, false); assert.equal(s.reply, 'hello, README.md'); assert.equal(s.cards.at(-1).type, 'reply');
+  assert.equal(st.resting(s, 2700), true);
+});
+test('Codex context size is its input tokens: cached tokens are already part of them', () => {
+  const { st, s } = codex();
+  const m = (metric_name, metric_value) => ({ ts: 3000, session_id: C, agent_type: 'codex', metric_name, metric_value, model: 'gpt-5-codex' });
+  st.ingestMetrics([m('llm.input_tokens', 19947), m('llm.cache_read_tokens', 9472)]); st.flush(Date.now() + 5000);
+  assert.equal(s.ctx, 19947); assert.equal(s.ctxReal, true);
+});
+test('a Codex sub-agent, its stop, compaction, an interrupt and a permission request come through', () => {
+  const { st, s } = codex();
+  st.event(cx(2000, 'session_start', { sub_id: 'a7', sub_name: 'explorer', raw_hook_name: 'subagent_start' }));
+  assert.equal(s.subs.get('a7').name, 'explorer');
+  st.event(cx(2100, 'tool_invoke', { tool_name: 'Bash', tool_arg: 'git log', call_id: 'c2', sub_id: 'a7' }));
+  st.event(cx(2200, 'tool_complete', { tool_name: 'Bash', tool_arg: 'git log', call_id: 'c2', sub_id: 'a7' }));
+  assert.equal(s.subs.get('a7').cards, 1);
+  const hk = (ts, hook_name, x = {}) => ({ ts, session_id: C, agent_type: 'codex', hook_name, ...x });
+  st.ingestHooks([hk(2300, 'subagent_ended', { sub_id: 'a7' })]); assert.equal(s.subs.get('a7').ended, true);
+  st.ingestHooks([hk(2400, 'permission_request', { tool_name: 'Bash', perm_arg: 'rm -rf build' })]);
+  assert.deepEqual([s.log.at(-1).kind, s.log.at(-1).label], ['phone', 'Asked permission: Bash rm -rf build']);
+  st.ingestHooks([hk(2500, 'pre_compact', { compact_trigger: 'auto' })]); assert.equal(s.compactJob.done, false);
+  st.ingestHooks([hk(2600, 'post_compact', { compact_trigger: 'auto' })]); assert.equal(s.compactJob.done, true);
+  st.event(cx(2700, 'tool_invoke', { tool_name: 'webrun', tool_arg: 'x', call_id: 'c3' })); assert.equal(s.open.size, 1);
+  const n = s.log.length;
+  st.ingestHooks([hk(2800, 'interrupt'), hk(2800, 'interrupt')]); // replayed after a reconnect: logged once
+  assert.equal(s.open.size, 0); assert.equal(s.awaiting, false); assert.equal(s.log.length, n + 1); assert.equal(s.log.at(-1).label, 'Turn interrupted by the user');
+});
+test('a Codex plan replaces the task list on the board', () => {
+  const { st, s } = codex();
+  const plan = steps => JSON.stringify({ plan: steps.map(([step, status]) => ({ step, status })) });
+  st.event(cx(2000, 'tool_invoke', { tool_name: 'update_plan', call_id: 'p1', plan: plan([['Read', 'in_progress'], ['Fix', 'pending']]) }));
+  assert.deepEqual([...s.tasks.values()], [{ subject: 'Read', done: false }, { subject: 'Fix', done: false }]);
+  st.event(cx(2100, 'tool_complete', { tool_name: 'update_plan', call_id: 'p1' }));
+  st.event(cx(3000, 'tool_invoke', { tool_name: 'update_plan', call_id: 'p2', plan: plan([['Read', 'completed'], ['Fix', 'in_progress']]) }));
+  assert.equal(s.tasks.get('plan0').done, true); assert.equal(s.log.filter(e => e.kind === 'board').at(-1).label, 'Plan: 1 of 2 steps done');
+});
+test('a Codex skill read is named from the skills stream', () => {
+  const { st, s } = codex();
+  st.event(cx(2000, 'tool_invoke', { tool_name: 'Bash', tool_arg: 'cat /h/.codex/skills/.system/openai-docs/SKILL.md', call_id: 'c4' }));
+  assert.equal(s.open.get('c4').kind, 'skill');
+  st.ingestSkills([{ ts: 2000, session_id: C, skill_name: 'openai-docs', skill_action: 'invoked', skill_source_type: 'system' }]);
+  assert.equal(s.open.get('c4').kind, 'skill'); // already from the command, so it holds when the skills row arrives after the call has finished
+  assert.equal(s.open.get('c4').label, 'Load skill: openai-docs'); assert.equal(s.skillsUsed.get('openai-docs'), 1);
+});
