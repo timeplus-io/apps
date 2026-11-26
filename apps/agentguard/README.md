@@ -1,8 +1,8 @@
 # AgentGuard — core telemetry pipeline for AI coding agents
 
-Installs the [AgentGuard](https://github.com/timeplus-io/AgentGuard) streaming pipeline that turns raw telemetry from AI coding agents (Claude Code, OpenClaw, Hermes, any OpenInference/OTLP emitter) into a normalized event model, per-call metrics, and security detections — all as Timeplus streams and materialized views in database `ag`.
+Installs the [AgentGuard](https://github.com/timeplus-io/AgentGuard) streaming pipeline that turns raw telemetry from AI coding agents (Claude Code, Codex, OpenClaw, Hermes, any OpenInference/OTLP emitter) into a normalized event model, per-call metrics, and security detections — all as Timeplus streams and materialized views in database `ag`.
 
-> This package is **generated** from the AgentGuard backend (`make tpapp` in the AgentGuard repo). Do not edit the SQL here by hand; change the backend DDL and regenerate.
+> The SQL in `ddl/` was first generated from the AgentGuard backend. That generator is gone (last in AgentGuard tag `v0.9.3`), so this directory is now the source. An upgrade re-runs every file with `IF NOT EXISTS`, which leaves an installed view as it is: change behaviour by adding a view, not by editing one.
 
 ## What gets installed
 
@@ -39,6 +39,7 @@ Or from the apps repo root: `make build APP=agentguard`.
 ## Sending telemetry
 
 - **OTLP/HTTP** (Claude Code with `CLAUDE_CODE_ENABLE_TELEMETRY=1`, OpenInference exporters): point `OTEL_EXPORTER_OTLP_ENDPOINT` at `http://<timeplus-host>:<otel_port>`.
+- **Codex**: the [AgentGuard Codex plugin](https://github.com/timeplus-io/AgentGuard/tree/main/agents/codex/agentguard-plugin) 0.2.0 or later sends one span per Codex hook over OTLP/HTTP to the same port, with the service name `codex`.
 - **Hook plugins** (AgentGuard Claude Code / OpenClaw / Hermes plugins): configure them to write to stream `ag.agentguard_hook_events`.
 
 ## Detection rules
@@ -110,18 +111,42 @@ Nothing is scripted or mocked. The page runs five streaming queries through the 
 | Rooms, agent badge, model | `agentguard_cim_event` | `session_id`, `agent_type`, `agent_id`, `model`, `cwd` from `raw_event_data` |
 | Phone, incoming (user instruction or answer), board (task) | `agentguard_cim_event`, `user_input` | `user_message` |
 | Trips to an object, result cards | `agentguard_cim_event`, `tool_invoke` / `tool_complete` | `tool_name`, `tool_input`, `tool_result` size, `tool_success`, `tool_use_id` |
-| Sub-agent robot | `agentguard_cim_event`, `session_start` from `subagent_spawning` | `agent_id`, `agent_type` in `raw_event_data` |
+| Sub-agent robot | `agentguard_cim_event`, `session_start` from `subagent_spawning` (Codex: `subagent_start`) | `agent_id`, `agent_type` in `raw_event_data` (Codex: `agentguard.subagent.id`, `agentguard.subagent.type`) |
 | Phone, outgoing (reply, question), progress update | `agentguard_cim_event`, `llm_response` | `assistant_message` |
 | Question through an ask-the-user tool | `agentguard_cim_event`, `tool_invoke` / `tool_complete` of `AskUserQuestion` and similar | `tool_input` (`questions[0].question` or `question`) |
 | Failed and denied calls, sub-agent stop, turn ended by an API error | `agentguard_hook_events` | `tool_call_failure`, `permission_denied`, `subagent_ended`, `stop_failure` |
+| Interrupted turn, permission request (Codex; in the activity log) | `agentguard_hook_events` | `interrupt`, `permission_request` |
 | Instruction files loaded into context (no tool call) | `agentguard_hook_events` | `instructions_loaded`: `file_path`, `memory_type`, `load_reason` |
 | Compaction | `agentguard_hook_events`, `agentguard_cim_event` | `pre_compact` (start), `session_start` with `source = compact` or `post_compact` (done) |
-| Task list on the board | `agentguard_hook_events` | `task_created`, `task_completed` |
+| Task list on the board | `agentguard_hook_events`; Codex: `agentguard_cim_event`, `tool_invoke` of `update_plan` | `task_created`, `task_completed`; Codex: `plan` in `tool_input` |
 | Skill names and use counts | `agentguard_skills` | `skill_name`, `skill_action`, `skill_source_type` |
 | Memory operations | `agentguard_memory_ops` | `memory_op`, `memory_source`, `server_name`, `memory_path` |
 | Context gauge and history | `agentguard_cim_metrics` | `llm.input_tokens` + `llm.cache_read_tokens` + `llm.cache_write_tokens` per LLM call |
 
-Tool families map to objects: Bash → Terminal; Read/Write/Edit/Grep/Glob → Local file; WebFetch/WebSearch → Search; Skill → Skill; memory tools and memory files → Memory; `mcp__*` → MCP; Agent/Task → sub-agent; anything else → Other tools. OpenClaw and Hermes tool names are mapped the same way (`web/agent-rooms/src/mapping.js`).
+Tool families map to objects: Bash → Terminal; Read/Write/Edit/Grep/Glob → Local file; WebFetch/WebSearch → Search; Skill → Skill; memory tools and memory files → Memory; `mcp__*` → MCP; Agent/Task → sub-agent; anything else → Other tools. OpenClaw, Hermes and Codex tool names are mapped the same way (`web/agent-rooms/src/mapping.js`).
+
+### Codex
+
+Codex sessions come from the AgentGuard Codex plugin (0.2.0 or later), which sends one OTLP span per Codex hook. Three views added in 0.5.0 turn the spans the older views skip into rows the page reads:
+
+| View | From spans | Into |
+|---|---|---|
+| `mv_cim_openinference_hooks` | `user_prompt_submit`, `stop`, `session_start`, `subagent_start` | `agentguard_cim_event`: `user_input`, `llm_response` with the reply, `session_start` |
+| `mv_hook_bridge_openinference_hooks` | `subagent_stop`, `pre_compact`, `post_compact`, `interrupt`, `permission_request` | `agentguard_hook_events` |
+| `mv_skills_invoked_codex` | `tool` spans whose command reads a `SKILL.md` | `agentguard_skills` |
+
+What differs from Claude Code on screen:
+
+- **File reads go through the shell.** Codex has no read, search or list tool. A shell command that starts with `cat`, `sed -n`, `head`, `tail`, `rg`, `grep`, `ls`, `find` and the like, and redirects nothing to a file, is drawn as a trip to Local file; any other command goes to the Terminal. Only the first command of a pipeline or chain is looked at.
+- **Skills** have no tool either: reading `<skill>/SKILL.md` through the shell counts as using that skill.
+- **File edits** are `apply_patch`; the label is the first file named in the patch.
+- **The task list** is the plan from `update_plan`.
+- **The context gauge** uses `llm.input_tokens` alone. Codex counts cached tokens inside its input tokens, so `llm.cache_read_tokens` is not added.
+- **A tool call appears when it has finished.** The plugin sends one span per call, at the end, so the robot makes the trip after the fact and there is no `running` timer.
+
+Not shown for Codex, because nothing reports it: instruction files (`AGENTS.md`) and the system prompt, the list of available skills, memory, and failed tool calls (a failed command still reports as a completed call). The `session` span sent at the end repeats the session's start, so `agentguard_cim_event` has two `session_start` rows for a finished Codex session.
+
+Sub-agents, compaction, interrupts, permission requests and `update_plan` were checked with replayed hook payloads, not a live Codex session.
 
 ### How behaviour is derived
 
@@ -146,7 +171,7 @@ Checked against real Claude Code sessions:
 - **Skill and memory rows carry no result.** They are matched to their tool call by timestamp; success or failure comes from the call.
 - **Tool failures, permission denials and sub-agent stop** are only in `agentguard_hook_events`; the CIM views drop them.
 
-OpenClaw and Hermes sessions are drawn from the same streams but have only been checked with Claude Code so far.
+OpenClaw and Hermes sessions are drawn from the same streams but have not been checked with a live session.
 
 ### Files
 

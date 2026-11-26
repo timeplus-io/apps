@@ -26,19 +26,22 @@ export function eventsSQL(db, minutes, sinceMs) {
     // what an ask-the-user tool asks: {questions: [{question}]} (Claude Code) or {question}
     `substring(if(json_value(tool_input, '$.questions[0].question') != '', json_value(tool_input, '$.questions[0].question'), ${jv('tool_input', 'question')}), 1, 300) AS ask_text, ` +
     `json_value(raw_event_data, '$.cwd') AS cwd, json_value(raw_event_data, '$.source') AS source, json_value(raw_event_data, '$.tool_use_id') AS call_id, ` +
-    `json_value(raw_event_data, '$.agent_id') AS sub_id, json_value(raw_event_data, '$.agent_type') AS sub_name ` +
+    // the sub-agent a row belongs to: `agent_id` (Claude Code) or `agentguard.subagent.id` (Codex)
+    `if(json_value(raw_event_data, '$.agent_id') != '', json_value(raw_event_data, '$.agent_id'), json_extract_string(raw_event_data, 'agentguard.subagent.id')) AS sub_id, ` +
+    `if(json_value(raw_event_data, '$.agent_type') != '', json_value(raw_event_data, '$.agent_type'), json_extract_string(raw_event_data, 'agentguard.subagent.type')) AS sub_name, ` +
+    `if(tool_name = 'update_plan', substring(tool_input, 1, 6000), '') AS plan ` +
     `FROM ${ident(db, 'database')}.agentguard_cim_event ` +
     `WHERE event_type IN ('session_start', 'session_end', 'user_input', 'llm_response', 'tool_invoke', 'tool_complete') AND ${since(minutes, sinceMs)}`;
 }
 
 /** Per-LLM-call token metrics: the real context size. */
 export function metricsSQL(db, minutes, sinceMs) {
-  return `SELECT to_unix_timestamp64_milli(event_time) AS ts, session_id, metric_name, metric_value, tags['model'] AS model ` +
+  return `SELECT to_unix_timestamp64_milli(event_time) AS ts, session_id, agent_type, metric_name, metric_value, tags['model'] AS model ` +
     `FROM ${ident(db, 'database')}.agentguard_cim_metrics ` +
     `WHERE metric_name IN ('llm.input_tokens', 'llm.cache_read_tokens', 'llm.cache_write_tokens') AND ${since(minutes, sinceMs)}`;
 }
 
-/** Raw hooks the CIM views do not carry: sub-agent stop, tool failures, permission denials, instruction files loaded, compaction. */
+/** Raw hooks the CIM views do not carry: sub-agent stop, tool failures, permission requests and denials, instruction files loaded, compaction, interrupted turns. */
 export function hooksSQL(db, minutes, sinceMs) {
   return `SELECT to_unix_timestamp64_milli(event_time) AS ts, session_id, hook_name, agent_type, ` +
     `if(tool_name != '', tool_name, json_value(event_data, '$.tool_name')) AS tool_name, ` +
@@ -47,9 +50,11 @@ export function hooksSQL(db, minutes, sinceMs) {
     `json_value(event_data, '$.agent_id') AS sub_id, json_value(event_data, '$.file_path') AS file_path, ` +
     `json_value(event_data, '$.memory_type') AS memory_type, json_value(event_data, '$.load_reason') AS load_reason, ` +
     `json_value(event_data, '$.trigger') AS compact_trigger, json_value(event_data, '$.task_id') AS task_id, ` +
-    `substring(json_value(event_data, '$.task_subject'), 1, 200) AS task_subject ` +
+    `substring(json_value(event_data, '$.task_subject'), 1, 200) AS task_subject, ` +
+    // what a permission request is for, where the plugin sends the tool input as one JSON string (Codex)
+    `substring(${firstArg(`json_extract_string(event_data, 'tool.parameters')`)}, 1, 240) AS perm_arg ` +
     `FROM ${ident(db, 'database')}.agentguard_hook_events ` +
-    `WHERE hook_name IN ('subagent_ended', 'tool_call_failure', 'permission_denied', 'instructions_loaded', 'pre_compact', 'post_compact', 'task_created', 'task_completed', 'stop_failure') AND ${since(minutes, sinceMs)}`;
+    `WHERE hook_name IN ('subagent_ended', 'tool_call_failure', 'permission_denied', 'instructions_loaded', 'pre_compact', 'post_compact', 'task_created', 'task_completed', 'stop_failure', 'interrupt', 'permission_request') AND ${since(minutes, sinceMs)}`;
 }
 
 /** Skill events the app extracts (invoked through the Skill tool, or listed as available in a prompt). */

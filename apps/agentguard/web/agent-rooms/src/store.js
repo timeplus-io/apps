@@ -7,7 +7,7 @@
 // answers. An assistant message that turns out to be followed by more tool calls in the same
 // turn was a progress update, not a reply.
 // No rendering and no timers here, so it can be unit tested with plain rows.
-import { toolKind, toolLabel, agentInfo, estTokens, sessionName, isAskTool, isQuestion } from './mapping.js';
+import { toolKind, toolLabel, agentInfo, estTokens, sessionName, isAskTool, isQuestion, planSteps } from './mapping.js';
 
 const short = (s, n) => { s = String(s || '').replace(/\s+/g, ' ').trim(); return s.length > n ? s.slice(0, n - 1) + '…' : s; };
 const MAX_LOG = 400, MAX_CARDS = 200, MAX_HIST = 120;
@@ -97,7 +97,8 @@ export class Store {
         if (r.call_id) s.seen.add(r.call_id);
         s.active = true; s.ended = false;
         if (!r.sub_id) this.demote(s); // the main agent carried on after speaking
-        const kind = toolKind(r.tool_name, r.tool_arg), ask = !r.sub_id && isAskTool(r.tool_name);
+        if (r.plan) this.plan(s, r.plan, ts);
+        const kind = toolKind(r.tool_name, r.tool_arg, s.agentType), ask = !r.sub_id && isAskTool(r.tool_name);
         const call = { id: r.call_id || 'c' + (++this.seq), tool: r.tool_name, kind, ts, done: false, ok: true, tok: 0, error: '', subId: r.sub_id || '', sub: null, ask,
           label: ask ? short(r.ask_text || r.tool_arg || 'a question for the user', 160) : kind === 'sub' ? short('Sub-agent: ' + (r.sub_type || r.tool_arg || r.tool_name), 80) : toolLabel(r.tool_name, r.tool_arg) };
         s.calls++; s.open.set(call.id, call); this.index(s, call);
@@ -118,7 +119,7 @@ export class Store {
         if (!call && r.call_id && s.seen.has(r.call_id)) break; // already completed
         if (r.call_id) s.seen.add(r.call_id);
         if (!call) { // invoke fell outside the look-back window
-          const kind = toolKind(r.tool_name, r.tool_arg);
+          const kind = toolKind(r.tool_name, r.tool_arg, s.agentType);
           call = { id: r.call_id || 'c' + (++this.seq), tool: r.tool_name, kind, ts, done: false, ok: true, tok: 0, error: '', subId: r.sub_id || '', sub: null,
             label: kind === 'sub' ? short('Sub-agent: ' + (r.sub_type || r.tool_arg || r.tool_name), 80) : toolLabel(r.tool_name, r.tool_arg) };
           s.calls++;
@@ -130,8 +131,11 @@ export class Store {
         break;
       }
       case 'llm_response': {
+        const text = String(r.assistant_message || '');
+        // One model request of a turn that reports each request (Codex): the turn goes on until its `stop`.
+        if (!text && r.raw_hook_name === 'post_model_request') { s.active = true; break; }
         s.active = true; s.awaiting = false; this.closeOpen(s, ts);
-        const text = String(r.assistant_message || ''); if (!text) break;
+        if (!text) break;
         if (ts === s.replyTs && text === s.replyRaw) break; // replayed after a reconnect
         this.demote(s); // two messages in one turn: the earlier one was a progress update
         s.replyTs = ts; s.replyRaw = text;
@@ -161,6 +165,19 @@ export class Store {
       if (cur && cur.done === done) return;
       t.tasks.set(r.task_id, { subject: r.task_subject || (cur && cur.subject) || 'task ' + r.task_id, done });
       this.log(t, { ts: Number(r.ts) || 0, kind: 'board', label: (done ? 'Done: ' : 'New task: ') + t.tasks.get(r.task_id).subject, ok: true, tok: 0 });
+      return;
+    }
+    if (r.hook_name === 'interrupt') { // the user stopped the turn: no answer will come
+      if (!s) return;
+      const ts = Number(r.ts) || 0, key = 'x' + ts; if (s.enriched.has(key)) return; s.enriched.add(key);
+      s.awaiting = false; s.waitingUser = null; this.closeOpen(s, ts);
+      this.log(s, { ts, kind: 'agent', label: 'Turn interrupted by the user', ok: true, tok: 0 });
+      return;
+    }
+    if (r.hook_name === 'permission_request') { // the agent asked the user to approve a tool call
+      if (!s) return;
+      const ts = Number(r.ts) || 0, key = 'p' + ts + r.tool_name; if (s.enriched.has(key)) return; s.enriched.add(key);
+      this.log(s, { ts, kind: 'phone', dir: 'out', label: short('Asked permission: ' + toolLabel(r.tool_name, r.perm_arg || r.tool_arg), 160), ok: true, tok: 0 });
       return;
     }
     if (r.hook_name === 'stop_failure') { // the turn died on an API error: no answer will come
@@ -245,7 +262,9 @@ export class Store {
   ingestMetrics(rows) { for (const r of rows) this.metric(r); }
   metric(r) {
     if (!r.session_id) return;
-    const s = this.session(r.session_id), ts = Number(r.ts) || 0, p = s.pending; // metrics may arrive before the first event
+    // Codex reports cached tokens as part of its input tokens; adding them again would double the context.
+    if (r.agent_type === 'codex' && r.metric_name === 'llm.cache_read_tokens') return;
+    const s = this.session(r.session_id, { agent_type: r.agent_type }), ts = Number(r.ts) || 0, p = s.pending; // metrics may arrive before the first event
     if (p && p.ts !== ts) this.commit(s);
     if (!s.pending) s.pending = { ts, sum: 0, model: r.model || '', at: Date.now() };
     s.pending.sum += Number(r.metric_value) || 0;
@@ -268,6 +287,13 @@ export class Store {
   }
 
   // ---- helpers ----
+  /** A plan tool call replaces the task list on the board with the plan's steps. */
+  plan(s, input, ts) {
+    const steps = planSteps(input); if (!steps.length) return;
+    const sig = JSON.stringify(steps); if (sig === s.planSig) return; s.planSig = sig;
+    s.tasks = new Map(steps.map((t, i) => ['plan' + i, t]));
+    this.log(s, { ts, kind: 'board', label: 'Plan: ' + steps.filter(t => t.done).length + ' of ' + steps.length + ' steps done', ok: true, tok: 0 });
+  }
   sub(s, id, name, ts) {
     let sub = s.subs.get(id);
     if (!sub) {
