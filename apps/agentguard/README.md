@@ -39,7 +39,7 @@ Or from the apps repo root: `make build APP=agentguard`.
 ## Sending telemetry
 
 - **OTLP/HTTP** (Claude Code with `CLAUDE_CODE_ENABLE_TELEMETRY=1`, OpenInference exporters): point `OTEL_EXPORTER_OTLP_ENDPOINT` at `http://<timeplus-host>:<otel_port>`.
-- **Codex**: the [AgentGuard Codex plugin](https://github.com/timeplus-io/AgentGuard/tree/main/agents/codex/agentguard-plugin) 0.2.0 or later sends one span per Codex hook over OTLP/HTTP to the same port, with the service name `codex`.
+- **Codex**: the [AgentGuard Codex plugin](https://github.com/timeplus-io/AgentGuard/tree/main/agents/codex/agentguard-plugin) has two export paths; use one per deployment (see [Codex](#codex)). By default (0.2.0 or later) it sends one span per Codex hook over OTLP/HTTP to the same port, with the service name `codex`. With `AGENTGUARD_CODEX_EXPORT=hooks` (0.3.0 or later) it writes one row per hook to `ag.agentguard_hook_events`, like the hook plugins below.
 - **Hook plugins** (AgentGuard Claude Code / OpenClaw / Hermes plugins): configure them to write to stream `ag.agentguard_hook_events`.
 
 ## Detection rules
@@ -111,7 +111,7 @@ Nothing is scripted or mocked. The page runs five streaming queries through the 
 | Rooms, agent badge, model | `agentguard_cim_event` | `session_id`, `agent_type`, `agent_id`, `model`, `cwd` from `raw_event_data` |
 | Phone, incoming (user instruction or answer), board (task) | `agentguard_cim_event`, `user_input` | `user_message` |
 | Trips to an object, result cards | `agentguard_cim_event`, `tool_invoke` / `tool_complete` | `tool_name`, `tool_input`, `tool_result` size, `tool_success`, `tool_use_id` |
-| Sub-agent robot | `agentguard_cim_event`, `session_start` from `subagent_spawning` (Codex: `subagent_start`) | `agent_id`, `agent_type` in `raw_event_data` (Codex: `agentguard.subagent.id`, `agentguard.subagent.type`) |
+| Sub-agent robot | `agentguard_cim_event`, `session_start` from `subagent_spawning` (Codex: `subagent_start`) | `agent_id`, `agent_type` in `raw_event_data` (Codex on the OTel path: `agentguard.subagent.id`, `agentguard.subagent.type`) |
 | Phone, outgoing (reply, question), progress update | `agentguard_cim_event`, `llm_response` | `assistant_message` |
 | Question through an ask-the-user tool | `agentguard_cim_event`, `tool_invoke` / `tool_complete` of `AskUserQuestion` and similar | `tool_input` (`questions[0].question` or `question`) |
 | Failed and denied calls, sub-agent stop, turn ended by an API error | `agentguard_hook_events` | `tool_call_failure`, `permission_denied`, `subagent_ended`, `stop_failure` |
@@ -127,13 +127,40 @@ Tool families map to objects: Bash → Terminal; Read/Write/Edit/Grep/Glob → L
 
 ### Codex
 
-Codex sessions come from the AgentGuard Codex plugin (0.2.0 or later), which sends one OTLP span per Codex hook. Three views added in 0.5.0 turn the spans the older views skip into rows the page reads:
+Codex sessions come from the [AgentGuard Codex plugin](https://github.com/timeplus-io/AgentGuard/tree/main/agents/codex/agentguard-plugin), which can send them in two ways. A deployment uses one: the plugin never sends both, and a session sent both ways would be counted twice.
 
-| View | From spans | Into |
+| | OTel path (default) | Hook-event path |
 |---|---|---|
-| `mv_cim_openinference_hooks` | `user_prompt_submit`, `stop`, `session_start`, `subagent_start` | `agentguard_cim_event`: `user_input`, `llm_response` with the reply, `session_start` |
-| `mv_hook_bridge_openinference_hooks` | `subagent_stop`, `pre_compact`, `post_compact`, `interrupt`, `permission_request` | `agentguard_hook_events` |
-| `mv_skills_invoked_codex` | `tool` spans whose command reads a `SKILL.md` | `agentguard_skills` |
+| Plugin | 0.2.0 or later | 0.3.0 or later, `AGENTGUARD_CODEX_EXPORT=hooks` |
+| App | 0.5.0 or later | 0.6.0 or later |
+| What is sent | one OTLP span per Codex hook, service name `codex` | one `agentguard_hook_events` row per Codex hook, `agent_type = 'codex'`, the hook payload in `event_data` |
+| Port on the Timeplus host | `otel_port` (4318) | 3218 (timeplusd ingest, the plugin's default) or 8000 (Timeplus REST API, `AGENTGUARD_INGEST_API=rest`) |
+| Lands in | `otel_traces` | `agentguard_hook_events` |
+
+The views that serve each path:
+
+| Into | OTel path | Hook-event path |
+|---|---|---|
+| `agentguard_cim_event` | `mv_cim_openinference` (model requests, tool calls, session), `mv_cim_openinference_hooks` (prompt, reply, session and sub-agent start) | `mv_cim_codex` |
+| `agentguard_cim_metrics`, `llm.*` | `mv_cim_metrics_openinference_llm` | `mv_cim_metrics_codex_llm` |
+| `agentguard_cim_metrics`, `tool.call` and `tool.success` | `mv_cim_metrics_codex_tools` (both paths) | `mv_cim_metrics_codex_tools` |
+| `agentguard_skills` | `mv_skills_invoked_codex` | `mv_skills_invoked_codex_hooks` |
+| `agentguard_hook_events` (sub-agent stop, compaction, interrupt, permission request) | `mv_hook_bridge_openinference_hooks`, and `mv_hook_bridge_openinference` for model requests, tool calls and the session | written by the plugin |
+
+On the OTel path the bridge views write rows into `agentguard_hook_events` with `agent_type = 'codex'` too. The plugin marks the rows it writes on the hook-event path with `"agentguard.export": "hooks"` in `event_data`, and the hook-event views read only marked rows, so an OTel-path session is never read twice.
+
+The same session gives the same rows on either path: the same events in `agentguard_cim_event`, the same token counts in `agentguard_cim_metrics`, the same skill rows, and the same room in Agent Rooms. The hook-event path differs in these columns:
+
+- `raw_hook_name` is the hook name (`pre_tool_use`, `post_tool_use`, `session_end`); on the OTel path it is the span name (`tool`, `session`).
+- `run_id` is the Codex turn id on every row; on the OTel path it is empty on model request, tool and session rows.
+- `tool_invoke` comes from `pre_tool_use`, when the call starts, and has no result yet. On the OTel path both tool rows come from one span sent when the call has finished.
+- `tool_input` and `tool_result` are the JSON of the hook payload without spaces after `:` and `,`.
+- `tool_duration_ms` is set on `tool_complete` only; `hook_decision` is `observe`.
+- There is one `session_start` row per session. On the OTel path the `session` span sent at the end repeats the session's start, so a finished session has two.
+- `llm.cache_write_tokens` is written when Codex reports `cache_write_input_tokens`. Metric tags carry `run_id` where the OTel path has `trace_id`.
+- `llm.latency_ms`, `tool_duration_ms` and the time of the `llm_request` row need the plugin to have seen the start of the request or call. Without it there is no `llm.latency_ms` row, the duration is 0 and `llm_request` has the time of its `llm_response`.
+
+`mv_cim_metrics_codex_tools` is new in 0.6.0 and reads `agentguard_cim_event`, so from 0.6.0 Codex tool calls are counted on the OTel path too, including the ones already stored when the app is upgraded.
 
 What differs from Claude Code on screen:
 
@@ -141,12 +168,11 @@ What differs from Claude Code on screen:
 - **Skills** have no tool either: reading `<skill>/SKILL.md` through the shell counts as using that skill.
 - **File edits** are `apply_patch`; the label is the first file named in the patch.
 - **The task list** is the plan from `update_plan`.
-- **The context gauge** uses `llm.input_tokens` alone. Codex counts cached tokens inside its input tokens, so `llm.cache_read_tokens` is not added.
-- **A tool call appears when it has finished.** The plugin sends one span per call, at the end, so the robot makes the trip after the fact and there is no `running` timer.
+- **The context gauge** uses `llm.input_tokens` alone. Codex counts cached tokens inside its input tokens, so `llm.cache_read_tokens` and `llm.cache_write_tokens` are not added.
+- **On the OTel path a tool call appears when it has finished.** The plugin sends one span per call, at the end, so the robot makes the trip after the fact and there is no `running` timer. On the hook-event path the call appears when it starts.
 
-Not shown for Codex, because nothing reports it: instruction files (`AGENTS.md`) and the system prompt, the list of available skills, memory, and failed tool calls (a failed command still reports as a completed call). The `session` span sent at the end repeats the session's start, so `agentguard_cim_event` has two `session_start` rows for a finished Codex session.
-
-Sub-agents, compaction, interrupts, permission requests and `update_plan` were checked with replayed hook payloads, not a live Codex session.
+Not shown for Codex, because nothing reports it: instruction files (`AGENTS.md`) and the system prompt, the list of available skills, memory, and failed tool calls (a failed command still reports as a completed call).
+Sub-agents, compaction, interrupts, permission requests and `update_plan` were checked with replayed hook payloads, not a live Codex session. The hook-event path as a whole was checked the same way: `tests/codex-hooks/hook-rows.json` is one session as the plugin writes it (all 14 hooks, one sub-agent, one compaction), and `make test-codex-hooks` replays it into a Timeplus that has the app installed and checks the rows of the four views and the room Agent Rooms builds from them.
 
 ### How behaviour is derived
 
@@ -195,6 +221,9 @@ OpenClaw and Hermes sessions are drawn from the same streams but have not been c
 ```bash
 make test     # unit tests for the page logic (Node 20+)
 make build    # zips the bundle into the package and checks it (entry file, size limits, file names)
+
+# live check of the Codex hook-event path against an installed app (timeplusd SQL port)
+TIMEPLUS_URL=http://localhost:8123 TIMEPLUS_USER=... TIMEPLUS_PASSWORD=... make test-codex-hooks
 ```
 
 ## Uninstall

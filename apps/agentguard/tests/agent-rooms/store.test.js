@@ -241,6 +241,20 @@ test('Codex context size is its input tokens: cached tokens are already part of 
   st.ingestMetrics([m('llm.input_tokens', 19947), m('llm.cache_read_tokens', 9472)]); st.flush(Date.now() + 5000);
   assert.equal(s.ctx, 19947); assert.equal(s.ctxReal, true);
 });
+// Hook-event path (timeplus-io/apps#71): mv_cim_metrics_codex_llm also writes llm.cache_write_tokens.
+test('Codex cache-write tokens are not added to the context size either', () => {
+  const { st, s } = codex();
+  const m = (metric_name, metric_value) => ({ ts: 3000, session_id: C, agent_type: 'codex', metric_name, metric_value, model: 'gpt-5-codex' });
+  st.ingestMetrics([m('llm.input_tokens', 2000), m('llm.cache_read_tokens', 1500), m('llm.cache_write_tokens', 64)]); st.flush(Date.now() + 5000);
+  assert.equal(s.ctx, 2000);
+});
+test('a Codex tool call on the hook-event path is open from its pre_tool_use row to its post_tool_use row', () => {
+  const { st, s } = codex();
+  st.event(cx(2000, 'tool_invoke', { tool_name: 'Bash', tool_arg: 'make test', call_id: 'c9', raw_hook_name: 'pre_tool_use', hook_decision: 'observe' }));
+  assert.equal(s.open.size, 1); assert.equal(s.open.get('c9').done, false);
+  st.event(cx(2400, 'tool_complete', { tool_name: 'Bash', tool_arg: 'make test', call_id: 'c9', raw_hook_name: 'post_tool_use', hook_decision: 'observe', payload_chars: 80 }));
+  assert.deepEqual([s.open.size, s.calls, s.failures], [0, 1, 0]);
+});
 test('a Codex sub-agent, its stop, compaction, an interrupt and a permission request come through', () => {
   const { st, s } = codex();
   st.event(cx(2000, 'session_start', { sub_id: 'a7', sub_name: 'explorer', raw_hook_name: 'subagent_start' }));

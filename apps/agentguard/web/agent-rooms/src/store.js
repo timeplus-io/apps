@@ -262,8 +262,8 @@ export class Store {
   ingestMetrics(rows) { for (const r of rows) this.metric(r); }
   metric(r) {
     if (!r.session_id) return;
-    // Codex reports cached tokens as part of its input tokens; adding them again would double the context.
-    if (r.agent_type === 'codex' && r.metric_name === 'llm.cache_read_tokens') return;
+    // Codex reports cached tokens, read or written, as part of its input tokens; adding them again would double the context.
+    if (r.agent_type === 'codex' && r.metric_name !== 'llm.input_tokens') return;
     const s = this.session(r.session_id, { agent_type: r.agent_type }), ts = Number(r.ts) || 0, p = s.pending; // metrics may arrive before the first event
     if (p && p.ts !== ts) this.commit(s);
     if (!s.pending) s.pending = { ts, sum: 0, model: r.model || '', at: Date.now() };
