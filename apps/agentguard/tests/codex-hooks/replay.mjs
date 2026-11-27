@@ -32,9 +32,7 @@ async function post(sql, body = '') {
 }
 const rows = async sql => (await post(sql + ' FORMAT JSONEachRow')).split('\n').filter(Boolean).map(l => JSON.parse(l));
 const mine = `session_id = '${SESSION}'`;
-// Metrics are read for agent_type 'codex' only: the Claude Code, OpenClaw and Hermes tool metric views
-// also count this session's tool calls, under their own agent type (their filter does not apply).
-const from = stream => `FROM table(${DB}.${stream}) WHERE ${mine}` + (stream === 'agentguard_cim_metrics' ? ` AND agent_type = 'codex'` : '');
+const from = stream => `FROM table(${DB}.${stream}) WHERE ${mine}`;
 
 // ---- write the recorded rows, moved to now so they fall inside the page's look-back window ----
 const fixture = JSON.parse(readFileSync(new URL('./hook-rows.json', import.meta.url), 'utf8'));
@@ -85,7 +83,9 @@ const req = cim.filter(r => r.event_type === 'llm_request'), resp = cim.filter(r
 assert.ok(req.every((r, i) => Number(r.ts) < Number(resp[i].ts)), 'llm_request is stamped at the start of the model request');
 
 // ---- agentguard_cim_metrics ----
-const metrics = await rows(`SELECT metric_name, metric_value, tags['run_id'] AS run_id, tags['model'] AS model, tags['tool_name'] AS tool ${from('agentguard_cim_metrics')} ORDER BY event_time, metric_name`);
+const metrics = await rows(`SELECT agent_type, metric_name, metric_value, tags['run_id'] AS run_id, tags['model'] AS model, tags['tool_name'] AS tool ${from('agentguard_cim_metrics')} ORDER BY event_time, metric_name`);
+// #72: the tool metric views of the other agents must not count a Codex tool call under their own type.
+assert.deepEqual(count(metrics, m => m.agent_type), { codex: 33 }, 'every metric row of a Codex session is a codex row');
 const sum = name => metrics.filter(m => m.metric_name === name).reduce((a, m) => a + Number(m.metric_value), 0);
 assert.deepEqual(count(metrics, m => m.metric_name), { 'llm.call': 4, 'llm.total_tokens': 4, 'llm.input_tokens': 4, 'llm.output_tokens': 4,
   'llm.cache_read_tokens': 4, 'llm.latency_ms': 4, 'llm.cache_write_tokens': 1, 'tool.call': 4, 'tool.success': 4 });

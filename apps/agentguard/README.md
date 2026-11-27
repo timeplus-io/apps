@@ -2,7 +2,7 @@
 
 Installs the [AgentGuard](https://github.com/timeplus-io/AgentGuard) streaming pipeline that turns raw telemetry from AI coding agents (Claude Code, Codex, OpenClaw, Hermes, any OpenInference/OTLP emitter) into a normalized event model, per-call metrics, and security detections — all as Timeplus streams and materialized views in database `ag`.
 
-> The SQL in `ddl/` was first generated from the AgentGuard backend. That generator is gone (last in AgentGuard tag `v0.9.3`), so this directory is now the source. An upgrade re-runs every file with `IF NOT EXISTS`, which leaves an installed view as it is: change behaviour by adding a view, not by editing one.
+> The SQL in `ddl/` was first generated from the AgentGuard backend. That generator is gone (last in AgentGuard tag `v0.9.3`), so this directory is now the source. An upgrade re-runs every file with `IF NOT EXISTS`, which leaves an installed view as it is: change behaviour by adding a view, not by editing one. To replace a view, add it under a new name (`_v2`), take the old file out of the manifest, and drop the old view with a `type: system` resource (`DROP VIEW IF EXISTS`), as 0.6.1 does.
 
 ## What gets installed
 
@@ -65,6 +65,14 @@ SYSTEM RESUME MATERIALIZED VIEW ag.mv_rule_rp002;
 ## Attaching the AgentGuard UI
 
 Set `timeplus.database: ag` in AgentGuard's `config.yaml` (or `TIMEPLUS_DATABASE=ag`). The setup wizard then reports every resource as already present and the UI reads the app's streams.
+
+## Upgrading to 0.6.1
+
+0.6.1 fixes the tool metric views ([#72](https://github.com/timeplus-io/apps/issues/72)). Up to 0.6.0, `mv_cim_metrics_claudecode_tools`, `mv_cim_metrics_openclaw_tools` and `mv_cim_metrics_hermes_tools` each counted the tool calls of every agent under their own agent type, so with more than one agent type reporting, `tool.call`, `tool.success` and `tool.duration_ms` in `agentguard_cim_metrics` were too high.
+
+- The upgrade drops those three views and `mv_cim_metrics_hermes_llm` (same mistake, but it did not over-count) and creates `..._v2` views in their place.
+- The new views read from the upgrade on. **Rows written before the upgrade stay as they are**, so tool counts per agent type are still too high for the time before it. For that period, count `tool_complete` rows in `agentguard_cim_event` instead.
+- Codex tool metrics (`mv_cim_metrics_codex_tools`) were not affected.
 
 ## Dashboard
 

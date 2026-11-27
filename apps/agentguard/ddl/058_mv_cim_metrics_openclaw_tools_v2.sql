@@ -1,10 +1,13 @@
-CREATE MATERIALIZED VIEW IF NOT EXISTS {{ .DB }}.mv_cim_metrics_openclaw_tools
+-- Replaces mv_cim_metrics_openclaw_tools (#72), which selected a constant as `agent_type` and so let its WHERE pass every
+-- agent. `agent_type` is selected as the column here: an alias with a column's name replaces the
+-- column in WHERE. It reads from now on, so an upgrade does not write the stored rows again.
+CREATE MATERIALIZED VIEW IF NOT EXISTS {{ .DB }}.mv_cim_metrics_openclaw_tools_v2
 INTO {{ .DB }}.agentguard_cim_metrics AS
 SELECT
   event_time,
   metric_name,
   metric_value,
-  'openclaw'                                                   AS agent_type,
+  agent_type,
   agent_id,
   deployment_id,
   session_id,
