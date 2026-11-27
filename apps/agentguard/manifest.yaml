@@ -1,7 +1,7 @@
 package_format_version: 1
 id: io.timeplus.agentguard
 name: AgentGuard
-version: 0.6.0
+version: 0.6.1
 author: Timeplus
 icon: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJiZyIgeDE9IjAiIHkxPSIwIiB4Mj0iNDgiIHkyPSI0OCIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNENTNGOEMiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiM5RjJCQzAiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHJ4PSIxMSIgZmlsbD0idXJsKCNiZykiLz48cGF0aCBkPSJNMjQgMTEgTDM1IDE1LjUgVjI0IEMzNSAzMC41IDMwIDM2IDI0IDM4IEMxOCAzNiAxMyAzMC41IDEzIDI0IFYxNS41IFoiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBmaWxsPSJub25lIi8+PHBhdGggZD0iTTIxIDIwIEwxNy41IDI0LjUgTDIxIDI5IiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBmaWxsPSJub25lIi8+PHBhdGggZD0iTTI3IDIwIEwzMC41IDI0LjUgTDI3IDI5IiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBmaWxsPSJub25lIi8+PC9zdmc+"
 description: >
@@ -96,21 +96,9 @@ resources:
   - file: ddl/021_mv_cim_metrics_openclaw_llm.sql
     type: materialized_view
     name: mv_cim_metrics_openclaw_llm
-  - file: ddl/022_mv_cim_metrics_openclaw_tools.sql
-    type: materialized_view
-    name: mv_cim_metrics_openclaw_tools
   - file: ddl/023_mv_cim_metrics_claudecode_otel.sql
     type: materialized_view
     name: mv_cim_metrics_claudecode_otel
-  - file: ddl/024_mv_cim_metrics_claudecode_tools.sql
-    type: materialized_view
-    name: mv_cim_metrics_claudecode_tools
-  - file: ddl/025_mv_cim_metrics_hermes_llm.sql
-    type: materialized_view
-    name: mv_cim_metrics_hermes_llm
-  - file: ddl/026_mv_cim_metrics_hermes_tools.sql
-    type: materialized_view
-    name: mv_cim_metrics_hermes_tools
   - file: ddl/027_mv_cim_metrics_openinference_llm.sql
     type: materialized_view
     name: mv_cim_metrics_openinference_llm
@@ -201,6 +189,30 @@ resources:
   - file: ddl/056_mv_skills_invoked_codex_hooks.sql
     type: materialized_view
     name: mv_skills_invoked_codex_hooks
+  - file: ddl/057_drop_mv_cim_metrics_openclaw_tools.sql
+    type: system
+    name: drop_mv_cim_metrics_openclaw_tools
+  - file: ddl/058_mv_cim_metrics_openclaw_tools_v2.sql
+    type: materialized_view
+    name: mv_cim_metrics_openclaw_tools_v2
+  - file: ddl/059_drop_mv_cim_metrics_claudecode_tools.sql
+    type: system
+    name: drop_mv_cim_metrics_claudecode_tools
+  - file: ddl/060_mv_cim_metrics_claudecode_tools_v2.sql
+    type: materialized_view
+    name: mv_cim_metrics_claudecode_tools_v2
+  - file: ddl/061_drop_mv_cim_metrics_hermes_tools.sql
+    type: system
+    name: drop_mv_cim_metrics_hermes_tools
+  - file: ddl/062_mv_cim_metrics_hermes_tools_v2.sql
+    type: materialized_view
+    name: mv_cim_metrics_hermes_tools_v2
+  - file: ddl/063_drop_mv_cim_metrics_hermes_llm.sql
+    type: system
+    name: drop_mv_cim_metrics_hermes_llm
+  - file: ddl/064_mv_cim_metrics_hermes_llm_v2.sql
+    type: materialized_view
+    name: mv_cim_metrics_hermes_llm_v2
 
 dashboards:
   - file: dashboards/main.json
