@@ -16,6 +16,7 @@ Installs the [AgentGuard](https://github.com/timeplus-io/AgentGuard) streaming p
 | Derived | `agentguard_skills` + `mv_skills_*`, `agentguard_memory_ops` + `mv_memory_*` |
 | Cost | `agentguard_pricing`, `agentguard_cost_budgets` (schema only) |
 | Rules | `agentguard_rules` + four Core Protection detections `mv_rule_rp001..rp004`, running from install |
+| Dashboards | Six dashboards: overview, sessions and activity, token usage, tool calls, session trace, threats (see below) |
 | Custom UI | Agent Rooms 3D, a live 3D view of agent sessions (see below) |
 
 Not included (they need the AgentGuard server): user management, notifications, approval holds, Sentry, Semantic DLP, and the rest of the rule catalog.
@@ -74,9 +75,35 @@ Set `timeplus.database: ag` in AgentGuard's `config.yaml` (or `TIMEPLUS_DATABASE
 - The new views read from the upgrade on. **Rows written before the upgrade stay as they are**, so tool counts per agent type are still too high for the time before it. For that period, count `tool_complete` rows in `agentguard_cim_event` instead.
 - Codex tool metrics (`mv_cim_metrics_codex_tools`) were not affected.
 
-## Dashboard
+## Dashboards
 
-`dashboards/main.json` — AgentGuard Overview: events per minute by agent type, tokens by model, open threats by severity, recent threats.
+Six dashboards, each on one question and with at most six charts. Each has a **Time range** control; all but Threats and Session Trace also filter by **Agent type**.
+
+| Dashboard | File | Shows |
+|---|---|---|
+| Agents: Overview | `dashboards/main.json` | Active sessions, tool calls, tokens and open threats as numbers; events over time; the most active sessions |
+| Agents: Sessions and Activity | `dashboards/sessions.json` | Active sessions over time, activity mix (prompts, model requests, tool calls, replies), sessions by project, session profile per agent type, time waiting on a person, the session list |
+| Agents: Token Usage | `dashboards/tokens.json` | Tokens by model and by type, cache hit ratio, model request latency (p95), usage per model, the sessions using the most tokens |
+| Agents: Tool Calls | `dashboards/tools.json` | Tool calls over time, top tools, tool duration (p95), failed and blocked calls, MCP servers and skills, repeated calls |
+| Agents: Session Trace | `dashboards/session_trace.json` | One session: summary, steps, turns, context growth, time by tool, detections. Type a session id, or leave `latest` for the most recent session |
+| Agents: Threats | `dashboards/threats.json` | Open threats by severity, detections over time by rule, by rule and tool, by session, blocked actions, recent threats |
+
+Where the data comes from: sessions, steps and tool calls from `agentguard_cim_event`; tokens and latency from `agentguard_cim_metrics`; threats from `agentguard_security_events` and `agentguard_threats`; skills from `agentguard_skills`; "Waiting on a person" from `agentguard_hook_events`.
+
+What to expect on today's data:
+
+- **Token Usage has no Claude Code rows on a hook-only setup.** Claude Code token metrics need its telemetry (`CLAUDE_CODE_ENABLE_TELEMETRY=1`) pointed at the app's OTel input, until [AgentGuard#324](https://github.com/timeplus-io/AgentGuard/issues/324) is done. "Context growth" on Session Trace is empty for the same sessions.
+- **"Failed and blocked tool calls" stays empty** until tool failures are recorded ([#75](https://github.com/timeplus-io/apps/issues/75)).
+- **Tool duration for Claude Code** is there for calls made after the upgrade to 0.7.0.
+- A Claude Code turn is found by the `prompt_id` in its payload, as its `run_id` is the session id ([AgentGuard#325](https://github.com/timeplus-io/AgentGuard/issues/325)).
+- Charts over time use up to 60 bars, at least a minute wide, so the bar width follows the time range. Tables that rank show the top eight; tables that list show the newest 100 rows with the latest at the bottom.
+
+Editing a dashboard: the console's table shows the last `rowCount` rows of a result and opens at its last row, the controls must fill the first row (a panel beside a narrower control row is lifted into it), and a text control needs a default value. `make test` checks these.
+
+## Upgrading to 0.7.0
+
+- The single dashboard, AgentGuard Overview, is replaced by the six above. Their names start with "Agents:".
+- `mv_cim_claudecode` is dropped and `mv_cim_claudecode_v2` created in its place: the same view, with `tool_duration_ms` read from the tool call's `duration_ms`. It reads from the upgrade on; Claude Code events that arrive in the moment between the drop and the create are not turned into CIM rows.
 
 ## Agent Rooms 3D
 

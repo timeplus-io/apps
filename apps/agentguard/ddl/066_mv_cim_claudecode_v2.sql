@@ -1,4 +1,8 @@
-CREATE MATERIALIZED VIEW IF NOT EXISTS {{ .DB }}.mv_cim_claudecode
+-- Replaces mv_cim_claudecode (#74), which wrote 0 as `tool_duration_ms`. Claude Code reports the
+-- duration of a tool call as `duration_ms` in the PostToolUse payload, so `tool_complete` rows now
+-- carry it. Everything else is as before. It reads from now on, so an upgrade does not write the
+-- stored rows again.
+CREATE MATERIALIZED VIEW IF NOT EXISTS {{ .DB }}.mv_cim_claudecode_v2
 INTO {{ .DB }}.agentguard_cim_event AS
 SELECT
   event_time,
@@ -32,7 +36,8 @@ SELECT
   json_query(event_data, '$.tool_input')                          AS tool_input,
   json_query(event_data, '$.tool_response')                       AS tool_result,
   json_value(event_data, '$.tool_response.interrupted') != 'true' AS tool_success,
-  0                                                               AS tool_duration_ms,
+  if(hook_name = 'after_tool_call',
+     to_int64(to_float64_or_zero(json_value(event_data, '$.duration_ms'))), 0) AS tool_duration_ms,
   json_value(event_data, '$.prompt')                              AS user_message,
   json_value(event_data, '$.last_assistant_message')              AS assistant_message,
   hook_decision,

@@ -1,0 +1,233 @@
+[
+  {
+    "id": "ctl-session",
+    "title": "Session ID",
+    "description": "",
+    "position": {
+      "h": 1,
+      "w": 12,
+      "x": 0,
+      "y": 0,
+      "nextX": 12,
+      "nextY": 1
+    },
+    "viz_type": "control",
+    "viz_content": "",
+    "viz_config": {
+      "chartType": "text",
+      "defaultValue": "latest",
+      "inlineValues": "",
+      "label": "Session ID",
+      "labelWidth": "25",
+      "target": "filter_session"
+    }
+  },
+  {
+    "id": "tr-summary",
+    "title": "Session",
+    "description": "The session shown on this page: the id typed above, or with 'latest' the most recent session with a prompt or a tool call.",
+    "position": {
+      "h": 2,
+      "w": 12,
+      "x": 0,
+      "y": 1,
+      "nextX": 12,
+      "nextY": 3
+    },
+    "viz_type": "chart",
+    "viz_content": "SELECT session_id, any(agent_type) AS agent, any_if(model, model != '') AS model, array_element(split_by_char('/', any_if(json_value(raw_event_data, '$.cwd'), json_value(raw_event_data, '$.cwd') != '')), -1) AS project, min(event_time) AS started, max(event_time) AS last_event, round(date_diff('second', min(event_time), max(event_time)) / 60, 1) AS minutes, count_if(event_type = 'user_input') AS prompts, count_if(event_type = 'llm_request') AS model_requests, count_if(event_type = 'tool_complete') AS tool_calls, (SELECT to_int64(sum(metric_value)) FROM table([[ .DB ]].agentguard_cim_metrics) WHERE session_id = (SELECT if('{{filter_session}}' IN ('', 'latest'), arg_max(session_id, event_time), '{{filter_session}}') FROM table([[ .DB ]].agentguard_cim_event) WHERE event_type IN ('user_input', 'tool_invoke')) AND metric_name IN ('llm.input_tokens', 'llm.output_tokens')) AS tokens, (SELECT count() FROM table([[ .DB ]].agentguard_security_events) WHERE session_id = (SELECT if('{{filter_session}}' IN ('', 'latest'), arg_max(session_id, event_time), '{{filter_session}}') FROM table([[ .DB ]].agentguard_cim_event) WHERE event_type IN ('user_input', 'tool_invoke'))) AS detections FROM table([[ .DB ]].agentguard_cim_event) WHERE session_id = (SELECT if('{{filter_session}}' IN ('', 'latest'), arg_max(session_id, event_time), '{{filter_session}}') FROM table([[ .DB ]].agentguard_cim_event) WHERE event_type IN ('user_input', 'tool_invoke')) GROUP BY session_id",
+    "viz_config": {
+      "chartType": "table",
+      "config": {
+        "rowCount": 100,
+        "updateMode": "all",
+        "updateKey": "",
+        "tableWrap": false
+      }
+    }
+  },
+  {
+    "id": "tr-steps",
+    "title": "Steps",
+    "description": "The last 100 steps of the session, the latest at the bottom: prompts, model requests, tool calls and replies.",
+    "position": {
+      "h": 6,
+      "w": 12,
+      "x": 0,
+      "y": 3,
+      "nextX": 12,
+      "nextY": 9
+    },
+    "viz_type": "chart",
+    "viz_content": "SELECT time, turn, event_type, tool_name, duration_ms, detail FROM ( SELECT event_time AS time, substring(if(agent_type = 'claudecode', json_value(raw_event_data, '$.prompt_id'), run_id), 1, 8) AS turn, event_type, tool_name, tool_duration_ms AS duration_ms, substring(multi_if(user_message != '', user_message, assistant_message != '', assistant_message, event_type = 'tool_invoke', tool_input, event_type = 'tool_complete', tool_result, ''), 1, 300) AS detail FROM table([[ .DB ]].agentguard_cim_event) WHERE session_id = (SELECT if('{{filter_session}}' IN ('', 'latest'), arg_max(session_id, event_time), '{{filter_session}}') FROM table([[ .DB ]].agentguard_cim_event) WHERE event_type IN ('user_input', 'tool_invoke')) AND event_type NOT IN ('prompt_context', 'llm_context') ORDER BY event_time DESC LIMIT 100) ORDER BY time",
+    "viz_config": {
+      "chartType": "table",
+      "config": {
+        "rowCount": 100,
+        "updateMode": "all",
+        "updateKey": "",
+        "tableWrap": false
+      }
+    }
+  },
+  {
+    "id": "tr-turns",
+    "title": "Turns",
+    "description": "One row per turn, from a prompt to the reply, the latest at the bottom.",
+    "position": {
+      "h": 4,
+      "w": 12,
+      "x": 0,
+      "y": 9,
+      "nextX": 12,
+      "nextY": 13
+    },
+    "viz_type": "chart",
+    "viz_content": "SELECT * FROM (SELECT substring(if(agent_type = 'claudecode', json_value(raw_event_data, '$.prompt_id'), run_id), 1, 8) AS turn, min(event_time) AS started, date_diff('second', min(event_time), max(event_time)) AS seconds, count_if(event_type = 'llm_request') AS model_requests, count_if(event_type = 'tool_complete') AS tool_calls, round(sum(tool_duration_ms) / 1000, 1) AS tool_seconds, substring(any_if(user_message, user_message != ''), 1, 200) AS prompt FROM table([[ .DB ]].agentguard_cim_event) WHERE session_id = (SELECT if('{{filter_session}}' IN ('', 'latest'), arg_max(session_id, event_time), '{{filter_session}}') FROM table([[ .DB ]].agentguard_cim_event) WHERE event_type IN ('user_input', 'tool_invoke')) AND if(agent_type = 'claudecode', json_value(raw_event_data, '$.prompt_id'), run_id) != '' GROUP BY turn HAVING count_if(event_type IN ('user_input', 'tool_invoke', 'llm_request')) > 0 ORDER BY started DESC LIMIT 100) ORDER BY started",
+    "viz_config": {
+      "chartType": "table",
+      "config": {
+        "rowCount": 100,
+        "updateMode": "all",
+        "updateKey": "",
+        "tableWrap": false
+      }
+    }
+  },
+  {
+    "id": "tr-context",
+    "title": "Context growth",
+    "description": "Input tokens of each model request: how the prompt grows during the session.",
+    "position": {
+      "h": 4,
+      "w": 6,
+      "x": 0,
+      "y": 13,
+      "nextX": 6,
+      "nextY": 17
+    },
+    "viz_type": "chart",
+    "viz_content": "SELECT event_time AS time, to_int64(metric_value) AS input_tokens FROM table([[ .DB ]].agentguard_cim_metrics) WHERE session_id = (SELECT if('{{filter_session}}' IN ('', 'latest'), arg_max(session_id, event_time), '{{filter_session}}') FROM table([[ .DB ]].agentguard_cim_event) WHERE event_type IN ('user_input', 'tool_invoke')) AND metric_name = 'llm.input_tokens' ORDER BY time",
+    "viz_config": {
+      "chartType": "line",
+      "config": {
+        "xAxis": "time",
+        "yAxis": "input_tokens",
+        "color": "",
+        "xRange": "Infinity",
+        "xFormat": "",
+        "xTitle": "",
+        "yTitle": "",
+        "yRange": {
+          "min": null,
+          "max": null
+        },
+        "lineStyle": "straight",
+        "dataLabel": false,
+        "showAll": false,
+        "legend": false,
+        "points": true,
+        "gridlines": true,
+        "unit": {
+          "position": "right",
+          "value": ""
+        },
+        "fractionDigits": 0,
+        "colors": [
+          "#ED64A6",
+          "#F0BE3E",
+          "#DA4B36",
+          "#9A1563",
+          "#FF4A71",
+          "#D12D50",
+          "#8934D9",
+          "#D53F8C",
+          "#F7775A",
+          "#8934D9"
+        ],
+        "yTickLabel": {
+          "maxChar": 25
+        }
+      }
+    }
+  },
+  {
+    "id": "tr-tool-time",
+    "title": "Time by tool",
+    "description": "Total seconds spent in each tool during the session.",
+    "position": {
+      "h": 4,
+      "w": 6,
+      "x": 6,
+      "y": 13,
+      "nextX": 12,
+      "nextY": 17
+    },
+    "viz_type": "chart",
+    "viz_content": "SELECT tool_name, round(sum(tool_duration_ms) / 1000, 1) AS seconds, count() AS calls FROM table([[ .DB ]].agentguard_cim_event) WHERE session_id = (SELECT if('{{filter_session}}' IN ('', 'latest'), arg_max(session_id, event_time), '{{filter_session}}') FROM table([[ .DB ]].agentguard_cim_event) WHERE event_type IN ('user_input', 'tool_invoke')) AND event_type = 'tool_complete' GROUP BY tool_name ORDER BY seconds DESC LIMIT 15",
+    "viz_config": {
+      "chartType": "bar",
+      "config": {
+        "xAxis": "tool_name",
+        "yAxis": "seconds",
+        "color": "",
+        "groupType": "stack",
+        "updateMode": "all",
+        "updateKey": "",
+        "xFormat": "",
+        "xTitle": "",
+        "yTitle": "",
+        "dataLabel": true,
+        "legend": false,
+        "gridlines": true,
+        "unit": {
+          "position": "left",
+          "value": ""
+        },
+        "fractionDigits": 1,
+        "colors": [
+          "#ED64A6",
+          "#F0BE3E",
+          "#DA4B36",
+          "#9A1563",
+          "#FF4A71",
+          "#D12D50",
+          "#8934D9",
+          "#D53F8C",
+          "#F7775A",
+          "#8934D9"
+        ],
+        "yTickLabel": {
+          "maxChar": 40
+        },
+        "xTickLabel": {
+          "maxChar": 40
+        }
+      }
+    }
+  },
+  {
+    "id": "tr-detections",
+    "title": "Detections",
+    "description": "The last 100 security detections raised in this session, the latest at the bottom.",
+    "position": {
+      "h": 4,
+      "w": 12,
+      "x": 0,
+      "y": 17,
+      "nextX": 12,
+      "nextY": 21
+    },
+    "viz_type": "chart",
+    "viz_content": "SELECT * FROM (SELECT detected_at, severity, rule_id, rule_name, hook_name, tool_name, message FROM table([[ .DB ]].agentguard_security_events) WHERE session_id = (SELECT if('{{filter_session}}' IN ('', 'latest'), arg_max(session_id, event_time), '{{filter_session}}') FROM table([[ .DB ]].agentguard_cim_event) WHERE event_type IN ('user_input', 'tool_invoke')) ORDER BY detected_at DESC LIMIT 100) ORDER BY detected_at",
+    "viz_config": {
+      "chartType": "table",
+      "config": {
+        "rowCount": 100,
+        "updateMode": "all",
+        "updateKey": "",
+        "tableWrap": false
+      }
+    }
+  }
+]

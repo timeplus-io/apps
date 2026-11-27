@@ -1,7 +1,7 @@
 package_format_version: 1
 id: io.timeplus.agentguard
 name: AgentGuard
-version: 0.6.1
+version: 0.7.0
 author: Timeplus
 icon: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJiZyIgeDE9IjAiIHkxPSIwIiB4Mj0iNDgiIHkyPSI0OCIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNENTNGOEMiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiM5RjJCQzAiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHJ4PSIxMSIgZmlsbD0idXJsKCNiZykiLz48cGF0aCBkPSJNMjQgMTEgTDM1IDE1LjUgVjI0IEMzNSAzMC41IDMwIDM2IDI0IDM4IEMxOCAzNiAxMyAzMC41IDEzIDI0IFYxNS41IFoiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBmaWxsPSJub25lIi8+PHBhdGggZD0iTTIxIDIwIEwxNy41IDI0LjUgTDIxIDI5IiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBmaWxsPSJub25lIi8+PHBhdGggZD0iTTI3IDIwIEwzMC41IDI0LjUgTDI3IDI5IiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBmaWxsPSJub25lIi8+PC9zdmc+"
 description: >
@@ -11,7 +11,9 @@ description: >
   events, normalizes them into a Common Information Model (agentguard_cim_event),
   computes per-call token/cost/latency metrics, and ships four Core Protection
   detection rules (prompt injection, DLP, privilege escalation, supply chain)
-  that run from install. Agent Rooms 3D is an optional custom UI, shown on
+  that run from install. Six dashboards cover the overview, sessions and
+  activity, token usage, tool calls, a per-session trace and threats.
+  Agent Rooms 3D is an optional custom UI, shown on
   Timeplus app server 3.5.2 or later; older versions install the app without
   it. Pause a rule with:
     SYSTEM PAUSE MATERIALIZED VIEW <db>.mv_rule_rp001;
@@ -63,9 +65,6 @@ resources:
   - file: ddl/010_agentguard_cim_event.sql
     type: stream
     name: agentguard_cim_event
-  - file: ddl/011_mv_cim_claudecode.sql
-    type: materialized_view
-    name: mv_cim_claudecode
   - file: ddl/012_mv_cim_openclaw.sql
     type: materialized_view
     name: mv_cim_openclaw
@@ -213,11 +212,32 @@ resources:
   - file: ddl/064_mv_cim_metrics_hermes_llm_v2.sql
     type: materialized_view
     name: mv_cim_metrics_hermes_llm_v2
+  - file: ddl/065_drop_mv_cim_claudecode.sql
+    type: system
+    name: drop_mv_cim_claudecode
+  - file: ddl/066_mv_cim_claudecode_v2.sql
+    type: materialized_view
+    name: mv_cim_claudecode_v2
 
 dashboards:
   - file: dashboards/main.json
-    name: AgentGuard Overview
-    description: Events per minute by agent type, tokens and cost by model, open and recent threats.
+    name: "Agents: Overview"
+    description: Active sessions, tool calls, tokens and open threats at a glance, events per minute and the most active sessions.
+  - file: dashboards/sessions.json
+    name: "Agents: Sessions and Activity"
+    description: What the agents are doing. Active sessions over time, activity mix, projects, time waiting on a person and the session list.
+  - file: dashboards/tokens.json
+    name: "Agents: Token Usage"
+    description: Tokens by model and by type, cache hit ratio, model request latency and the sessions using the most tokens.
+  - file: dashboards/tools.json
+    name: "Agents: Tool Calls"
+    description: Which tools are used, slow or failing. Top tools, duration, failed and blocked calls, MCP servers and skills, repeated calls.
+  - file: dashboards/session_trace.json
+    name: "Agents: Session Trace"
+    description: One session step by step. Prompts, model requests, tool calls and replies, turns, context growth and detections.
+  - file: dashboards/threats.json
+    name: "Agents: Threats"
+    description: Security detections. Open threats by severity, detections by rule, tool and session, blocked actions and recent threats.
 
 uis:
   - name: agent-rooms
