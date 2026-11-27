@@ -8,7 +8,7 @@ CHECK         := python3 ../../scripts/check_tpapp.py
 THREE_VERSION ?= 0.184.0
 THREE_DIR     := web/agent-rooms/vendor
 
-.PHONY: build install test test-codex-hooks vendor vendor-context
+.PHONY: build install test test-codex-hooks test-hook-events vendor vendor-context
 
 # The custom UI directories come from the manifest (`uis[].dir`). The package is built
 # under a temporary name and only becomes $(OUT) once it passes the check, so a bad
@@ -30,6 +30,10 @@ test:
 # app installed (TIMEPLUS_URL, default http://localhost:8123; TIMEPLUS_USER; TIMEPLUS_PASSWORD).
 test-codex-hooks:
 	node tests/codex-hooks/replay.mjs
+
+# Live check of failed tool calls, permission waits and Claude Code model requests (same settings).
+test-hook-events:
+	node tests/hook-events/replay.mjs
 
 # Refresh the three.js copy shipped inside the Agent Rooms bundle.
 vendor:

@@ -48,7 +48,7 @@ const lines = fixture.data.map((r, i) => {
 await post(`INSERT INTO ${DB}.agentguard_hook_events (${fixture.columns.join(', ')}) FORMAT JSONCompactEachRow`, lines.join('\n'));
 
 // ---- wait for the views ----
-const EXPECT = { agentguard_cim_event: 22, agentguard_cim_metrics: 33, agentguard_skills: 1 };
+const EXPECT = { agentguard_cim_event: 23, agentguard_cim_metrics: 33, agentguard_skills: 1 };
 const counts = async () => Object.fromEntries(await Promise.all(Object.keys(EXPECT).map(async s => [s, Number((await rows(`SELECT count() AS n ${from(s)}`))[0].n)])));
 let got = {};
 for (let i = 0; i < 40; i++) {
@@ -60,7 +60,7 @@ await new Promise(r => setTimeout(r, 1000)); // anything extra would arrive now
 assert.deepEqual(await counts(), EXPECT, 'row counts per stream');
 
 // ---- agentguard_cim_event ----
-const cim = await rows(`SELECT event_type, raw_hook_name, run_id, provider, model, tool_name, tool_input, tool_result, tool_duration_ms, ` +
+const cim = await rows(`SELECT event_type, raw_hook_name, run_id, provider, model, tool_name, tool_input, tool_result, tool_success, tool_duration_ms, ` +
   `user_message, assistant_message, to_unix_timestamp64_milli(event_time) AS ts ${from('agentguard_cim_event')} ORDER BY event_time, event_type`);
 const count = (list, key) => list.reduce((m, r) => (m[key(r)] = (m[key(r)] || 0) + 1, m), {});
 assert.deepEqual(count(cim, r => r.event_type + ' < ' + r.raw_hook_name), {
@@ -68,6 +68,7 @@ assert.deepEqual(count(cim, r => r.event_type + ' < ' + r.raw_hook_name), {
   'user_input < user_prompt_submit': 2, 'llm_response < stop': 1,
   'llm_request < post_model_request': 4, 'llm_response < post_model_request': 4,
   'tool_invoke < pre_tool_use': 4, 'tool_complete < post_tool_use': 4,
+  'permission_request < permission_request': 1, // #76
 });
 assert.ok(cim.every(r => r.model === 'gpt-5-codex' && r.provider === 'openai'), 'model and provider on every row');
 assert.deepEqual(cim.filter(r => r.event_type === 'user_input').map(r => [r.user_message, r.run_id]), [['fix the failing test', 't1'], ['also run the linter', 't2']]);
@@ -78,6 +79,9 @@ assert.deepEqual(JSON.parse(done[0].tool_input), { command: 'cat /h/.codex/skill
 assert.deepEqual(JSON.parse(done[0].tool_result), { exit_code: 0, output: '# OpenAI docs' });
 assert.equal(done[1].tool_result, 'Plan updated'); // a string result stays as it is
 assert.ok(done.every(r => Number(r.tool_duration_ms) > 0), 'tool_duration_ms on tool_complete');
+assert.ok(done.every(r => r.tool_success === true || r.tool_success === 1), 'no tool call of the fixture failed');
+const asked = cim.find(r => r.event_type === 'permission_request');
+assert.deepEqual([asked.tool_name, JSON.parse(asked.tool_input).command], ['Bash', 'make test'], 'a permission request carries the tool and its input');
 assert.ok(cim.filter(r => r.event_type === 'tool_invoke').every(r => r.tool_input && !r.tool_result && Number(r.tool_duration_ms) === 0));
 const req = cim.filter(r => r.event_type === 'llm_request'), resp = cim.filter(r => r.event_type === 'llm_response' && r.raw_hook_name === 'post_model_request');
 assert.ok(req.every((r, i) => Number(r.ts) < Number(resp[i].ts)), 'llm_request is stamped at the start of the model request');

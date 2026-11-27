@@ -88,17 +88,28 @@ Six dashboards, each on one question and with at most six charts. Each has a **T
 | Agents: Session Trace | `dashboards/session_trace.json` | One session: summary, steps, turns, context growth, time by tool, detections. Type a session id, or leave `latest` for the most recent session |
 | Agents: Threats | `dashboards/threats.json` | Open threats by severity, detections over time by rule, by rule and tool, by session, blocked actions, recent threats |
 
-Where the data comes from: sessions, steps and tool calls from `agentguard_cim_event`; tokens and latency from `agentguard_cim_metrics`; threats from `agentguard_security_events` and `agentguard_threats`; skills from `agentguard_skills`; "Waiting on a person" from `agentguard_hook_events`.
+Where the data comes from: sessions, steps, tool calls and waits on a person from `agentguard_cim_event`; tokens and latency from `agentguard_cim_metrics`; threats from `agentguard_security_events` and `agentguard_threats`; skills from `agentguard_skills`.
 
-What to expect on today's data:
+What to expect:
 
-- **Token Usage has no Claude Code rows on a hook-only setup.** Claude Code token metrics need its telemetry (`CLAUDE_CODE_ENABLE_TELEMETRY=1`) pointed at the app's OTel input, until [AgentGuard#324](https://github.com/timeplus-io/AgentGuard/issues/324) is done. "Context growth" on Session Trace is empty for the same sessions.
-- **"Failed and blocked tool calls" stays empty** until tool failures are recorded ([#75](https://github.com/timeplus-io/apps/issues/75)).
+- **Claude Code tokens need the Claude Code plugin 0.7.1 or later** (or Claude Code's own telemetry, `CLAUDE_CODE_ENABLE_TELEMETRY=1`, pointed at the app's OTel input). The plugin sends one row per model request when a turn ends, so the tokens of a turn appear at its end. Use one of the two: a session that reports on both is counted twice. "Model requests" in the Activity mix stays a Codex figure; for Claude Code the count is on Session Trace.
+- **Failed tool calls**: for Claude Code, every call the agent reports as failed (a non-zero exit, a tool error). For Codex, MCP calls that return an error; a Codex shell call counts as a success whatever its exit status, as the hook does not give it. Failures are recorded from the upgrade to 0.8.0 on.
 - **Tool duration for Claude Code** is there for calls made after the upgrade to 0.7.0.
-- A Claude Code turn is found by the `prompt_id` in its payload, as its `run_id` is the session id ([AgentGuard#325](https://github.com/timeplus-io/AgentGuard/issues/325)).
+- A Claude Code turn is its `prompt_id`. The plugin sends it as `run_id` from 0.7.0; for older rows the dashboards read it from the payload.
 - Charts over time use up to 60 bars, at least a minute wide, so the bar width follows the time range. Tables that rank show the top eight; tables that list show the newest 100 rows with the latest at the bottom.
 
 Editing a dashboard: the console's table shows the last `rowCount` rows of a result and opens at its last row, the controls must fill the first row (a panel beside a narrower control row is lifted into it), and a text control needs a default value. `make test` checks these.
+
+## Upgrading to 0.8.0
+
+0.8.0 records failed tool calls ([#75](https://github.com/timeplus-io/apps/issues/75)), puts permission requests and notifications in the CIM stream ([#76](https://github.com/timeplus-io/apps/issues/76)), and reads the per-request token rows of the Claude Code plugin 0.7.1.
+
+- `mv_cim_claudecode_v2` is dropped and `mv_cim_claudecode_v3` created. A `tool_call_failure` hook row becomes a `tool_complete` row with `tool_success = false` and the error as `tool_result`; before, a failed call had no `tool_complete` row. `permission_request`, `permission_denied` and `notification` hook rows become CIM rows with that `event_type`.
+- `mv_cim_codex` is dropped and `mv_cim_codex_v2` created. `tool_success` is false for an MCP response with `isError: true`, and `permission_request` becomes a CIM row.
+- `mv_cim_metrics_claudecode_llm` is new: `llm.*` metrics from the plugin's `llm_call` rows, including the ones already stored.
+- The new CIM views read from the upgrade on. Events that arrive in the moment between a drop and its create are not turned into CIM rows.
+- **New `event_type` values** in `agentguard_cim_event`: `permission_request`, `permission_denied`, `notification`. A query that counts all rows of a session now counts these too. The four rules and Agent Rooms name the event types they read and are not affected.
+- `tool.call` now counts failed Claude Code calls, and `tool.success` is 0 for them.
 
 ## Upgrading to 0.7.0
 
@@ -176,7 +187,7 @@ The views that serve each path:
 
 | Into | OTel path | Hook-event path |
 |---|---|---|
-| `agentguard_cim_event` | `mv_cim_openinference` (model requests, tool calls, session), `mv_cim_openinference_hooks` (prompt, reply, session and sub-agent start) | `mv_cim_codex` |
+| `agentguard_cim_event` | `mv_cim_openinference` (model requests, tool calls, session), `mv_cim_openinference_hooks` (prompt, reply, session and sub-agent start) | `mv_cim_codex_v2` |
 | `agentguard_cim_metrics`, `llm.*` | `mv_cim_metrics_openinference_llm` | `mv_cim_metrics_codex_llm` |
 | `agentguard_cim_metrics`, `tool.call` and `tool.success` | `mv_cim_metrics_codex_tools` (both paths) | `mv_cim_metrics_codex_tools` |
 | `agentguard_skills` | `mv_skills_invoked_codex` | `mv_skills_invoked_codex_hooks` |
@@ -223,7 +234,7 @@ Sub-agents, compaction, interrupts, permission requests and `update_plan` were c
 Checked against real Claude Code sessions:
 
 - **System prompt text** is not reported, so the board shows the task only.
-- **Per-card token cost** is estimated from payload size (about 4 characters per token) and marked `≈`. The context gauge uses real token metrics, and needs Claude Code telemetry (`CLAUDE_CODE_ENABLE_TELEMETRY=1`) pointed at the app's OTel input; without it the gauge falls back to the estimate.
+- **Per-card token cost** is estimated from payload size (about 4 characters per token) and marked `≈`. The context gauge uses real token metrics. For Claude Code they come from the plugin 0.7.1 or later, at the end of each turn, or from Claude Code telemetry (`CLAUDE_CODE_ENABLE_TELEMETRY=1`) pointed at the app's OTel input; without either the gauge falls back to the estimate.
 - **Context limit** is not reported. The gauge assumes 200k, and switches to 1M once a session exceeds 200k.
 - **Compaction** is a real event for Claude Code (the session restarts with `source = compact`). For agents that report nothing, it is inferred from a drop of more than 40% (and 20k tokens) in context size. The summary card's size is filled in by the next LLM call.
 - **Token metrics do not say which agent made the call.** Calls by a different model or made while a sub-agent is running are left out of the context size.

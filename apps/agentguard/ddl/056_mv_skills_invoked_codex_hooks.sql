@@ -1,6 +1,6 @@
 -- mv_skills_invoked_codex for the hook-event path: a `pre_tool_use` row whose command reads
 -- `<skill>/SKILL.md` counts as invoking that skill. `event_time` is the row's, the same instant as
--- its `tool_invoke` row from mv_cim_codex, which is how Agent Rooms matches the two.
+-- its `tool_invoke` row from mv_cim_codex_v2, which is how Agent Rooms matches the two.
 CREATE MATERIALIZED VIEW IF NOT EXISTS {{ .DB }}.mv_skills_invoked_codex_hooks
 INTO {{ .DB }}.agentguard_skills AS
 SELECT
