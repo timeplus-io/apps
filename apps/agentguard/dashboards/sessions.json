@@ -237,7 +237,7 @@
   {
     "id": "se-waiting",
     "title": "Waiting on a person",
-    "description": "Permission requests and notifications (idle, permission prompt) over time, read from the raw hook events.",
+    "description": "Permission requests, denials and notifications (idle, permission prompt) over time.",
     "position": {
       "h": 4,
       "w": 4,
@@ -247,7 +247,7 @@
       "nextY": 9
     },
     "viz_type": "chart",
-    "viz_content": "SELECT format_datetime(to_datetime(int_div(to_unix_timestamp(event_time), greatest(60, int_div(date_diff('second', now() - {{filter_time_range}}, now()), 60))) * greatest(60, int_div(date_diff('second', now() - {{filter_time_range}}, now()), 60))), '%m-%d %H:%M') AS time, multi_if(hook_name = 'permission_request', 'permission request', hook_name = 'permission_denied', 'permission denied', json_value(event_data, '$.notification_type') != '', json_value(event_data, '$.notification_type'), 'notification') AS kind, count() AS events FROM table([[ .DB ]].agentguard_hook_events) WHERE event_time > now() - {{filter_time_range}} AND ('{{filter_agent}}' = 'all' OR agent_type = '{{filter_agent}}') AND hook_name IN ('permission_request', 'permission_denied', 'notification') GROUP BY time, kind ORDER BY time",
+    "viz_content": "SELECT format_datetime(to_datetime(int_div(to_unix_timestamp(event_time), greatest(60, int_div(date_diff('second', now() - {{filter_time_range}}, now()), 60))) * greatest(60, int_div(date_diff('second', now() - {{filter_time_range}}, now()), 60))), '%m-%d %H:%M') AS time, multi_if(event_type = 'permission_request', 'permission request', event_type = 'permission_denied', 'permission denied', json_value(raw_event_data, '$.notification_type') != '', json_value(raw_event_data, '$.notification_type'), 'notification') AS kind, count() AS events FROM table([[ .DB ]].agentguard_cim_event) WHERE event_time > now() - {{filter_time_range}} AND ('{{filter_agent}}' = 'all' OR agent_type = '{{filter_agent}}') AND event_type IN ('permission_request', 'permission_denied', 'notification') GROUP BY time, kind ORDER BY time",
     "viz_config": {
       "chartType": "column",
       "config": {
