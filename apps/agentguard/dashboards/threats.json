@@ -1,0 +1,231 @@
+[
+  {
+    "id": "ctl-time",
+    "title": "Time range",
+    "description": "",
+    "position": {
+      "h": 1,
+      "w": 12,
+      "x": 0,
+      "y": 0,
+      "nextX": 12,
+      "nextY": 1
+    },
+    "viz_type": "control",
+    "viz_content": "",
+    "viz_config": {
+      "chartType": "selector",
+      "defaultValue": "24h",
+      "inlineValues": "15m,1h,6h,24h,7d",
+      "label": "Time range",
+      "labelWidth": "25",
+      "target": "filter_time_range"
+    }
+  },
+  {
+    "id": "th-open",
+    "title": "Open threats by severity",
+    "description": "Threats not yet acknowledged or cleared, whatever their age.",
+    "position": {
+      "h": 4,
+      "w": 4,
+      "x": 0,
+      "y": 1,
+      "nextX": 4,
+      "nextY": 5
+    },
+    "viz_type": "chart",
+    "viz_content": "SELECT severity, count() AS threats FROM table([[ .DB ]].agentguard_threats) WHERE status = '' OR status = 'open' GROUP BY severity ORDER BY severity",
+    "viz_config": {
+      "chartType": "column",
+      "config": {
+        "xAxis": "severity",
+        "yAxis": "threats",
+        "color": "",
+        "groupType": "stack",
+        "updateMode": "all",
+        "updateKey": "",
+        "xFormat": "",
+        "xTitle": "",
+        "yTitle": "",
+        "dataLabel": true,
+        "legend": false,
+        "gridlines": true,
+        "unit": {
+          "position": "left",
+          "value": ""
+        },
+        "fractionDigits": 0,
+        "colors": [
+          "#ED64A6",
+          "#F0BE3E",
+          "#DA4B36",
+          "#9A1563",
+          "#FF4A71",
+          "#D12D50",
+          "#8934D9",
+          "#D53F8C",
+          "#F7775A",
+          "#8934D9"
+        ],
+        "yTickLabel": {
+          "maxChar": 25
+        },
+        "xTickLabel": {
+          "maxChar": 40
+        }
+      }
+    }
+  },
+  {
+    "id": "th-over-time",
+    "title": "Detections over time by rule",
+    "description": "Security detections over time.",
+    "position": {
+      "h": 4,
+      "w": 8,
+      "x": 4,
+      "y": 1,
+      "nextX": 12,
+      "nextY": 5
+    },
+    "viz_type": "chart",
+    "viz_content": "SELECT format_datetime(to_datetime(int_div(to_unix_timestamp(detected_at), greatest(60, int_div(date_diff('second', now() - {{filter_time_range}}, now()), 60))) * greatest(60, int_div(date_diff('second', now() - {{filter_time_range}}, now()), 60))), '%m-%d %H:%M') AS time, rule_name, count() AS detections FROM table([[ .DB ]].agentguard_security_events) WHERE detected_at > now() - {{filter_time_range}} GROUP BY time, rule_name ORDER BY time",
+    "viz_config": {
+      "chartType": "column",
+      "config": {
+        "xAxis": "time",
+        "yAxis": "detections",
+        "color": "rule_name",
+        "groupType": "stack",
+        "updateMode": "all",
+        "updateKey": "",
+        "xFormat": "",
+        "xTitle": "",
+        "yTitle": "",
+        "dataLabel": false,
+        "legend": true,
+        "gridlines": true,
+        "unit": {
+          "position": "left",
+          "value": ""
+        },
+        "fractionDigits": 0,
+        "colors": [
+          "#ED64A6",
+          "#F0BE3E",
+          "#DA4B36",
+          "#9A1563",
+          "#FF4A71",
+          "#D12D50",
+          "#8934D9",
+          "#D53F8C",
+          "#F7775A",
+          "#8934D9"
+        ],
+        "yTickLabel": {
+          "maxChar": 25
+        },
+        "xTickLabel": {
+          "maxChar": 40
+        }
+      }
+    }
+  },
+  {
+    "id": "th-by-rule",
+    "title": "Detections by rule and tool",
+    "description": "Which rule fired on which tool: the eight most frequent pairs.",
+    "position": {
+      "h": 5,
+      "w": 6,
+      "x": 0,
+      "y": 5,
+      "nextX": 6,
+      "nextY": 10
+    },
+    "viz_type": "chart",
+    "viz_content": "SELECT rule_id, rule_name, severity, tool_name, count() AS detections, uniq(session_id) AS sessions, max(detected_at) AS last_seen FROM table([[ .DB ]].agentguard_security_events) WHERE detected_at > now() - {{filter_time_range}} GROUP BY rule_id, rule_name, severity, tool_name ORDER BY detections DESC LIMIT 8",
+    "viz_config": {
+      "chartType": "table",
+      "config": {
+        "rowCount": 100,
+        "updateMode": "all",
+        "updateKey": "",
+        "tableWrap": false
+      }
+    }
+  },
+  {
+    "id": "th-by-session",
+    "title": "Sessions with the most detections",
+    "description": "The eight sessions with the most critical detections. Copy a session id into the Session Trace dashboard to see what the agent did.",
+    "position": {
+      "h": 5,
+      "w": 6,
+      "x": 6,
+      "y": 5,
+      "nextX": 12,
+      "nextY": 10
+    },
+    "viz_type": "chart",
+    "viz_content": "SELECT session_id, any(agent_id) AS agent_id, count() AS detections, count_if(severity = 'critical') AS critical, uniq(rule_id) AS rules, max(detected_at) AS last_seen FROM table([[ .DB ]].agentguard_security_events) WHERE detected_at > now() - {{filter_time_range}} GROUP BY session_id ORDER BY critical DESC, detections DESC LIMIT 8",
+    "viz_config": {
+      "chartType": "table",
+      "config": {
+        "rowCount": 100,
+        "updateMode": "all",
+        "updateKey": "",
+        "tableWrap": false
+      }
+    }
+  },
+  {
+    "id": "th-blocked",
+    "title": "Blocked actions",
+    "description": "The last 100 events a rule or a hold blocked, the latest at the bottom.",
+    "position": {
+      "h": 5,
+      "w": 6,
+      "x": 0,
+      "y": 10,
+      "nextX": 6,
+      "nextY": 15
+    },
+    "viz_type": "chart",
+    "viz_content": "SELECT * FROM (SELECT event_time AS time, agent_type, session_id, event_type, tool_name, hook_decision, block_reason FROM table([[ .DB ]].agentguard_cim_event) WHERE event_time > now() - {{filter_time_range}} AND hook_decision NOT IN ('', 'observe', 'allow') ORDER BY event_time DESC LIMIT 100) ORDER BY time",
+    "viz_config": {
+      "chartType": "table",
+      "config": {
+        "rowCount": 100,
+        "updateMode": "all",
+        "updateKey": "",
+        "tableWrap": false
+      }
+    }
+  },
+  {
+    "id": "th-recent",
+    "title": "Recent threats",
+    "description": "The 100 most recent threats (one per agent, session and rule), the latest at the bottom.",
+    "position": {
+      "h": 5,
+      "w": 6,
+      "x": 6,
+      "y": 10,
+      "nextX": 12,
+      "nextY": 15
+    },
+    "viz_type": "chart",
+    "viz_content": "SELECT * FROM (SELECT last_seen, severity, rule_name, agent_id, session_id, if(status = '', 'open', status) AS status FROM table([[ .DB ]].agentguard_threats) WHERE last_seen > now() - {{filter_time_range}} ORDER BY last_seen DESC LIMIT 100) ORDER BY last_seen",
+    "viz_config": {
+      "chartType": "table",
+      "config": {
+        "rowCount": 100,
+        "updateMode": "all",
+        "updateKey": "",
+        "tableWrap": false
+      }
+    }
+  }
+]

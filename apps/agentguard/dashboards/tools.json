@@ -1,0 +1,316 @@
+[
+  {
+    "id": "ctl-time",
+    "title": "Time range",
+    "description": "",
+    "position": {
+      "h": 1,
+      "w": 6,
+      "x": 0,
+      "y": 0,
+      "nextX": 6,
+      "nextY": 1
+    },
+    "viz_type": "control",
+    "viz_content": "",
+    "viz_config": {
+      "chartType": "selector",
+      "defaultValue": "6h",
+      "inlineValues": "15m,1h,6h,24h,7d",
+      "label": "Time range",
+      "labelWidth": "25",
+      "target": "filter_time_range"
+    }
+  },
+  {
+    "id": "ctl-agent",
+    "title": "Agent type",
+    "description": "",
+    "position": {
+      "h": 1,
+      "w": 6,
+      "x": 6,
+      "y": 0,
+      "nextX": 12,
+      "nextY": 1
+    },
+    "viz_type": "control",
+    "viz_content": "",
+    "viz_config": {
+      "chartType": "selector",
+      "defaultValue": "all",
+      "inlineValues": "all,claudecode,codex,openclaw,hermes",
+      "label": "Agent type",
+      "labelWidth": "25",
+      "target": "filter_agent"
+    }
+  },
+  {
+    "id": "tl-over-time",
+    "title": "Tool calls over time",
+    "description": "Finished tool calls over time for the eight most used tools.",
+    "position": {
+      "h": 4,
+      "w": 8,
+      "x": 0,
+      "y": 1,
+      "nextX": 8,
+      "nextY": 5
+    },
+    "viz_type": "chart",
+    "viz_content": "SELECT format_datetime(to_datetime(int_div(to_unix_timestamp(event_time), greatest(60, int_div(date_diff('second', now() - {{filter_time_range}}, now()), 60))) * greatest(60, int_div(date_diff('second', now() - {{filter_time_range}}, now()), 60))), '%m-%d %H:%M') AS time, tool_name, count() AS calls FROM table([[ .DB ]].agentguard_cim_event) WHERE event_time > now() - {{filter_time_range}} AND ('{{filter_agent}}' = 'all' OR agent_type = '{{filter_agent}}') AND event_type = 'tool_complete' AND tool_name IN (SELECT tool_name FROM table([[ .DB ]].agentguard_cim_event) WHERE event_time > now() - {{filter_time_range}} AND ('{{filter_agent}}' = 'all' OR agent_type = '{{filter_agent}}') AND event_type = 'tool_complete' GROUP BY tool_name ORDER BY count() DESC LIMIT 8) GROUP BY time, tool_name ORDER BY time",
+    "viz_config": {
+      "chartType": "column",
+      "config": {
+        "xAxis": "time",
+        "yAxis": "calls",
+        "color": "tool_name",
+        "groupType": "stack",
+        "updateMode": "all",
+        "updateKey": "",
+        "xFormat": "",
+        "xTitle": "",
+        "yTitle": "",
+        "dataLabel": false,
+        "legend": true,
+        "gridlines": true,
+        "unit": {
+          "position": "left",
+          "value": ""
+        },
+        "fractionDigits": 0,
+        "colors": [
+          "#ED64A6",
+          "#F0BE3E",
+          "#DA4B36",
+          "#9A1563",
+          "#FF4A71",
+          "#D12D50",
+          "#8934D9",
+          "#D53F8C",
+          "#F7775A",
+          "#8934D9"
+        ],
+        "yTickLabel": {
+          "maxChar": 25
+        },
+        "xTickLabel": {
+          "maxChar": 40
+        }
+      }
+    }
+  },
+  {
+    "id": "tl-top",
+    "title": "Top tools",
+    "description": "Finished tool calls per tool, by agent type.",
+    "position": {
+      "h": 4,
+      "w": 4,
+      "x": 8,
+      "y": 1,
+      "nextX": 12,
+      "nextY": 5
+    },
+    "viz_type": "chart",
+    "viz_content": "SELECT tool_name, agent_type, count() AS calls FROM table([[ .DB ]].agentguard_cim_event) WHERE event_time > now() - {{filter_time_range}} AND ('{{filter_agent}}' = 'all' OR agent_type = '{{filter_agent}}') AND event_type = 'tool_complete' GROUP BY tool_name, agent_type ORDER BY calls DESC LIMIT 30",
+    "viz_config": {
+      "chartType": "bar",
+      "config": {
+        "xAxis": "tool_name",
+        "yAxis": "calls",
+        "color": "agent_type",
+        "groupType": "stack",
+        "updateMode": "all",
+        "updateKey": "",
+        "xFormat": "",
+        "xTitle": "",
+        "yTitle": "",
+        "dataLabel": true,
+        "legend": true,
+        "gridlines": true,
+        "unit": {
+          "position": "left",
+          "value": ""
+        },
+        "fractionDigits": 0,
+        "colors": [
+          "#ED64A6",
+          "#F0BE3E",
+          "#DA4B36",
+          "#9A1563",
+          "#FF4A71",
+          "#D12D50",
+          "#8934D9",
+          "#D53F8C",
+          "#F7775A",
+          "#8934D9"
+        ],
+        "yTickLabel": {
+          "maxChar": 40
+        },
+        "xTickLabel": {
+          "maxChar": 40
+        }
+      }
+    }
+  },
+  {
+    "id": "tl-duration",
+    "title": "Tool duration (p95) by tool",
+    "description": "95th percentile duration in seconds, for the ten tools that took the most time in total. Calls without a reported duration are left out.",
+    "position": {
+      "h": 4,
+      "w": 6,
+      "x": 0,
+      "y": 5,
+      "nextX": 6,
+      "nextY": 9
+    },
+    "viz_type": "chart",
+    "viz_content": "SELECT tool_name, round(quantile(0.95)(tool_duration_ms) / 1000, 2) AS p95_seconds FROM table([[ .DB ]].agentguard_cim_event) WHERE event_time > now() - {{filter_time_range}} AND ('{{filter_agent}}' = 'all' OR agent_type = '{{filter_agent}}') AND event_type = 'tool_complete' AND tool_duration_ms > 0 GROUP BY tool_name ORDER BY sum(tool_duration_ms) DESC LIMIT 10",
+    "viz_config": {
+      "chartType": "bar",
+      "config": {
+        "xAxis": "tool_name",
+        "yAxis": "p95_seconds",
+        "color": "",
+        "groupType": "stack",
+        "updateMode": "all",
+        "updateKey": "",
+        "xFormat": "",
+        "xTitle": "",
+        "yTitle": "",
+        "dataLabel": true,
+        "legend": false,
+        "gridlines": true,
+        "unit": {
+          "position": "left",
+          "value": ""
+        },
+        "fractionDigits": 2,
+        "colors": [
+          "#ED64A6",
+          "#F0BE3E",
+          "#DA4B36",
+          "#9A1563",
+          "#FF4A71",
+          "#D12D50",
+          "#8934D9",
+          "#D53F8C",
+          "#F7775A",
+          "#8934D9"
+        ],
+        "yTickLabel": {
+          "maxChar": 40
+        },
+        "xTickLabel": {
+          "maxChar": 40
+        }
+      }
+    }
+  },
+  {
+    "id": "tl-failures",
+    "title": "Failed and blocked tool calls",
+    "description": "Tool calls that failed, and calls a rule blocked, over time.",
+    "position": {
+      "h": 4,
+      "w": 6,
+      "x": 6,
+      "y": 5,
+      "nextX": 12,
+      "nextY": 9
+    },
+    "viz_type": "chart",
+    "viz_content": "SELECT format_datetime(to_datetime(int_div(to_unix_timestamp(event_time), greatest(60, int_div(date_diff('second', now() - {{filter_time_range}}, now()), 60))) * greatest(60, int_div(date_diff('second', now() - {{filter_time_range}}, now()), 60))), '%m-%d %H:%M') AS time, if(event_type = 'tool_complete', 'failed', 'blocked') AS outcome, count() AS calls FROM table([[ .DB ]].agentguard_cim_event) WHERE event_time > now() - {{filter_time_range}} AND ('{{filter_agent}}' = 'all' OR agent_type = '{{filter_agent}}') AND ((event_type = 'tool_complete' AND NOT tool_success) OR (event_type = 'tool_invoke' AND hook_decision NOT IN ('', 'observe', 'allow'))) GROUP BY time, outcome ORDER BY time",
+    "viz_config": {
+      "chartType": "column",
+      "config": {
+        "xAxis": "time",
+        "yAxis": "calls",
+        "color": "outcome",
+        "groupType": "stack",
+        "updateMode": "all",
+        "updateKey": "",
+        "xFormat": "",
+        "xTitle": "",
+        "yTitle": "",
+        "dataLabel": false,
+        "legend": true,
+        "gridlines": true,
+        "unit": {
+          "position": "left",
+          "value": ""
+        },
+        "fractionDigits": 0,
+        "colors": [
+          "#ED64A6",
+          "#F0BE3E",
+          "#DA4B36",
+          "#9A1563",
+          "#FF4A71",
+          "#D12D50",
+          "#8934D9",
+          "#D53F8C",
+          "#F7775A",
+          "#8934D9"
+        ],
+        "yTickLabel": {
+          "maxChar": 25
+        },
+        "xTickLabel": {
+          "maxChar": 40
+        }
+      }
+    }
+  },
+  {
+    "id": "tl-mcp-skills",
+    "title": "MCP servers and skills",
+    "description": "Tool calls per MCP server and skill uses per skill: the eight most used.",
+    "position": {
+      "h": 5,
+      "w": 5,
+      "x": 0,
+      "y": 9,
+      "nextX": 5,
+      "nextY": 14
+    },
+    "viz_type": "chart",
+    "viz_content": "SELECT kind, name, agent_type, uses FROM ( SELECT 'MCP server' AS kind, array_element(split_by_string('__', tool_name), 2) AS name, agent_type, count() AS uses FROM table([[ .DB ]].agentguard_cim_event) WHERE event_time > now() - {{filter_time_range}} AND ('{{filter_agent}}' = 'all' OR agent_type = '{{filter_agent}}') AND event_type = 'tool_complete' AND tool_name LIKE 'mcp\\\\_\\\\_%' GROUP BY name, agent_type UNION ALL SELECT 'skill' AS kind, skill_name AS name, agent_type, count() AS uses FROM table([[ .DB ]].agentguard_skills) WHERE event_time > now() - {{filter_time_range}} AND ('{{filter_agent}}' = 'all' OR agent_type = '{{filter_agent}}') AND skill_action = 'invoked' GROUP BY name, agent_type) ORDER BY uses DESC LIMIT 8",
+    "viz_config": {
+      "chartType": "table",
+      "config": {
+        "rowCount": 100,
+        "updateMode": "all",
+        "updateKey": "",
+        "tableWrap": false
+      }
+    }
+  },
+  {
+    "id": "tl-repeats",
+    "title": "Repeated tool calls",
+    "description": "The same tool with the same input three or more times in one session, a sign of a loop: the eight most repeated.",
+    "position": {
+      "h": 5,
+      "w": 7,
+      "x": 5,
+      "y": 9,
+      "nextX": 12,
+      "nextY": 14
+    },
+    "viz_type": "chart",
+    "viz_content": "SELECT session_id, any(agent_type) AS agent, tool_name, count() AS repeats, min(event_time) AS first_call, max(event_time) AS last_call, substring(any(tool_input), 1, 200) AS input FROM table([[ .DB ]].agentguard_cim_event) WHERE event_time > now() - {{filter_time_range}} AND ('{{filter_agent}}' = 'all' OR agent_type = '{{filter_agent}}') AND event_type = 'tool_invoke' GROUP BY session_id, tool_name, city_hash64(tool_input) HAVING repeats >= 3 ORDER BY repeats DESC LIMIT 8",
+    "viz_config": {
+      "chartType": "table",
+      "config": {
+        "rowCount": 100,
+        "updateMode": "all",
+        "updateKey": "",
+        "tableWrap": false
+      }
+    }
+  }
+]
