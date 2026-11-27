@@ -3,10 +3,10 @@
     "package_format_version": 1,
     "id": "io.timeplus.agentguard",
     "name": "AgentGuard",
-    "version": "0.6.0",
+    "version": "0.7.0",
     "author": "Timeplus",
     "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJiZyIgeDE9IjAiIHkxPSIwIiB4Mj0iNDgiIHkyPSI0OCIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNENTNGOEMiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiM5RjJCQzAiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHJ4PSIxMSIgZmlsbD0idXJsKCNiZykiLz48cGF0aCBkPSJNMjQgMTEgTDM1IDE1LjUgVjI0IEMzNSAzMC41IDMwIDM2IDI0IDM4IEMxOCAzNiAxMyAzMC41IDEzIDI0IFYxNS41IFoiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBmaWxsPSJub25lIi8+PHBhdGggZD0iTTIxIDIwIEwxNy41IDI0LjUgTDIxIDI5IiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBmaWxsPSJub25lIi8+PHBhdGggZD0iTTI3IDIwIEwzMC41IDI0LjUgTDI3IDI5IiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBmaWxsPSJub25lIi8+PC9zdmc+",
-    "description": "AgentGuard core telemetry pipeline for AI coding agents (Claude Code, Codex, OpenClaw, Hermes, OpenInference/OTLP), with Agent Rooms 3D, a live 3D view of agent sessions. Ingests OTLP traces/logs/metrics and agent hook events, normalizes them into a Common Information Model (agentguard_cim_event), computes per-call token/cost/latency metrics, and ships four Core Protection detection rules (prompt injection, DLP, privilege escalation, supply chain) that run from install. Agent Rooms 3D is an optional custom UI, shown on Timeplus app server 3.5.2 or later; older versions install the app without it. Pause a rule with:\n  SYSTEM PAUSE MATERIALIZED VIEW <db>.mv_rule_rp001;\n",
+    "description": "AgentGuard core telemetry pipeline for AI coding agents (Claude Code, Codex, OpenClaw, Hermes, OpenInference/OTLP), with Agent Rooms 3D, a live 3D view of agent sessions. Ingests OTLP traces/logs/metrics and agent hook events, normalizes them into a Common Information Model (agentguard_cim_event), computes per-call token/cost/latency metrics, and ships four Core Protection detection rules (prompt injection, DLP, privilege escalation, supply chain) that run from install. Six dashboards cover the overview, sessions and activity, token usage, tool calls, a per-session trace and threats. Agent Rooms 3D is an optional custom UI, shown on Timeplus app server 3.5.2 or later; older versions install the app without it. Pause a rule with:\n  SYSTEM PAUSE MATERIALIZED VIEW <db>.mv_rule_rp001;\n",
     "db_name": "ag",
     "categories": [
       "security",
@@ -80,11 +80,6 @@
         "name": "agentguard_cim_event"
       },
       {
-        "file": "ddl/011_mv_cim_claudecode.sql",
-        "type": "materialized_view",
-        "name": "mv_cim_claudecode"
-      },
-      {
         "file": "ddl/012_mv_cim_openclaw.sql",
         "type": "materialized_view",
         "name": "mv_cim_openclaw"
@@ -135,29 +130,9 @@
         "name": "mv_cim_metrics_openclaw_llm"
       },
       {
-        "file": "ddl/022_mv_cim_metrics_openclaw_tools.sql",
-        "type": "materialized_view",
-        "name": "mv_cim_metrics_openclaw_tools"
-      },
-      {
         "file": "ddl/023_mv_cim_metrics_claudecode_otel.sql",
         "type": "materialized_view",
         "name": "mv_cim_metrics_claudecode_otel"
-      },
-      {
-        "file": "ddl/024_mv_cim_metrics_claudecode_tools.sql",
-        "type": "materialized_view",
-        "name": "mv_cim_metrics_claudecode_tools"
-      },
-      {
-        "file": "ddl/025_mv_cim_metrics_hermes_llm.sql",
-        "type": "materialized_view",
-        "name": "mv_cim_metrics_hermes_llm"
-      },
-      {
-        "file": "ddl/026_mv_cim_metrics_hermes_tools.sql",
-        "type": "materialized_view",
-        "name": "mv_cim_metrics_hermes_tools"
       },
       {
         "file": "ddl/027_mv_cim_metrics_openinference_llm.sql",
@@ -308,13 +283,88 @@
         "file": "ddl/056_mv_skills_invoked_codex_hooks.sql",
         "type": "materialized_view",
         "name": "mv_skills_invoked_codex_hooks"
+      },
+      {
+        "file": "ddl/057_drop_mv_cim_metrics_openclaw_tools.sql",
+        "type": "system",
+        "name": "drop_mv_cim_metrics_openclaw_tools"
+      },
+      {
+        "file": "ddl/058_mv_cim_metrics_openclaw_tools_v2.sql",
+        "type": "materialized_view",
+        "name": "mv_cim_metrics_openclaw_tools_v2"
+      },
+      {
+        "file": "ddl/059_drop_mv_cim_metrics_claudecode_tools.sql",
+        "type": "system",
+        "name": "drop_mv_cim_metrics_claudecode_tools"
+      },
+      {
+        "file": "ddl/060_mv_cim_metrics_claudecode_tools_v2.sql",
+        "type": "materialized_view",
+        "name": "mv_cim_metrics_claudecode_tools_v2"
+      },
+      {
+        "file": "ddl/061_drop_mv_cim_metrics_hermes_tools.sql",
+        "type": "system",
+        "name": "drop_mv_cim_metrics_hermes_tools"
+      },
+      {
+        "file": "ddl/062_mv_cim_metrics_hermes_tools_v2.sql",
+        "type": "materialized_view",
+        "name": "mv_cim_metrics_hermes_tools_v2"
+      },
+      {
+        "file": "ddl/063_drop_mv_cim_metrics_hermes_llm.sql",
+        "type": "system",
+        "name": "drop_mv_cim_metrics_hermes_llm"
+      },
+      {
+        "file": "ddl/064_mv_cim_metrics_hermes_llm_v2.sql",
+        "type": "materialized_view",
+        "name": "mv_cim_metrics_hermes_llm_v2"
+      },
+      {
+        "file": "ddl/065_drop_mv_cim_claudecode.sql",
+        "type": "system",
+        "name": "drop_mv_cim_claudecode"
+      },
+      {
+        "file": "ddl/066_mv_cim_claudecode_v2.sql",
+        "type": "materialized_view",
+        "name": "mv_cim_claudecode_v2"
       }
     ],
     "dashboards": [
       {
         "file": "dashboards/main.json",
-        "name": "AgentGuard Overview",
-        "description": "Events per minute by agent type, tokens and cost by model, open and recent threats."
+        "name": "Agents: Overview",
+        "description": "Active sessions, tool calls, tokens and open threats at a glance, events per minute and the most active sessions."
+      },
+      {
+        "file": "dashboards/sessions.json",
+        "name": "Agents: Sessions and Activity",
+        "description": "What the agents are doing. Active sessions over time, activity mix, projects, time waiting on a person and the session list."
+      },
+      {
+        "file": "dashboards/tokens.json",
+        "name": "Agents: Token Usage",
+        "description": "Tokens by model and by type, cache hit ratio, model request latency and the sessions using the most tokens."
+      },
+      {
+        "file": "dashboards/tools.json",
+        "name": "Agents: Tool Calls",
+        "description": "Which tools are used, slow or failing. Top tools, duration, failed and blocked calls, MCP servers and skills, repeated calls."
+      },
+      {
+        "file": "dashboards/session_trace.json",
+        "name": "Agents: Session Trace",
+        "description": "One session step by step. Prompts, model requests, tool calls and replies, turns, context growth and detections."
+      },
+      {
+        "file": "dashboards/threats.json",
+        "name": "Agents: Threats",
+        "description": "Security detections. Open threats by severity, detections by rule, tool and session, blocked actions and recent threats."
       }
     ],
     "uis": [
@@ -326,7 +376,7 @@
         "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJiZyIgeDE9IjAiIHkxPSIwIiB4Mj0iNDgiIHkyPSI0OCIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNENTNGOEMiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiM5RjJCQzAiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHJ4PSIxMSIgZmlsbD0idXJsKCNiZykiLz48ZyBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBmaWxsPSJub25lIj48cGF0aCBkPSJNMjQgMTIgMzUgMTh2MTJsLTExIDYtMTEtNlYxOFoiLz48cGF0aCBkPSJNMTMgMThsMTEgNiAxMS02Ii8+PHBhdGggZD0iTTI0IDI0djEyIi8+PC9nPjwvc3ZnPg=="
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.6.5/agentguard.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.6.6/agentguard.tpapp"
   },
   {
     "package_format_version": 1,
@@ -573,7 +623,7 @@
         "description": "Cumulative PnL, Sharpe and hit rate \u2014 pick the alpha via the dropdown"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.6.5/alpha-101.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.6.6/alpha-101.tpapp"
   },
   {
     "package_format_version": 1,
@@ -739,7 +789,7 @@
         "description": "Realtime AWS spend by service, region, and creator"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.6.5/aws-cost.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.6.6/aws-cost.tpapp"
   },
   {
     "package_format_version": 1,
@@ -837,7 +887,7 @@
         "description": "Real-time post volume, engagement, language breakdown, and live feed"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.6.5/bluesky.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.6.6/bluesky.tpapp"
   },
   {
     "package_format_version": 1,
@@ -897,7 +947,7 @@
         "description": "Real-time complex event processing visualization"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.6.5/cep.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.6.6/cep.tpapp"
   },
   {
     "package_format_version": 1,
@@ -1115,7 +1165,7 @@
         "description": "Real-time spike ratio monitoring, baseline tables, and live traffic"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.6.5/cisco-asa-ddos.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.6.6/cisco-asa-ddos.tpapp"
   },
   {
     "package_format_version": 1,
@@ -1302,7 +1352,7 @@
         "name": "spending_alert"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.6.5/game-feature-pipeline.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.6.6/game-feature-pipeline.tpapp"
   },
   {
     "package_format_version": 1,
@@ -1384,7 +1434,7 @@
         "description": "Type an IP, see the city."
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.6.5/geo-ip-lookup.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.6.6/geo-ip-lookup.tpapp"
   },
   {
     "package_format_version": 1,
@@ -1435,7 +1485,7 @@
         "description": "Real-time view of GitHub public events"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.6.5/github.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.6.6/github.tpapp"
   },
   {
     "package_format_version": 1,
@@ -1576,7 +1626,7 @@
         "description": "Ask questions over live HN stories with vector search + LLM, plus embedding-pipeline health"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.6.5/hacker-news.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.6.6/hacker-news.tpapp"
   },
   {
     "package_format_version": 1,
@@ -1747,7 +1797,7 @@
         "description": "Real-time trading metrics \u2014 participation rate and P&L"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.6.5/invest-insights.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.6.6/invest-insights.tpapp"
   },
   {
     "package_format_version": 1,
@@ -1896,7 +1946,7 @@
         "description": "Real-time OHLC, returns, and RSI for Coinbase crypto pairs"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.6.5/market-data.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.6.6/market-data.tpapp"
   },
   {
     "package_format_version": 1,
@@ -2009,7 +2059,7 @@
         "description": "Findings (class 2001) \u2014 severity trends, malware, top finding titles"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.6.5/ocsf.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.6.6/ocsf.tpapp"
   },
   {
     "package_format_version": 1,
@@ -2087,6 +2137,6 @@
         "description": "Live map, speed analytics, and fleet KPIs"
       }
     ],
-    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.6.5/taxi-fleet.tpapp"
+    "download_url": "https://github.com/timeplus-io/apps/releases/download/registry-v1.6.6/taxi-fleet.tpapp"
   }
 ]
