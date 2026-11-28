@@ -580,6 +580,11 @@ SETTINGS type='python', mode='streaming', read_function_name='poll',
 **Cause:** App upgrades re-run every DDL file. A `CREATE STREAM …` (no guard) succeeds on first install and fails on every upgrade with `Code: 57 ... already exists`.
 **Fix:** Use `CREATE … IF NOT EXISTS` on every resource type except `udf`. For UDFs, use `CREATE OR REPLACE FUNCTION` (the body is what typically changes on upgrade). For views specifically: **never use `CREATE OR REPLACE VIEW`** — drop+recreate breaks dependents (downstream MVs, dashboards, other views). See [Idempotency](#idempotency-every-create-must-be-re-runnable).
 
+### A regex that never matches: single backslash in a SQL string
+**Symptom:** No error at install. A view with `match(col, '\bword\b')` returns no rows, ever.
+**Cause:** In a SQL string literal `'\b'` is the backspace character (`hex('\b')` is `08`), so the pattern asks for a byte that is never in the text. `\s`, `\d` and `\w` happen to pass through unchanged, which hides the problem until a pattern uses `\b`.
+**Fix:** Double every backslash of a regex inside a SQL string: `match(col, '\\bword\\b')`. Check each pattern with one literal that must match and one that must not, for example `SELECT match('a word here', '\\bword\\b'), match('swordfish', '\\bword\\b')` → `true, false`. When a view depends on patterns, keep such cases in a test that runs against a development instance.
+
 ### Multi-statement SQL files
 **Error:** `Syntax error: Multi-statements are not allowed`  
 **Fix:** One SQL statement per file.
