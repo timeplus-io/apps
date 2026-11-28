@@ -1,7 +1,7 @@
 [
   {
     "id": "ctl-session",
-    "title": "Session ID",
+    "title": "Session",
     "description": "",
     "position": {
       "h": 1,
@@ -12,20 +12,20 @@
       "nextY": 1
     },
     "viz_type": "control",
-    "viz_content": "",
+    "viz_content": "SELECT replace_all(concat(format_datetime(max(event_time), '%m-%d %H:%M'), ' \u00b7 ', any(agent_type), ' \u00b7 ', array_element(split_by_char('/', any_if(json_value(raw_event_data, '$.cwd'), json_value(raw_event_data, '$.cwd') != '')), -1), ' \u00b7 ', session_id), char(39), '') AS session FROM table([[ .DB ]].agentguard_cim_event) WHERE event_type IN ('user_input', 'tool_invoke') GROUP BY session_id ORDER BY max(event_time) DESC LIMIT 50",
     "viz_config": {
-      "chartType": "text",
+      "chartType": "selector",
       "defaultValue": "latest",
       "inlineValues": "",
-      "label": "Session ID",
-      "labelWidth": "25",
+      "label": "Session",
+      "labelWidth": "12",
       "target": "filter_session"
     }
   },
   {
     "id": "tr-summary",
     "title": "Session",
-    "description": "The session shown on this page: the id typed above, or with 'latest' the most recent session with a prompt or a tool call.",
+    "description": "The session picked in Session: one of the 50 most recently active, newest first. 'latest' is the most recent session with a prompt or a tool call.",
     "position": {
       "h": 2,
       "w": 12,
@@ -35,62 +35,118 @@
       "nextY": 3
     },
     "viz_type": "chart",
-    "viz_content": "SELECT session_id, any(agent_type) AS agent, any_if(model, model != '') AS model, array_element(split_by_char('/', any_if(json_value(raw_event_data, '$.cwd'), json_value(raw_event_data, '$.cwd') != '')), -1) AS project, min(event_time) AS started, max(event_time) AS last_event, round(date_diff('second', min(event_time), max(event_time)) / 60, 1) AS minutes, count_if(event_type = 'user_input') AS prompts, (SELECT count() FROM table([[ .DB ]].agentguard_cim_metrics) WHERE session_id = (SELECT if('{{filter_session}}' IN ('', 'latest'), arg_max(session_id, event_time), '{{filter_session}}') FROM table([[ .DB ]].agentguard_cim_event) WHERE event_type IN ('user_input', 'tool_invoke')) AND metric_name = 'llm.call') AS model_requests, count_if(event_type = 'tool_complete') AS tool_calls, (SELECT to_int64(sum(metric_value)) FROM table([[ .DB ]].agentguard_cim_metrics) WHERE session_id = (SELECT if('{{filter_session}}' IN ('', 'latest'), arg_max(session_id, event_time), '{{filter_session}}') FROM table([[ .DB ]].agentguard_cim_event) WHERE event_type IN ('user_input', 'tool_invoke')) AND metric_name IN ('llm.input_tokens', 'llm.output_tokens')) AS tokens, (SELECT count() FROM table([[ .DB ]].agentguard_security_events) WHERE session_id = (SELECT if('{{filter_session}}' IN ('', 'latest'), arg_max(session_id, event_time), '{{filter_session}}') FROM table([[ .DB ]].agentguard_cim_event) WHERE event_type IN ('user_input', 'tool_invoke'))) AS detections FROM table([[ .DB ]].agentguard_cim_event) WHERE session_id = (SELECT if('{{filter_session}}' IN ('', 'latest'), arg_max(session_id, event_time), '{{filter_session}}') FROM table([[ .DB ]].agentguard_cim_event) WHERE event_type IN ('user_input', 'tool_invoke')) GROUP BY session_id",
+    "viz_content": "SELECT session_id, any(agent_type) AS agent, any_if(model, model != '') AS model, array_element(split_by_char('/', any_if(json_value(raw_event_data, '$.cwd'), json_value(raw_event_data, '$.cwd') != '')), -1) AS project, format_datetime(min(event_time), '%Y-%m-%d %H:%M:%S') AS started, format_datetime(max(event_time), '%Y-%m-%d %H:%M:%S') AS last_event, round(date_diff('second', min(event_time), max(event_time)) / 60, 1) AS minutes, multi_if(max(event_time) > now() - 5m, 'active', count_if(event_type = 'session_end') > 0, 'ended', 'idle') AS state, count_if(event_type = 'user_input') AS prompts, (SELECT count() FROM table([[ .DB ]].agentguard_cim_metrics) WHERE session_id = (SELECT if(array_element(split_by_char(' ', '{{filter_session}}'), -1) IN ('', 'latest'), arg_max(session_id, event_time), array_element(split_by_char(' ', '{{filter_session}}'), -1)) FROM table([[ .DB ]].agentguard_cim_event) WHERE event_type IN ('user_input', 'tool_invoke')) AND metric_name = 'llm.call') AS model_requests, count_if(event_type = 'tool_complete') AS tool_calls, count_if(event_type = 'tool_complete' AND NOT tool_success) AS failed_calls, (SELECT to_int64(sum_if(metric_value, metric_name = 'llm.input_tokens')) FROM table([[ .DB ]].agentguard_cim_metrics) WHERE session_id = (SELECT if(array_element(split_by_char(' ', '{{filter_session}}'), -1) IN ('', 'latest'), arg_max(session_id, event_time), array_element(split_by_char(' ', '{{filter_session}}'), -1)) FROM table([[ .DB ]].agentguard_cim_event) WHERE event_type IN ('user_input', 'tool_invoke'))) AS input_tokens, (SELECT to_int64(sum_if(metric_value, metric_name = 'llm.output_tokens')) FROM table([[ .DB ]].agentguard_cim_metrics) WHERE session_id = (SELECT if(array_element(split_by_char(' ', '{{filter_session}}'), -1) IN ('', 'latest'), arg_max(session_id, event_time), array_element(split_by_char(' ', '{{filter_session}}'), -1)) FROM table([[ .DB ]].agentguard_cim_event) WHERE event_type IN ('user_input', 'tool_invoke'))) AS output_tokens, (SELECT to_int64(sum_if(metric_value, metric_name = 'llm.cache_read_tokens')) FROM table([[ .DB ]].agentguard_cim_metrics) WHERE session_id = (SELECT if(array_element(split_by_char(' ', '{{filter_session}}'), -1) IN ('', 'latest'), arg_max(session_id, event_time), array_element(split_by_char(' ', '{{filter_session}}'), -1)) FROM table([[ .DB ]].agentguard_cim_event) WHERE event_type IN ('user_input', 'tool_invoke'))) AS cache_read_tokens, (SELECT count() FROM table([[ .DB ]].agentguard_security_events) WHERE session_id = (SELECT if(array_element(split_by_char(' ', '{{filter_session}}'), -1) IN ('', 'latest'), arg_max(session_id, event_time), array_element(split_by_char(' ', '{{filter_session}}'), -1)) FROM table([[ .DB ]].agentguard_cim_event) WHERE event_type IN ('user_input', 'tool_invoke'))) AS detections FROM table([[ .DB ]].agentguard_cim_event) WHERE session_id = (SELECT if(array_element(split_by_char(' ', '{{filter_session}}'), -1) IN ('', 'latest'), arg_max(session_id, event_time), array_element(split_by_char(' ', '{{filter_session}}'), -1)) FROM table([[ .DB ]].agentguard_cim_event) WHERE event_type IN ('user_input', 'tool_invoke')) GROUP BY session_id",
     "viz_config": {
-      "chartType": "table",
+      "chartType": "md",
       "config": {
-        "rowCount": 100,
         "updateMode": "all",
         "updateKey": "",
-        "tableWrap": false
-      }
-    }
-  },
-  {
-    "id": "tr-steps",
-    "title": "Steps",
-    "description": "The last 100 steps of the session, the latest at the bottom: prompts, tool calls, replies, permission requests and notifications. A failed tool call shows its error as detail.",
-    "position": {
-      "h": 6,
-      "w": 12,
-      "x": 0,
-      "y": 3,
-      "nextX": 12,
-      "nextY": 9
-    },
-    "viz_type": "chart",
-    "viz_content": "SELECT time, turn, event_type, tool_name, status, duration_ms, detail FROM ( SELECT event_time AS time, substring(if(agent_type = 'claudecode', json_value(raw_event_data, '$.prompt_id'), run_id), 1, 8) AS turn, event_type, tool_name, multi_if(event_type = 'tool_complete' AND NOT tool_success, 'failed', hook_decision NOT IN ('', 'observe', 'allow'), hook_decision, '') AS status, tool_duration_ms AS duration_ms, substring(multi_if(user_message != '', user_message, assistant_message != '', assistant_message, event_type = 'notification', json_value(raw_event_data, '$.message'), event_type = 'tool_invoke', tool_input, event_type = 'tool_complete', tool_result, ''), 1, 300) AS detail FROM table([[ .DB ]].agentguard_cim_event) WHERE session_id = (SELECT if('{{filter_session}}' IN ('', 'latest'), arg_max(session_id, event_time), '{{filter_session}}') FROM table([[ .DB ]].agentguard_cim_event) WHERE event_type IN ('user_input', 'tool_invoke')) AND event_type NOT IN ('prompt_context', 'llm_context') ORDER BY event_time DESC LIMIT 100) ORDER BY time",
-    "viz_config": {
-      "chartType": "table",
-      "config": {
-        "rowCount": 100,
-        "updateMode": "all",
-        "updateKey": "",
-        "tableWrap": false
+        "content": "**{{project}}** \u00b7 {{agent}} \u00b7 {{model}} \u00b7 **{{state}}** \u00b7 {{started}} to {{last_event}} (**{{minutes}}** min) \u00b7 `{{session_id}}`\n\n**{{prompts}}** prompts \u00b7 **{{model_requests}}** model requests \u00b7 **{{tool_calls}}** tool calls (**{{failed_calls}}** failed) \u00b7 **{{detections}}** detections \u00b7 tokens: **{{input_tokens}}** input, **{{output_tokens}}** output, **{{cache_read_tokens}}** cache read"
       }
     }
   },
   {
     "id": "tr-turns",
     "title": "Turns",
-    "description": "One row per turn, from a prompt to the reply, the latest at the bottom. Model requests and tokens come from the token metrics of the turn.",
+    "description": "One bar per turn, from its prompt to its last event, along the time of the session: the latest 50 turns. Pick a turn in Turn, below, to see its steps.",
     "position": {
-      "h": 4,
+      "h": 5,
+      "w": 12,
+      "x": 0,
+      "y": 3,
+      "nextX": 12,
+      "nextY": 8
+    },
+    "viz_type": "chart",
+    "viz_content": "SELECT concat(format_datetime(started, '%H:%M:%S'), ' ', substring(prompt, 1, 40)) AS turn, round(start_ms / 60000, 2) AS start_min, round(greatest(end_ms, start_ms + 2000) / 60000, 2) AS end_min, round((end_ms - start_ms) / 1000) AS seconds, tool_calls, failed_calls, substring(prompt, 1, 200) AS prompt FROM (SELECT if(agent_type = 'claudecode', json_value(raw_event_data, '$.prompt_id'), run_id) AS turn_id, min(event_time) AS started, to_unix_timestamp64_milli(min(event_time)) - (SELECT to_unix_timestamp64_milli(min(event_time)) FROM table([[ .DB ]].agentguard_cim_event) WHERE session_id = (SELECT if(array_element(split_by_char(' ', '{{filter_session}}'), -1) IN ('', 'latest'), arg_max(session_id, event_time), array_element(split_by_char(' ', '{{filter_session}}'), -1)) FROM table([[ .DB ]].agentguard_cim_event) WHERE event_type IN ('user_input', 'tool_invoke'))) AS start_ms, to_unix_timestamp64_milli(max(event_time)) - (SELECT to_unix_timestamp64_milli(min(event_time)) FROM table([[ .DB ]].agentguard_cim_event) WHERE session_id = (SELECT if(array_element(split_by_char(' ', '{{filter_session}}'), -1) IN ('', 'latest'), arg_max(session_id, event_time), array_element(split_by_char(' ', '{{filter_session}}'), -1)) FROM table([[ .DB ]].agentguard_cim_event) WHERE event_type IN ('user_input', 'tool_invoke'))) AS end_ms, count_if(event_type = 'tool_complete') AS tool_calls, count_if(event_type = 'tool_complete' AND NOT tool_success) AS failed_calls, replace_regex(any_if(user_message, user_message != ''), '\\\\s+', ' ') AS prompt FROM table([[ .DB ]].agentguard_cim_event) WHERE session_id = (SELECT if(array_element(split_by_char(' ', '{{filter_session}}'), -1) IN ('', 'latest'), arg_max(session_id, event_time), array_element(split_by_char(' ', '{{filter_session}}'), -1)) FROM table([[ .DB ]].agentguard_cim_event) WHERE event_type IN ('user_input', 'tool_invoke')) AND if(agent_type = 'claudecode', json_value(raw_event_data, '$.prompt_id'), run_id) != '' GROUP BY turn_id HAVING count_if(event_type IN ('user_input', 'tool_invoke')) > 0 ORDER BY started DESC LIMIT 50) ORDER BY started",
+    "viz_config": {
+      "chartType": "grammar",
+      "config": {
+        "renderInterval": 500,
+        "updateMode": "all",
+        "updateKey": "",
+        "markType": "interval",
+        "xField": "turn",
+        "yField": [
+          "start_min"
+        ],
+        "colorField": "",
+        "sizeField": "",
+        "xScaleType": "band",
+        "yScaleType": "linear",
+        "temporalMode": "",
+        "temporalRange": null,
+        "streamMaxItems": 2000,
+        "streamMode": "replace",
+        "throttleMs": 100,
+        "xAxisTitle": "",
+        "yAxisTitle": "minutes from the start of the session",
+        "legendPosition": "hidden",
+        "advancedSpec": "{\"marks\": [{\"type\": \"interval\", \"encode\": {\"x\": \"turn\", \"y\": \"start_min\", \"y1\": \"end_min\"}, \"style\": {\"maxWidth\": 18}, \"tooltip\": {\"items\": [{\"field\": \"seconds\", \"name\": \"seconds\"}, {\"field\": \"tool_calls\", \"name\": \"tool calls\"}, {\"field\": \"failed_calls\", \"name\": \"failed calls\"}, {\"field\": \"prompt\", \"name\": \"prompt\"}]}}], \"coordinate\": {\"transforms\": [{\"type\": \"transpose\"}]}, \"scales\": {\"x\": {\"type\": \"band\"}, \"y\": {\"type\": \"linear\", \"nice\": true}}, \"axes\": {\"x\": {\"title\": false}, \"y\": {\"title\": \"minutes from the start of the session\"}}}"
+      }
+    }
+  },
+  {
+    "id": "ctl-turn",
+    "title": "Turn",
+    "description": "",
+    "position": {
+      "h": 1,
+      "w": 12,
+      "x": 0,
+      "y": 8,
+      "nextX": 12,
+      "nextY": 9
+    },
+    "viz_type": "control",
+    "viz_content": "SELECT replace_all(concat(format_datetime(min(event_time), '%H:%M:%S'), ' \u00b7 ', substring(replace_regex(any_if(user_message, user_message != ''), '\\\\s+', ' '), 1, 40), ' \u00b7 ', to_string(count_if(event_type = 'tool_invoke')), ' tool calls \u00b7 ', if(agent_type = 'claudecode', json_value(raw_event_data, '$.prompt_id'), run_id)), char(39), '') AS turn FROM table([[ .DB ]].agentguard_cim_event) WHERE session_id = (SELECT if(array_element(split_by_char(' ', '{{filter_session}}'), -1) IN ('', 'latest'), arg_max(session_id, event_time), array_element(split_by_char(' ', '{{filter_session}}'), -1)) FROM table([[ .DB ]].agentguard_cim_event) WHERE event_type IN ('user_input', 'tool_invoke')) AND if(agent_type = 'claudecode', json_value(raw_event_data, '$.prompt_id'), run_id) != '' GROUP BY if(agent_type = 'claudecode', json_value(raw_event_data, '$.prompt_id'), run_id) HAVING count_if(event_type IN ('user_input', 'tool_invoke')) > 0 ORDER BY min(event_time) DESC LIMIT 200",
+    "viz_config": {
+      "chartType": "selector",
+      "defaultValue": "latest",
+      "inlineValues": "",
+      "label": "Turn",
+      "labelWidth": "12",
+      "target": "filter_turn"
+    }
+  },
+  {
+    "id": "tr-steps",
+    "title": "Steps of the turn",
+    "description": "One row per step of the turn picked in Turn, above, in order: the prompt, each model request and tool call from its start to its end, waits on a person, the reply. Point at a bar for its duration, input and result. The first 200 steps are drawn. Model requests need token metrics for the turn.",
+    "position": {
+      "h": 5,
       "w": 12,
       "x": 0,
       "y": 9,
       "nextX": 12,
-      "nextY": 13
+      "nextY": 14
     },
     "viz_type": "chart",
-    "viz_content": "SELECT substring(e.turn_id, 1, 8) AS turn, e.started AS started, e.seconds AS seconds, m.model_requests AS model_requests, to_int64(m.output_tokens) AS output_tokens, e.tool_calls AS tool_calls, e.failed AS failed_calls, e.tool_seconds AS tool_seconds, e.prompt AS prompt FROM (SELECT if(agent_type = 'claudecode', json_value(raw_event_data, '$.prompt_id'), run_id) AS turn_id, min(event_time) AS started, date_diff('second', min(event_time), max(event_time)) AS seconds, count_if(event_type = 'tool_complete') AS tool_calls, count_if(event_type = 'tool_complete' AND NOT tool_success) AS failed, round(sum(tool_duration_ms) / 1000, 1) AS tool_seconds, substring(any_if(user_message, user_message != ''), 1, 200) AS prompt FROM table([[ .DB ]].agentguard_cim_event) WHERE session_id = (SELECT if('{{filter_session}}' IN ('', 'latest'), arg_max(session_id, event_time), '{{filter_session}}') FROM table([[ .DB ]].agentguard_cim_event) WHERE event_type IN ('user_input', 'tool_invoke')) AND if(agent_type = 'claudecode', json_value(raw_event_data, '$.prompt_id'), run_id) != '' GROUP BY turn_id HAVING count_if(event_type IN ('user_input', 'tool_invoke', 'llm_request')) > 0 ORDER BY started DESC LIMIT 100) AS e LEFT JOIN (SELECT tags['run_id'] AS rid, count_if(metric_name = 'llm.call') AS model_requests, sum_if(metric_value, metric_name = 'llm.output_tokens') AS output_tokens FROM table([[ .DB ]].agentguard_cim_metrics) WHERE session_id = (SELECT if('{{filter_session}}' IN ('', 'latest'), arg_max(session_id, event_time), '{{filter_session}}') FROM table([[ .DB ]].agentguard_cim_event) WHERE event_type IN ('user_input', 'tool_invoke')) GROUP BY rid) AS m ON m.rid = e.turn_id ORDER BY started",
+    "viz_content": "SELECT concat(lpad(to_string(n), 3, '0'), ' ', format_datetime(from_unix_timestamp64_milli(start_ms), '%H:%M:%S'), ' ', name) AS step, kind, round((start_ms - first_ms) / 1000, 2) AS start_s, round((greatest(end_ms, start_ms + 200) - first_ms) / 1000, 2) AS end_s, round((end_ms - start_ms) / 1000, 2) AS seconds, input, result FROM (SELECT kind, name, start_ms, end_ms, input, result, row_number() OVER (ORDER BY start_ms) AS n, min(start_ms) OVER () AS first_ms FROM ( SELECT if(tool_success, 'tool call', 'tool call (failed)') AS kind, tool_name AS name, to_unix_timestamp64_milli(event_time) - tool_duration_ms AS start_ms, to_unix_timestamp64_milli(event_time) AS end_ms, substring(replace_regex(tool_input, '\\\\s+', ' '), 1, 300) AS input, substring(replace_regex(tool_result, '\\\\s+', ' '), 1, 300) AS result FROM table([[ .DB ]].agentguard_cim_event) WHERE session_id = (SELECT if(array_element(split_by_char(' ', '{{filter_session}}'), -1) IN ('', 'latest'), arg_max(session_id, event_time), array_element(split_by_char(' ', '{{filter_session}}'), -1)) FROM table([[ .DB ]].agentguard_cim_event) WHERE event_type IN ('user_input', 'tool_invoke')) AND if(agent_type = 'claudecode', json_value(raw_event_data, '$.prompt_id'), run_id) = (SELECT if(count_if(if(agent_type = 'claudecode', json_value(raw_event_data, '$.prompt_id'), run_id) = array_element(split_by_char(' ', '{{filter_turn}}'), -1)) > 0, array_element(split_by_char(' ', '{{filter_turn}}'), -1), arg_max(if(agent_type = 'claudecode', json_value(raw_event_data, '$.prompt_id'), run_id), event_time)) FROM table([[ .DB ]].agentguard_cim_event) WHERE session_id = (SELECT if(array_element(split_by_char(' ', '{{filter_session}}'), -1) IN ('', 'latest'), arg_max(session_id, event_time), array_element(split_by_char(' ', '{{filter_session}}'), -1)) FROM table([[ .DB ]].agentguard_cim_event) WHERE event_type IN ('user_input', 'tool_invoke')) AND if(agent_type = 'claudecode', json_value(raw_event_data, '$.prompt_id'), run_id) != '' AND event_type IN ('user_input', 'tool_invoke')) AND event_type = 'tool_complete' UNION ALL SELECT 'model request' AS kind, 'model request' AS name, end_ms - latency_ms AS start_ms, end_ms, model AS input, concat(to_string(input_tokens), ' input, ', to_string(output_tokens), ' output, ', to_string(cache_read), ' cache read, ', to_string(cache_write), ' cache write tokens') AS result FROM (SELECT to_unix_timestamp64_milli(event_time) AS end_ms, any(tags['model']) AS model, to_int64(sum_if(metric_value, metric_name = 'llm.latency_ms')) AS latency_ms, to_int64(sum_if(metric_value, metric_name = 'llm.input_tokens')) AS input_tokens, to_int64(sum_if(metric_value, metric_name = 'llm.output_tokens')) AS output_tokens, to_int64(sum_if(metric_value, metric_name = 'llm.cache_read_tokens')) AS cache_read, to_int64(sum_if(metric_value, metric_name = 'llm.cache_write_tokens')) AS cache_write FROM table([[ .DB ]].agentguard_cim_metrics) WHERE session_id = (SELECT if(array_element(split_by_char(' ', '{{filter_session}}'), -1) IN ('', 'latest'), arg_max(session_id, event_time), array_element(split_by_char(' ', '{{filter_session}}'), -1)) FROM table([[ .DB ]].agentguard_cim_event) WHERE event_type IN ('user_input', 'tool_invoke')) AND tags['run_id'] = (SELECT if(count_if(if(agent_type = 'claudecode', json_value(raw_event_data, '$.prompt_id'), run_id) = array_element(split_by_char(' ', '{{filter_turn}}'), -1)) > 0, array_element(split_by_char(' ', '{{filter_turn}}'), -1), arg_max(if(agent_type = 'claudecode', json_value(raw_event_data, '$.prompt_id'), run_id), event_time)) FROM table([[ .DB ]].agentguard_cim_event) WHERE session_id = (SELECT if(array_element(split_by_char(' ', '{{filter_session}}'), -1) IN ('', 'latest'), arg_max(session_id, event_time), array_element(split_by_char(' ', '{{filter_session}}'), -1)) FROM table([[ .DB ]].agentguard_cim_event) WHERE event_type IN ('user_input', 'tool_invoke')) AND if(agent_type = 'claudecode', json_value(raw_event_data, '$.prompt_id'), run_id) != '' AND event_type IN ('user_input', 'tool_invoke')) AND metric_name LIKE 'llm.%' GROUP BY end_ms) UNION ALL SELECT multi_if(event_type = 'user_input', 'prompt', event_type = 'llm_response', 'reply', 'waiting on a person') AS kind, multi_if(event_type = 'user_input', 'prompt', event_type = 'llm_response', 'reply', event_type = 'notification', 'notification', replace_all(event_type, '_', ' ')) AS name, to_unix_timestamp64_milli(event_time) AS start_ms, to_unix_timestamp64_milli(event_time) AS end_ms, substring(replace_regex(multi_if(user_message != '', user_message, event_type = 'notification', json_value(raw_event_data, '$.message'), event_type != 'llm_response', concat(tool_name, ' ', tool_input), ''), '\\\\s+', ' '), 1, 300) AS input, substring(replace_regex(if(block_reason != '', block_reason, assistant_message), '\\\\s+', ' '), 1, 300) AS result FROM table([[ .DB ]].agentguard_cim_event) WHERE session_id = (SELECT if(array_element(split_by_char(' ', '{{filter_session}}'), -1) IN ('', 'latest'), arg_max(session_id, event_time), array_element(split_by_char(' ', '{{filter_session}}'), -1)) FROM table([[ .DB ]].agentguard_cim_event) WHERE event_type IN ('user_input', 'tool_invoke')) AND if(agent_type = 'claudecode', json_value(raw_event_data, '$.prompt_id'), run_id) = (SELECT if(count_if(if(agent_type = 'claudecode', json_value(raw_event_data, '$.prompt_id'), run_id) = array_element(split_by_char(' ', '{{filter_turn}}'), -1)) > 0, array_element(split_by_char(' ', '{{filter_turn}}'), -1), arg_max(if(agent_type = 'claudecode', json_value(raw_event_data, '$.prompt_id'), run_id), event_time)) FROM table([[ .DB ]].agentguard_cim_event) WHERE session_id = (SELECT if(array_element(split_by_char(' ', '{{filter_session}}'), -1) IN ('', 'latest'), arg_max(session_id, event_time), array_element(split_by_char(' ', '{{filter_session}}'), -1)) FROM table([[ .DB ]].agentguard_cim_event) WHERE event_type IN ('user_input', 'tool_invoke')) AND if(agent_type = 'claudecode', json_value(raw_event_data, '$.prompt_id'), run_id) != '' AND event_type IN ('user_input', 'tool_invoke')) AND (event_type IN ('user_input', 'permission_request', 'permission_denied', 'notification') OR (event_type = 'llm_response' AND assistant_message != '')))) WHERE n <= 200 ORDER BY n",
     "viz_config": {
-      "chartType": "table",
+      "chartType": "grammar",
       "config": {
-        "rowCount": 100,
+        "renderInterval": 500,
         "updateMode": "all",
         "updateKey": "",
-        "tableWrap": false
+        "markType": "interval",
+        "xField": "step",
+        "yField": [
+          "start_s"
+        ],
+        "colorField": "kind",
+        "sizeField": "",
+        "xScaleType": "band",
+        "yScaleType": "linear",
+        "temporalMode": "",
+        "temporalRange": null,
+        "streamMaxItems": 2000,
+        "streamMode": "replace",
+        "throttleMs": 100,
+        "xAxisTitle": "",
+        "yAxisTitle": "seconds from the start of the turn",
+        "legendPosition": "top",
+        "advancedSpec": "{\"marks\": [{\"type\": \"interval\", \"encode\": {\"x\": \"step\", \"y\": \"start_s\", \"y1\": \"end_s\", \"color\": \"kind\"}, \"style\": {\"maxWidth\": 18}, \"tooltip\": {\"items\": [{\"field\": \"kind\", \"name\": \"step\"}, {\"field\": \"seconds\", \"name\": \"seconds\"}, {\"field\": \"input\", \"name\": \"input\"}, {\"field\": \"result\", \"name\": \"result\"}]}}], \"coordinate\": {\"transforms\": [{\"type\": \"transpose\"}]}, \"scales\": {\"x\": {\"type\": \"band\"}, \"y\": {\"type\": \"linear\", \"nice\": true}}, \"axes\": {\"x\": {\"title\": false}, \"y\": {\"title\": \"seconds from the start of the turn\"}}}"
       }
     }
   },
@@ -102,12 +158,12 @@
       "h": 4,
       "w": 6,
       "x": 0,
-      "y": 13,
+      "y": 14,
       "nextX": 6,
-      "nextY": 17
+      "nextY": 18
     },
     "viz_type": "chart",
-    "viz_content": "SELECT event_time AS time, to_int64(sum(metric_value)) AS context_tokens FROM table([[ .DB ]].agentguard_cim_metrics) WHERE session_id = (SELECT if('{{filter_session}}' IN ('', 'latest'), arg_max(session_id, event_time), '{{filter_session}}') FROM table([[ .DB ]].agentguard_cim_event) WHERE event_type IN ('user_input', 'tool_invoke')) AND tags['sidechain'] != 'true' AND (metric_name = 'llm.input_tokens' OR (agent_type != 'codex' AND metric_name IN ('llm.cache_read_tokens', 'llm.cache_write_tokens'))) GROUP BY time ORDER BY time",
+    "viz_content": "SELECT event_time AS time, to_int64(sum(metric_value)) AS context_tokens FROM table([[ .DB ]].agentguard_cim_metrics) WHERE session_id = (SELECT if(array_element(split_by_char(' ', '{{filter_session}}'), -1) IN ('', 'latest'), arg_max(session_id, event_time), array_element(split_by_char(' ', '{{filter_session}}'), -1)) FROM table([[ .DB ]].agentguard_cim_event) WHERE event_type IN ('user_input', 'tool_invoke')) AND tags['sidechain'] != 'true' AND (metric_name = 'llm.input_tokens' OR (agent_type != 'codex' AND metric_name IN ('llm.cache_read_tokens', 'llm.cache_write_tokens'))) GROUP BY time ORDER BY time",
     "viz_config": {
       "chartType": "line",
       "config": {
@@ -159,12 +215,12 @@
       "h": 4,
       "w": 6,
       "x": 6,
-      "y": 13,
+      "y": 14,
       "nextX": 12,
-      "nextY": 17
+      "nextY": 18
     },
     "viz_type": "chart",
-    "viz_content": "SELECT tool_name, round(sum(tool_duration_ms) / 1000, 1) AS seconds, count() AS calls FROM table([[ .DB ]].agentguard_cim_event) WHERE session_id = (SELECT if('{{filter_session}}' IN ('', 'latest'), arg_max(session_id, event_time), '{{filter_session}}') FROM table([[ .DB ]].agentguard_cim_event) WHERE event_type IN ('user_input', 'tool_invoke')) AND event_type = 'tool_complete' GROUP BY tool_name ORDER BY seconds DESC LIMIT 15",
+    "viz_content": "SELECT tool_name, round(sum(tool_duration_ms) / 1000, 1) AS seconds, count() AS calls FROM table([[ .DB ]].agentguard_cim_event) WHERE session_id = (SELECT if(array_element(split_by_char(' ', '{{filter_session}}'), -1) IN ('', 'latest'), arg_max(session_id, event_time), array_element(split_by_char(' ', '{{filter_session}}'), -1)) FROM table([[ .DB ]].agentguard_cim_event) WHERE event_type IN ('user_input', 'tool_invoke')) AND event_type = 'tool_complete' GROUP BY tool_name ORDER BY seconds DESC LIMIT 15",
     "viz_config": {
       "chartType": "bar",
       "config": {
@@ -214,12 +270,12 @@
       "h": 4,
       "w": 12,
       "x": 0,
-      "y": 17,
+      "y": 18,
       "nextX": 12,
-      "nextY": 21
+      "nextY": 22
     },
     "viz_type": "chart",
-    "viz_content": "SELECT * FROM (SELECT detected_at, severity, rule_id, rule_name, hook_name, tool_name, message FROM table([[ .DB ]].agentguard_security_events) WHERE session_id = (SELECT if('{{filter_session}}' IN ('', 'latest'), arg_max(session_id, event_time), '{{filter_session}}') FROM table([[ .DB ]].agentguard_cim_event) WHERE event_type IN ('user_input', 'tool_invoke')) ORDER BY detected_at DESC LIMIT 100) ORDER BY detected_at",
+    "viz_content": "SELECT * FROM (SELECT detected_at, severity, rule_id, rule_name, hook_name, tool_name, message FROM table([[ .DB ]].agentguard_security_events) WHERE session_id = (SELECT if(array_element(split_by_char(' ', '{{filter_session}}'), -1) IN ('', 'latest'), arg_max(session_id, event_time), array_element(split_by_char(' ', '{{filter_session}}'), -1)) FROM table([[ .DB ]].agentguard_cim_event) WHERE event_type IN ('user_input', 'tool_invoke')) ORDER BY detected_at DESC LIMIT 100) ORDER BY detected_at",
     "viz_config": {
       "chartType": "table",
       "config": {

@@ -23,11 +23,21 @@ for (const file of files) {
     assert.equal(new Set(panels.map(p => p.id)).size, panels.length);
   });
 
-  test(`${file}: the controls fill the first row`, () => {
-    // A panel placed beside a narrower control row is lifted into it by the grid.
-    assert.equal(controls.reduce((w, c) => w + c.position.w, 0), 12);
-    assert.ok(controls.every(c => c.position.y === 0 && c.viz_config.defaultValue !== ''), 'every control has a default value');
-    assert.ok(charts.every(p => p.position.y >= 1));
+  test(`${file}: the controls fill their row`, () => {
+    // A panel placed beside a narrower control row is lifted into it by the grid. A control may sit
+    // lower than the first row (right above the panel it drives), but its row still holds controls only.
+    const rows = new Map();
+    for (const c of controls) rows.set(c.position.y, (rows.get(c.position.y) ?? 0) + c.position.w);
+    assert.ok(rows.has(0), 'the first row is a control row');
+    for (const [y, width] of rows) assert.equal(width, 12, `controls of row ${y} fill it`);
+    assert.ok(controls.every(c => c.position.h === 1 && c.viz_config.defaultValue !== ''), 'every control has a default value');
+    assert.ok(charts.every(p => !rows.has(p.position.y)), 'no chart starts in a control row');
+    for (const c of controls.filter(c => c.viz_content)) {
+      // a selector that takes its options from a query: the chosen text goes into the panel queries between quotes
+      assert.equal(c.viz_config.chartType, 'selector');
+      assert.ok(c.viz_content.includes('[[ .DB ]].'), `${c.id} reads [[ .DB ]]`);
+      assert.match(c.viz_content, /replace_all\(.*char\(39\), ''\)/, `${c.id}: options hold no quote character`);
+    }
   });
 
   test(`${file}: every query filter has a control, and queries name the database by template`, () => {
@@ -49,6 +59,13 @@ for (const file of files) {
         // row. Without that key only one series of each bar is drawn, and the chart looks unstacked.
         assert.equal(config.updateMode, 'key', `${p.id}: a chart with series updates by key`);
         assert.match(p.viz_content, new RegExp(`concat\\(to_string\\(${config.xAxis}\\), ' ', to_string\\(${config.color}\\)\\) AS ${config.updateKey}\\b`), `${p.id}: the key is x and series together`);
+      }
+      if (chartType === 'grammar') {
+        // a waterfall: every field the spec encodes or shows in the tooltip is a column of the query
+        const mark = JSON.parse(config.advancedSpec).marks[0];
+        const fields = [...Object.values(mark.encode), ...(mark.tooltip?.items ?? []).map(i => i.field)];
+        for (const f of fields) assert.match(p.viz_content, new RegExp(`\\b${f}\\b`), `${p.id}: column ${f}`);
+        assert.ok(mark.encode.y && mark.encode.y1, `${p.id}: a bar has a start and an end`);
       }
       if (chartType !== 'table') continue;
       // A table shows the last `rowCount` rows of the result, so the query must not return more.
