@@ -5,10 +5,10 @@
     "description": "",
     "position": {
       "h": 1,
-      "w": 6,
+      "w": 4,
       "x": 0,
       "y": 0,
-      "nextX": 6,
+      "nextX": 4,
       "nextY": 1
     },
     "viz_type": "control",
@@ -18,7 +18,7 @@
       "defaultValue": "6h",
       "inlineValues": "15m,1h,6h,24h,7d",
       "label": "Time range",
-      "labelWidth": "25",
+      "labelWidth": "35",
       "target": "filter_time_range"
     }
   },
@@ -28,10 +28,10 @@
     "description": "",
     "position": {
       "h": 1,
-      "w": 6,
-      "x": 6,
+      "w": 4,
+      "x": 4,
       "y": 0,
-      "nextX": 12,
+      "nextX": 8,
       "nextY": 1
     },
     "viz_type": "control",
@@ -41,8 +41,31 @@
       "defaultValue": "all",
       "inlineValues": "all,claudecode,codex,openclaw,hermes",
       "label": "Agent type",
-      "labelWidth": "25",
+      "labelWidth": "35",
       "target": "filter_agent"
+    }
+  },
+  {
+    "id": "ctl-deployment",
+    "title": "Deployment",
+    "description": "",
+    "position": {
+      "h": 1,
+      "w": 4,
+      "x": 8,
+      "y": 0,
+      "nextX": 12,
+      "nextY": 1
+    },
+    "viz_type": "control",
+    "viz_content": "SELECT replace_all(deployment_id, char(39), '') AS deployment FROM table([[ .DB ]].agentguard_cim_event) WHERE event_time > now() - 30d AND deployment_id != '' GROUP BY deployment_id ORDER BY max(event_time) DESC LIMIT 50",
+    "viz_config": {
+      "chartType": "selector",
+      "defaultValue": "all",
+      "inlineValues": "",
+      "label": "Deployment",
+      "labelWidth": "35",
+      "target": "filter_deployment"
     }
   },
   {
@@ -58,7 +81,7 @@
       "nextY": 3
     },
     "viz_type": "chart",
-    "viz_content": "SELECT uniq(session_id) AS sessions FROM table([[ .DB ]].agentguard_cim_event) WHERE event_time > now() - {{filter_time_range}} AND ('{{filter_agent}}' = 'all' OR agent_type = '{{filter_agent}}')",
+    "viz_content": "SELECT uniq(session_id) AS sessions FROM table([[ .DB ]].agentguard_cim_event) WHERE event_time > now() - {{filter_time_range}} AND ('{{filter_agent}}' = 'all' OR agent_type = '{{filter_agent}}') AND ('{{filter_deployment}}' = 'all' OR deployment_id = '{{filter_deployment}}')",
     "viz_config": {
       "chartType": "singleValue",
       "config": {
@@ -91,7 +114,7 @@
       "nextY": 3
     },
     "viz_type": "chart",
-    "viz_content": "SELECT count() AS tool_calls FROM table([[ .DB ]].agentguard_cim_event) WHERE event_time > now() - {{filter_time_range}} AND ('{{filter_agent}}' = 'all' OR agent_type = '{{filter_agent}}') AND event_type = 'tool_complete'",
+    "viz_content": "SELECT count() AS tool_calls FROM table([[ .DB ]].agentguard_cim_event) WHERE event_time > now() - {{filter_time_range}} AND ('{{filter_agent}}' = 'all' OR agent_type = '{{filter_agent}}') AND ('{{filter_deployment}}' = 'all' OR deployment_id = '{{filter_deployment}}') AND event_type = 'tool_complete'",
     "viz_config": {
       "chartType": "singleValue",
       "config": {
@@ -124,7 +147,7 @@
       "nextY": 3
     },
     "viz_type": "chart",
-    "viz_content": "SELECT to_int64(sum(metric_value)) AS tokens FROM table([[ .DB ]].agentguard_cim_metrics) WHERE event_time > now() - {{filter_time_range}} AND ('{{filter_agent}}' = 'all' OR agent_type = '{{filter_agent}}') AND metric_name IN ('llm.input_tokens', 'llm.output_tokens')",
+    "viz_content": "SELECT to_int64(sum(metric_value)) AS tokens FROM table([[ .DB ]].agentguard_cim_metrics) WHERE event_time > now() - {{filter_time_range}} AND ('{{filter_agent}}' = 'all' OR agent_type = '{{filter_agent}}') AND ('{{filter_deployment}}' = 'all' OR deployment_id = '{{filter_deployment}}') AND metric_name IN ('llm.input_tokens', 'llm.output_tokens')",
     "viz_config": {
       "chartType": "singleValue",
       "config": {
@@ -157,7 +180,7 @@
       "nextY": 3
     },
     "viz_type": "chart",
-    "viz_content": "SELECT count() AS threats FROM table([[ .DB ]].agentguard_threats) WHERE status = '' OR status = 'open'",
+    "viz_content": "SELECT count() AS threats FROM table([[ .DB ]].agentguard_threats) WHERE (status = '' OR status = 'open') AND ('{{filter_deployment}}' = 'all' OR deployment_id = '{{filter_deployment}}')",
     "viz_config": {
       "chartType": "singleValue",
       "config": {
@@ -190,7 +213,7 @@
       "nextY": 8
     },
     "viz_type": "chart",
-    "viz_content": "SELECT *, concat(to_string(time), ' ', to_string(agent_type)) AS k FROM (SELECT format_datetime(to_datetime(int_div(to_unix_timestamp(event_time), greatest(60, int_div(date_diff('second', now() - {{filter_time_range}}, now()), 60))) * greatest(60, int_div(date_diff('second', now() - {{filter_time_range}}, now()), 60))), '%m-%d %H:%M') AS time, agent_type, count() AS events FROM table([[ .DB ]].agentguard_cim_event) WHERE event_time > now() - {{filter_time_range}} AND ('{{filter_agent}}' = 'all' OR agent_type = '{{filter_agent}}') GROUP BY time, agent_type ORDER BY time) ORDER BY time",
+    "viz_content": "SELECT *, concat(to_string(time), ' ', to_string(agent_type)) AS k FROM (SELECT format_datetime(to_datetime(int_div(to_unix_timestamp(event_time), greatest(60, int_div(date_diff('second', now() - {{filter_time_range}}, now()), 60))) * greatest(60, int_div(date_diff('second', now() - {{filter_time_range}}, now()), 60))), '%m-%d %H:%M') AS time, agent_type, count() AS events FROM table([[ .DB ]].agentguard_cim_event) WHERE event_time > now() - {{filter_time_range}} AND ('{{filter_agent}}' = 'all' OR agent_type = '{{filter_agent}}') AND ('{{filter_deployment}}' = 'all' OR deployment_id = '{{filter_deployment}}') GROUP BY time, agent_type ORDER BY time) ORDER BY time",
     "viz_config": {
       "chartType": "column",
       "config": {
@@ -245,7 +268,7 @@
       "nextY": 8
     },
     "viz_type": "chart",
-    "viz_content": "SELECT e.session_id AS session_id, e.agent AS agent, e.project AS project, e.events AS events, e.tool_calls AS tool_calls, to_int64(m.tokens) AS tokens, d.detections AS detections, e.last_event AS last_event FROM (SELECT session_id, any(agent_type) AS agent, array_element(split_by_char('/', any_if(json_value(raw_event_data, '$.cwd'), json_value(raw_event_data, '$.cwd') != '')), -1) AS project, count() AS events, count_if(event_type = 'tool_complete') AS tool_calls, max(event_time) AS last_event FROM table([[ .DB ]].agentguard_cim_event) WHERE event_time > now() - {{filter_time_range}} AND ('{{filter_agent}}' = 'all' OR agent_type = '{{filter_agent}}') GROUP BY session_id) AS e LEFT JOIN (SELECT session_id, sum(metric_value) AS tokens FROM table([[ .DB ]].agentguard_cim_metrics) WHERE metric_name IN ('llm.input_tokens', 'llm.output_tokens') GROUP BY session_id) AS m ON m.session_id = e.session_id LEFT JOIN (SELECT session_id, count() AS detections FROM table([[ .DB ]].agentguard_security_events) GROUP BY session_id) AS d ON d.session_id = e.session_id ORDER BY events DESC LIMIT 8",
+    "viz_content": "SELECT e.session_id AS session_id, e.agent AS agent, e.project AS project, e.events AS events, e.tool_calls AS tool_calls, to_int64(m.tokens) AS tokens, d.detections AS detections, e.last_event AS last_event FROM (SELECT session_id, any(agent_type) AS agent, array_element(split_by_char('/', any_if(json_value(raw_event_data, '$.cwd'), json_value(raw_event_data, '$.cwd') != '')), -1) AS project, count() AS events, count_if(event_type = 'tool_complete') AS tool_calls, max(event_time) AS last_event FROM table([[ .DB ]].agentguard_cim_event) WHERE event_time > now() - {{filter_time_range}} AND ('{{filter_agent}}' = 'all' OR agent_type = '{{filter_agent}}') AND ('{{filter_deployment}}' = 'all' OR deployment_id = '{{filter_deployment}}') GROUP BY session_id) AS e LEFT JOIN (SELECT session_id, sum(metric_value) AS tokens FROM table([[ .DB ]].agentguard_cim_metrics) WHERE metric_name IN ('llm.input_tokens', 'llm.output_tokens') GROUP BY session_id) AS m ON m.session_id = e.session_id LEFT JOIN (SELECT session_id, count() AS detections FROM table([[ .DB ]].agentguard_security_events) GROUP BY session_id) AS d ON d.session_id = e.session_id ORDER BY events DESC LIMIT 8",
     "viz_config": {
       "chartType": "table",
       "config": {

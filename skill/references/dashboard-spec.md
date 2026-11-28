@@ -775,7 +775,8 @@ Trace waterfall (Gantt): one horizontal bar per row, from a start to an end. An 
 - **`style.maxWidth`** keeps bars thin when there are few rows in a tall panel.
 - **Scope the time axis.** One axis over a whole session leaves idle time between turns and shrinks every bar to a sliver; draw one turn (one trace) at a time and let a control pick it.
 - **A chart does not scroll inside its panel.** G2's `scrollbar` and `slider` options in `g2Overrides` have no effect, and a `g2Overrides.height` larger than the panel is clipped. A panel's height is also fixed by its `position.h`: it does not grow or shrink with the number of rows. Pick a height for the usual case (`h: 5` suits up to about 25 rows; more rows are drawn denser, with fewer labels), cap the rows, and put the detail in the tooltip.
-- A window function next to scalar subqueries in one `SELECT` failed with `Not found column`; number the rows in an inner query (`row_number() OVER (ORDER BY start_ms) AS n`) and compute the rest outside.
+- A window function next to scalar subqueries in one `SELECT`, or used inside another expression (`if(x != '', min(t) OVER (PARTITION BY x), t)`), failed with `Not found column`. Select the window function as a column of its own in an inner query (`min(t) OVER (PARTITION BY x) AS first_t`, `row_number() OVER (ORDER BY start_ms) AS n`) and compute the rest outside.
+- **Grouping rows under a parent** (the steps of a sub-agent under the sub-agent): give every row a sort key that is the parent's start for a child and its own start otherwise, add a row for the parent with a lower rank, number the rows by `(group key, rank, start)`, and mark a child in its label (`concat('└ ', name)`). The chart has flat rows: it shows order and marks, not indentation.
 
 **Gotchas**
 - `temporalRange` is **minutes**, not milliseconds. Setting it to `60000` gives you a 60000-minute (~41-day) window and your sliding chart will appear empty until ~41 days pass.
@@ -895,6 +896,8 @@ GROUP BY repo ORDER BY cnt DESC LIMIT 5 BY emit_version()
 | Column chart x axis shows `2026-11-27T16:35:00Z` | Select the time bucket as text with `format_datetime` |
 | Line chart draws long diagonals between far-apart points | A line joins points across empty periods; use a column chart for counts on sparse data |
 | `Aggregate function any(col) is found in WHERE` | `any(col) AS col` plus a filter on `col`: the alias replaces the column in `WHERE`. Alias it under another name |
+| `Aggregate function min(x) is found inside another aggregate function` | `min(x) AS x` next to another aggregate of `x` in the same `SELECT`: the alias replaces the column there too. Aggregate under other names in an inner query and rename outside |
+| Histogram bars are in the wrong order | A bar or column chart draws rows in the order of the result. Bucket in SQL (`multi_if(v < 1000, 0, v < 2000, 1, …) AS i` with a label column), and order by `i`, not by the label or the count |
 
 ---
 

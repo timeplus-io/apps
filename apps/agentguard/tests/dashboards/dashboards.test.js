@@ -9,8 +9,8 @@ const files = [...manifest.matchAll(/^\s+- file: (dashboards\/\S+\.json)$/gm)].m
 // `[[ .DB ]]` is the only install-time template in these files; it sits inside JSON strings.
 const load = file => JSON.parse(readFileSync(new URL(file, root), 'utf8'));
 
-test('the manifest lists six dashboards', () => {
-  assert.equal(files.length, 6);
+test('the manifest lists eight dashboards', () => {
+  assert.equal(files.length, 8);
 });
 
 for (const file of files) {
