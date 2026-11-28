@@ -90,7 +90,7 @@
       "nextY": 5
     },
     "viz_type": "chart",
-    "viz_content": "SELECT format_datetime(to_datetime(int_div(to_unix_timestamp(detected_at), greatest(60, int_div(date_diff('second', now() - {{filter_time_range}}, now()), 60))) * greatest(60, int_div(date_diff('second', now() - {{filter_time_range}}, now()), 60))), '%m-%d %H:%M') AS time, rule_name, count() AS detections FROM table([[ .DB ]].agentguard_security_events) WHERE detected_at > now() - {{filter_time_range}} GROUP BY time, rule_name ORDER BY time",
+    "viz_content": "SELECT *, concat(to_string(time), ' ', to_string(rule_name)) AS k FROM (SELECT format_datetime(to_datetime(int_div(to_unix_timestamp(detected_at), greatest(60, int_div(date_diff('second', now() - {{filter_time_range}}, now()), 60))) * greatest(60, int_div(date_diff('second', now() - {{filter_time_range}}, now()), 60))), '%m-%d %H:%M') AS time, rule_name, count() AS detections FROM table([[ .DB ]].agentguard_security_events) WHERE detected_at > now() - {{filter_time_range}} GROUP BY time, rule_name ORDER BY time) ORDER BY time",
     "viz_config": {
       "chartType": "column",
       "config": {
@@ -98,8 +98,8 @@
         "yAxis": "detections",
         "color": "rule_name",
         "groupType": "stack",
-        "updateMode": "all",
-        "updateKey": "",
+        "updateMode": "key",
+        "updateKey": "k",
         "xFormat": "",
         "xTitle": "",
         "yTitle": "",

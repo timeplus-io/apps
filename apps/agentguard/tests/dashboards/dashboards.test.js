@@ -44,6 +44,12 @@ for (const file of files) {
       const { chartType, config = {} } = p.viz_config;
       const names = chartType === 'singleValue' ? [config.value] : [config.xAxis, config.yAxis, config.color].filter(Boolean);
       for (const n of names) assert.match(p.viz_content, new RegExp(`\\b${n}\\b`), `${p.id}: column ${n}`);
+      if ((chartType === 'column' || chartType === 'bar') && config.color) {
+        // A column or bar chart keeps one row per x value unless it updates by a key that is unique per
+        // row. Without that key only one series of each bar is drawn, and the chart looks unstacked.
+        assert.equal(config.updateMode, 'key', `${p.id}: a chart with series updates by key`);
+        assert.match(p.viz_content, new RegExp(`concat\\(to_string\\(${config.xAxis}\\), ' ', to_string\\(${config.color}\\)\\) AS ${config.updateKey}\\b`), `${p.id}: the key is x and series together`);
+      }
       if (chartType !== 'table') continue;
       // A table shows the last `rowCount` rows of the result, so the query must not return more.
       const limit = Math.max(...[...p.viz_content.matchAll(/LIMIT (\d+)/g)].map(m => Number(m[1])), 0);

@@ -58,7 +58,7 @@
       "nextY": 5
     },
     "viz_type": "chart",
-    "viz_content": "SELECT format_datetime(to_datetime(int_div(to_unix_timestamp(event_time), greatest(60, int_div(date_diff('second', now() - {{filter_time_range}}, now()), 60))) * greatest(60, int_div(date_diff('second', now() - {{filter_time_range}}, now()), 60))), '%m-%d %H:%M') AS time, agent_type, uniq(session_id) AS sessions FROM table([[ .DB ]].agentguard_cim_event) WHERE event_time > now() - {{filter_time_range}} AND ('{{filter_agent}}' = 'all' OR agent_type = '{{filter_agent}}') GROUP BY time, agent_type ORDER BY time",
+    "viz_content": "SELECT *, concat(to_string(time), ' ', to_string(agent_type)) AS k FROM (SELECT format_datetime(to_datetime(int_div(to_unix_timestamp(event_time), greatest(60, int_div(date_diff('second', now() - {{filter_time_range}}, now()), 60))) * greatest(60, int_div(date_diff('second', now() - {{filter_time_range}}, now()), 60))), '%m-%d %H:%M') AS time, agent_type, uniq(session_id) AS sessions FROM table([[ .DB ]].agentguard_cim_event) WHERE event_time > now() - {{filter_time_range}} AND ('{{filter_agent}}' = 'all' OR agent_type = '{{filter_agent}}') GROUP BY time, agent_type ORDER BY time) ORDER BY time",
     "viz_config": {
       "chartType": "column",
       "config": {
@@ -66,8 +66,8 @@
         "yAxis": "sessions",
         "color": "agent_type",
         "groupType": "stack",
-        "updateMode": "all",
-        "updateKey": "",
+        "updateMode": "key",
+        "updateKey": "k",
         "xFormat": "",
         "xTitle": "",
         "yTitle": "",
@@ -113,7 +113,7 @@
       "nextY": 5
     },
     "viz_type": "chart",
-    "viz_content": "SELECT format_datetime(to_datetime(int_div(to_unix_timestamp(event_time), greatest(60, int_div(date_diff('second', now() - {{filter_time_range}}, now()), 60))) * greatest(60, int_div(date_diff('second', now() - {{filter_time_range}}, now()), 60))), '%m-%d %H:%M') AS time, multi_if(event_type = 'user_input', 'prompt', event_type = 'llm_request', 'model request', event_type = 'tool_invoke', 'tool call', event_type = 'llm_response' AND assistant_message != '', 'reply', '') AS activity, count() AS events FROM table([[ .DB ]].agentguard_cim_event) WHERE event_time > now() - {{filter_time_range}} AND ('{{filter_agent}}' = 'all' OR agent_type = '{{filter_agent}}') AND multi_if(event_type = 'user_input', 'prompt', event_type = 'llm_request', 'model request', event_type = 'tool_invoke', 'tool call', event_type = 'llm_response' AND assistant_message != '', 'reply', '') != '' GROUP BY time, activity ORDER BY time",
+    "viz_content": "SELECT *, concat(to_string(time), ' ', to_string(activity)) AS k FROM (SELECT format_datetime(to_datetime(int_div(to_unix_timestamp(event_time), greatest(60, int_div(date_diff('second', now() - {{filter_time_range}}, now()), 60))) * greatest(60, int_div(date_diff('second', now() - {{filter_time_range}}, now()), 60))), '%m-%d %H:%M') AS time, multi_if(event_type = 'user_input', 'prompt', event_type = 'llm_request', 'model request', event_type = 'tool_invoke', 'tool call', event_type = 'llm_response' AND assistant_message != '', 'reply', '') AS activity, count() AS events FROM table([[ .DB ]].agentguard_cim_event) WHERE event_time > now() - {{filter_time_range}} AND ('{{filter_agent}}' = 'all' OR agent_type = '{{filter_agent}}') AND multi_if(event_type = 'user_input', 'prompt', event_type = 'llm_request', 'model request', event_type = 'tool_invoke', 'tool call', event_type = 'llm_response' AND assistant_message != '', 'reply', '') != '' GROUP BY time, activity ORDER BY time) ORDER BY time",
     "viz_config": {
       "chartType": "column",
       "config": {
@@ -121,8 +121,8 @@
         "yAxis": "events",
         "color": "activity",
         "groupType": "stack",
-        "updateMode": "all",
-        "updateKey": "",
+        "updateMode": "key",
+        "updateKey": "k",
         "xFormat": "",
         "xTitle": "",
         "yTitle": "",
@@ -168,7 +168,7 @@
       "nextY": 9
     },
     "viz_type": "chart",
-    "viz_content": "SELECT project, agent, count() AS sessions FROM (SELECT session_id, any(agent_type) AS agent, array_element(split_by_char('/', any_if(json_value(raw_event_data, '$.cwd'), json_value(raw_event_data, '$.cwd') != '')), -1) AS project FROM table([[ .DB ]].agentguard_cim_event) WHERE event_time > now() - {{filter_time_range}} AND ('{{filter_agent}}' = 'all' OR agent_type = '{{filter_agent}}') GROUP BY session_id) WHERE project != '' GROUP BY project, agent ORDER BY sessions DESC LIMIT 30",
+    "viz_content": "SELECT *, concat(to_string(project), ' ', to_string(agent)) AS k FROM (SELECT project, agent, count() AS sessions FROM (SELECT session_id, any(agent_type) AS agent, array_element(split_by_char('/', any_if(json_value(raw_event_data, '$.cwd'), json_value(raw_event_data, '$.cwd') != '')), -1) AS project FROM table([[ .DB ]].agentguard_cim_event) WHERE event_time > now() - {{filter_time_range}} AND ('{{filter_agent}}' = 'all' OR agent_type = '{{filter_agent}}') GROUP BY session_id) WHERE project != '' GROUP BY project, agent ORDER BY sessions DESC LIMIT 30) ORDER BY sessions DESC",
     "viz_config": {
       "chartType": "bar",
       "config": {
@@ -176,8 +176,8 @@
         "yAxis": "sessions",
         "color": "agent",
         "groupType": "stack",
-        "updateMode": "all",
-        "updateKey": "",
+        "updateMode": "key",
+        "updateKey": "k",
         "xFormat": "",
         "xTitle": "",
         "yTitle": "",
@@ -247,7 +247,7 @@
       "nextY": 9
     },
     "viz_type": "chart",
-    "viz_content": "SELECT format_datetime(to_datetime(int_div(to_unix_timestamp(event_time), greatest(60, int_div(date_diff('second', now() - {{filter_time_range}}, now()), 60))) * greatest(60, int_div(date_diff('second', now() - {{filter_time_range}}, now()), 60))), '%m-%d %H:%M') AS time, multi_if(event_type = 'permission_request', 'permission request', event_type = 'permission_denied', 'permission denied', json_value(raw_event_data, '$.notification_type') != '', json_value(raw_event_data, '$.notification_type'), 'notification') AS kind, count() AS events FROM table([[ .DB ]].agentguard_cim_event) WHERE event_time > now() - {{filter_time_range}} AND ('{{filter_agent}}' = 'all' OR agent_type = '{{filter_agent}}') AND event_type IN ('permission_request', 'permission_denied', 'notification') GROUP BY time, kind ORDER BY time",
+    "viz_content": "SELECT *, concat(to_string(time), ' ', to_string(kind)) AS k FROM (SELECT format_datetime(to_datetime(int_div(to_unix_timestamp(event_time), greatest(60, int_div(date_diff('second', now() - {{filter_time_range}}, now()), 60))) * greatest(60, int_div(date_diff('second', now() - {{filter_time_range}}, now()), 60))), '%m-%d %H:%M') AS time, multi_if(event_type = 'permission_request', 'permission request', event_type = 'permission_denied', 'permission denied', json_value(raw_event_data, '$.notification_type') != '', json_value(raw_event_data, '$.notification_type'), 'notification') AS kind, count() AS events FROM table([[ .DB ]].agentguard_cim_event) WHERE event_time > now() - {{filter_time_range}} AND ('{{filter_agent}}' = 'all' OR agent_type = '{{filter_agent}}') AND event_type IN ('permission_request', 'permission_denied', 'notification') GROUP BY time, kind ORDER BY time) ORDER BY time",
     "viz_config": {
       "chartType": "column",
       "config": {
@@ -255,8 +255,8 @@
         "yAxis": "events",
         "color": "kind",
         "groupType": "stack",
-        "updateMode": "all",
-        "updateKey": "",
+        "updateMode": "key",
+        "updateKey": "k",
         "xFormat": "",
         "xTitle": "",
         "yTitle": "",

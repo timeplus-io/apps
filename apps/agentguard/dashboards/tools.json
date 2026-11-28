@@ -58,7 +58,7 @@
       "nextY": 5
     },
     "viz_type": "chart",
-    "viz_content": "SELECT format_datetime(to_datetime(int_div(to_unix_timestamp(event_time), greatest(60, int_div(date_diff('second', now() - {{filter_time_range}}, now()), 60))) * greatest(60, int_div(date_diff('second', now() - {{filter_time_range}}, now()), 60))), '%m-%d %H:%M') AS time, tool_name, count() AS calls FROM table([[ .DB ]].agentguard_cim_event) WHERE event_time > now() - {{filter_time_range}} AND ('{{filter_agent}}' = 'all' OR agent_type = '{{filter_agent}}') AND event_type = 'tool_complete' AND tool_name IN (SELECT tool_name FROM table([[ .DB ]].agentguard_cim_event) WHERE event_time > now() - {{filter_time_range}} AND ('{{filter_agent}}' = 'all' OR agent_type = '{{filter_agent}}') AND event_type = 'tool_complete' GROUP BY tool_name ORDER BY count() DESC LIMIT 8) GROUP BY time, tool_name ORDER BY time",
+    "viz_content": "SELECT *, concat(to_string(time), ' ', to_string(tool_name)) AS k FROM (SELECT format_datetime(to_datetime(int_div(to_unix_timestamp(event_time), greatest(60, int_div(date_diff('second', now() - {{filter_time_range}}, now()), 60))) * greatest(60, int_div(date_diff('second', now() - {{filter_time_range}}, now()), 60))), '%m-%d %H:%M') AS time, tool_name, count() AS calls FROM table([[ .DB ]].agentguard_cim_event) WHERE event_time > now() - {{filter_time_range}} AND ('{{filter_agent}}' = 'all' OR agent_type = '{{filter_agent}}') AND event_type = 'tool_complete' AND tool_name IN (SELECT tool_name FROM table([[ .DB ]].agentguard_cim_event) WHERE event_time > now() - {{filter_time_range}} AND ('{{filter_agent}}' = 'all' OR agent_type = '{{filter_agent}}') AND event_type = 'tool_complete' GROUP BY tool_name ORDER BY count() DESC LIMIT 8) GROUP BY time, tool_name ORDER BY time) ORDER BY time",
     "viz_config": {
       "chartType": "column",
       "config": {
@@ -66,8 +66,8 @@
         "yAxis": "calls",
         "color": "tool_name",
         "groupType": "stack",
-        "updateMode": "all",
-        "updateKey": "",
+        "updateMode": "key",
+        "updateKey": "k",
         "xFormat": "",
         "xTitle": "",
         "yTitle": "",
@@ -113,7 +113,7 @@
       "nextY": 5
     },
     "viz_type": "chart",
-    "viz_content": "SELECT tool_name, agent_type, count() AS calls FROM table([[ .DB ]].agentguard_cim_event) WHERE event_time > now() - {{filter_time_range}} AND ('{{filter_agent}}' = 'all' OR agent_type = '{{filter_agent}}') AND event_type = 'tool_complete' GROUP BY tool_name, agent_type ORDER BY calls DESC LIMIT 30",
+    "viz_content": "SELECT *, concat(to_string(tool_name), ' ', to_string(agent_type)) AS k FROM (SELECT tool_name, agent_type, count() AS calls FROM table([[ .DB ]].agentguard_cim_event) WHERE event_time > now() - {{filter_time_range}} AND ('{{filter_agent}}' = 'all' OR agent_type = '{{filter_agent}}') AND event_type = 'tool_complete' GROUP BY tool_name, agent_type ORDER BY calls DESC LIMIT 30) ORDER BY calls DESC",
     "viz_config": {
       "chartType": "bar",
       "config": {
@@ -121,8 +121,8 @@
         "yAxis": "calls",
         "color": "agent_type",
         "groupType": "stack",
-        "updateMode": "all",
-        "updateKey": "",
+        "updateMode": "key",
+        "updateKey": "k",
         "xFormat": "",
         "xTitle": "",
         "yTitle": "",
@@ -223,7 +223,7 @@
       "nextY": 9
     },
     "viz_type": "chart",
-    "viz_content": "SELECT format_datetime(to_datetime(int_div(to_unix_timestamp(event_time), greatest(60, int_div(date_diff('second', now() - {{filter_time_range}}, now()), 60))) * greatest(60, int_div(date_diff('second', now() - {{filter_time_range}}, now()), 60))), '%m-%d %H:%M') AS time, if(event_type = 'tool_complete', 'failed', 'blocked') AS outcome, count() AS calls FROM table([[ .DB ]].agentguard_cim_event) WHERE event_time > now() - {{filter_time_range}} AND ('{{filter_agent}}' = 'all' OR agent_type = '{{filter_agent}}') AND ((event_type = 'tool_complete' AND NOT tool_success) OR (event_type = 'tool_invoke' AND hook_decision NOT IN ('', 'observe', 'allow'))) GROUP BY time, outcome ORDER BY time",
+    "viz_content": "SELECT *, concat(to_string(time), ' ', to_string(outcome)) AS k FROM (SELECT format_datetime(to_datetime(int_div(to_unix_timestamp(event_time), greatest(60, int_div(date_diff('second', now() - {{filter_time_range}}, now()), 60))) * greatest(60, int_div(date_diff('second', now() - {{filter_time_range}}, now()), 60))), '%m-%d %H:%M') AS time, if(event_type = 'tool_complete', 'failed', 'blocked') AS outcome, count() AS calls FROM table([[ .DB ]].agentguard_cim_event) WHERE event_time > now() - {{filter_time_range}} AND ('{{filter_agent}}' = 'all' OR agent_type = '{{filter_agent}}') AND ((event_type = 'tool_complete' AND NOT tool_success) OR (event_type = 'tool_invoke' AND hook_decision NOT IN ('', 'observe', 'allow'))) GROUP BY time, outcome ORDER BY time) ORDER BY time",
     "viz_config": {
       "chartType": "column",
       "config": {
@@ -231,8 +231,8 @@
         "yAxis": "calls",
         "color": "outcome",
         "groupType": "stack",
-        "updateMode": "all",
-        "updateKey": "",
+        "updateMode": "key",
+        "updateKey": "k",
         "xFormat": "",
         "xTitle": "",
         "yTitle": "",
