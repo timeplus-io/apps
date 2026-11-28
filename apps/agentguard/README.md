@@ -98,7 +98,11 @@ What to expect:
 - A Claude Code turn is its `prompt_id`. The plugin sends it as `run_id` from 0.7.0; for older rows the dashboards read it from the payload.
 - Charts over time use up to 60 bars, at least a minute wide, so the bar width follows the time range. Tables that rank show the top eight; tables that list show the newest 100 rows with the latest at the bottom.
 
-Editing a dashboard: the console's table shows the last `rowCount` rows of a result and opens at its last row, the controls must fill the first row (a panel beside a narrower control row is lifted into it), and a text control needs a default value. `make test` checks these.
+Editing a dashboard: a column or bar chart with a series (`color`) must update by a key that is unique per row (`updateMode: "key"`, with `updateKey` naming a column made of x and series together), or it draws one series per bar and looks unstacked; the console's table shows the last `rowCount` rows of a result and opens at its last row, the controls must fill the first row (a panel beside a narrower control row is lifted into it), and a text control needs a default value. `make test` checks these.
+
+## Upgrading to 0.8.1
+
+0.8.1 fixes the charts with more than one series per bar. In 0.7.0 and 0.8.0 the stacked charts drew one series for each bar and dropped the others, so a bar showed, for example, only the replies of a period and not its tool calls and prompts. Affected: Events over time (Overview); Active sessions over time, Activity mix, Sessions by project, Waiting on a person (Sessions and Activity); Tokens by model, Tokens by type (Token Usage); Tool calls over time, Top tools, Failed and blocked tool calls (Tool Calls); Detections over time by rule (Threats). The numbers and tables on the same dashboards were right. Only the dashboards change in this version.
 
 ## Upgrading to 0.8.0
 
