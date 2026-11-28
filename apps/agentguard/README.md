@@ -16,7 +16,7 @@ Installs the [AgentGuard](https://github.com/timeplus-io/AgentGuard) streaming p
 | Derived | `agentguard_skills` + `mv_skills_*`, `agentguard_memory_ops` + `mv_memory_*` |
 | Cost | `agentguard_pricing`, `agentguard_cost_budgets` (schema only) |
 | Rules | `agentguard_rules` + four Core Protection detections `mv_rule_rp001..rp004`, running from install |
-| Dashboards | Six dashboards: overview, sessions and activity, token usage, tool calls, session trace, threats (see below) |
+| Dashboards | Eight dashboards: overview, sessions and activity, token usage, tool calls, session trace, threats, usage by agent, latency and errors (see below) |
 | Custom UI | Agent Rooms 3D, a live 3D view of agent sessions (see below) |
 
 Not included (they need the AgentGuard server): user management, notifications, approval holds, Sentry, Semantic DLP, and the rest of the rule catalog.
@@ -77,7 +77,7 @@ Set `timeplus.database: ag` in AgentGuard's `config.yaml` (or `TIMEPLUS_DATABASE
 
 ## Dashboards
 
-Six dashboards, each on one question and with at most six charts. All but Session Trace have a **Time range** control, and all but Threats and Session Trace also filter by **Agent type**. Session Trace has a **Session** list and a **Turn** list instead.
+Eight dashboards, each on one question and with at most six charts. All but Session Trace have a **Time range** and a **Deployment** control (the deployments seen in the last 30 days, or `all`), and all but Threats and Session Trace also filter by **Agent type**. Session Trace has a **Session** list and a **Turn** list instead.
 
 | Dashboard | File | Shows |
 |---|---|---|
@@ -87,6 +87,8 @@ Six dashboards, each on one question and with at most six charts. All but Sessio
 | Agents: Tool Calls | `dashboards/tools.json` | Tool calls over time, top tools, tool duration (p95), failed and blocked calls, MCP servers and skills, repeated calls |
 | Agents: Session Trace | `dashboards/session_trace.json` | One session as a trace: a two-line summary (project, agent, model, state, times, counts and tokens), a waterfall of its turns, a waterfall of the steps of one turn (prompt, model requests, tool calls, waits on a person, reply), context growth, time by tool, detections. Pick the session in **Session**, at the top, and the turn in **Turn**, right above the steps; both default to `latest` |
 | Agents: Threats | `dashboards/threats.json` | Open threats by severity, detections over time by rule, by rule and tool, by session, blocked actions, recent threats |
+| Agents: Usage by Agent | `dashboards/agents.json` | Sessions and tokens over time per agent, tokens by agent and model, tool calls by agent (worked and failed), usage per agent and per deployment |
+| Agents: Latency and Errors | `dashboards/latency.json` | Model request latency p50/p95/p99 over time and its distribution, turn duration by agent type, model request errors and retries, the slowest requests, reliability by agent type |
 
 Where the data comes from: sessions, steps, tool calls and waits on a person from `agentguard_cim_event`; tokens and latency from `agentguard_cim_metrics`; threats from `agentguard_security_events` and `agentguard_threats`; skills from `agentguard_skills`.
 
@@ -101,10 +103,20 @@ What to expect:
   - *Turns* draws one bar per turn along the time of the session (the latest 50). *Steps of the turn* draws one row per step, in order, on the time of the turn: a tool call and a model request from start to end, a prompt, a reply and a wait as a mark. A failed tool call has its own colour.
   - Point at a bar for the details: duration, the tool input and result (or error), the model and token counts of a model request, the prompt or reply text.
   - A tool call starts at its end less its duration, a model request at its end less its latency. Model requests are drawn when the turn has token metrics: Codex, and Claude Code with the plugin 0.7.1 or later, where they arrive when the turn ends.
-  - A panel has a fixed height: it cannot grow or shrink with the number of steps, and a chart cannot scroll inside it. The steps panel has the height of the turns panel, which suits the usual turn of up to about 25 steps; a longer turn is drawn denser, with fewer labels, up to its first 200 steps. In edit mode the panel can be dragged taller. Steps are not nested: a sub-agent's steps are rows like the others.
+  - A panel has a fixed height: it cannot grow or shrink with the number of steps, and a chart cannot scroll inside it. The steps panel has the height of the turns panel, which suits the usual turn of up to about 25 steps; a longer turn is drawn denser, with fewer labels, up to its first 200 steps. In edit mode the panel can be dragged taller. The steps of a sub-agent are grouped under a bar for the sub-agent, right after the call that started it, and marked with └; the chart has flat rows, so this is grouping, not a tree. A Claude Code sub-agent's model requests are drawn when the plugin sent them (on SubagentStop).
+- **Usage by Agent**: an agent is one `agent_id`, the machine or account a plugin reports as; a deployment groups agents. With one machine reporting there is one row.
+- **Model request errors and retries** are read from the raw hook events: a Codex model request that did not complete or was attempted again, and a Claude Code turn that an API error ended (`stop_failure`). For Claude Code there is no row for a model request that is retried inside a turn, so its retries are not counted.
 - Charts over time use up to 60 bars, at least a minute wide, so the bar width follows the time range. Tables that rank show the top eight; tables that list show the newest 100 rows with the latest at the bottom.
 
 Editing a dashboard: a column or bar chart with a series (`color`) must update by a key that is unique per row (`updateMode: "key"`, with `updateKey` naming a column made of x and series together), or it draws one series per bar and looks unstacked; the console's table shows the last `rowCount` rows of a result and opens at its last row, the controls of a row must fill it (a panel beside a narrower control row is lifted into it; a control can sit lower than the first row, as Turn does right above the steps panel it drives), and every control needs a default value. A selector takes its options from the first column of the query in its `viz_content`; the chosen text is put into the panel queries as it is, so the Session and Turn lists build each option without quote characters and the queries take the id as its last word. The two waterfalls are `grammar` charts: an interval mark with a start (`y`) and an end (`y1`) on a transposed coordinate, with the tooltip fields named in the spec. `make test` checks these.
+
+## Upgrading to 0.10.0
+
+Only the dashboards change ([#84](https://github.com/timeplus-io/apps/issues/84)).
+
+- Two new dashboards: **Agents: Usage by Agent** and **Agents: Latency and Errors**.
+- A **Deployment** filter on every dashboard that has a Time range.
+- Session Trace groups the steps of a sub-agent under a bar for the sub-agent.
 
 ## Upgrading to 0.9.0
 

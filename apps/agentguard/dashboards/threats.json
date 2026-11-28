@@ -5,10 +5,10 @@
     "description": "",
     "position": {
       "h": 1,
-      "w": 12,
+      "w": 6,
       "x": 0,
       "y": 0,
-      "nextX": 12,
+      "nextX": 6,
       "nextY": 1
     },
     "viz_type": "control",
@@ -18,8 +18,31 @@
       "defaultValue": "24h",
       "inlineValues": "15m,1h,6h,24h,7d",
       "label": "Time range",
-      "labelWidth": "25",
+      "labelWidth": "35",
       "target": "filter_time_range"
+    }
+  },
+  {
+    "id": "ctl-deployment",
+    "title": "Deployment",
+    "description": "",
+    "position": {
+      "h": 1,
+      "w": 6,
+      "x": 6,
+      "y": 0,
+      "nextX": 12,
+      "nextY": 1
+    },
+    "viz_type": "control",
+    "viz_content": "SELECT replace_all(deployment_id, char(39), '') AS deployment FROM table([[ .DB ]].agentguard_cim_event) WHERE event_time > now() - 30d AND deployment_id != '' GROUP BY deployment_id ORDER BY max(event_time) DESC LIMIT 50",
+    "viz_config": {
+      "chartType": "selector",
+      "defaultValue": "all",
+      "inlineValues": "",
+      "label": "Deployment",
+      "labelWidth": "35",
+      "target": "filter_deployment"
     }
   },
   {
@@ -35,7 +58,7 @@
       "nextY": 5
     },
     "viz_type": "chart",
-    "viz_content": "SELECT severity, count() AS threats FROM table([[ .DB ]].agentguard_threats) WHERE status = '' OR status = 'open' GROUP BY severity ORDER BY severity",
+    "viz_content": "SELECT severity, count() AS threats FROM table([[ .DB ]].agentguard_threats) WHERE (status = '' OR status = 'open') AND ('{{filter_deployment}}' = 'all' OR deployment_id = '{{filter_deployment}}') GROUP BY severity ORDER BY severity",
     "viz_config": {
       "chartType": "column",
       "config": {
@@ -90,7 +113,7 @@
       "nextY": 5
     },
     "viz_type": "chart",
-    "viz_content": "SELECT *, concat(to_string(time), ' ', to_string(rule_name)) AS k FROM (SELECT format_datetime(to_datetime(int_div(to_unix_timestamp(detected_at), greatest(60, int_div(date_diff('second', now() - {{filter_time_range}}, now()), 60))) * greatest(60, int_div(date_diff('second', now() - {{filter_time_range}}, now()), 60))), '%m-%d %H:%M') AS time, rule_name, count() AS detections FROM table([[ .DB ]].agentguard_security_events) WHERE detected_at > now() - {{filter_time_range}} GROUP BY time, rule_name ORDER BY time) ORDER BY time",
+    "viz_content": "SELECT *, concat(to_string(time), ' ', to_string(rule_name)) AS k FROM (SELECT format_datetime(to_datetime(int_div(to_unix_timestamp(detected_at), greatest(60, int_div(date_diff('second', now() - {{filter_time_range}}, now()), 60))) * greatest(60, int_div(date_diff('second', now() - {{filter_time_range}}, now()), 60))), '%m-%d %H:%M') AS time, rule_name, count() AS detections FROM table([[ .DB ]].agentguard_security_events) WHERE detected_at > now() - {{filter_time_range}} AND ('{{filter_deployment}}' = 'all' OR deployment_id = '{{filter_deployment}}') GROUP BY time, rule_name ORDER BY time) ORDER BY time",
     "viz_config": {
       "chartType": "column",
       "config": {
@@ -145,7 +168,7 @@
       "nextY": 10
     },
     "viz_type": "chart",
-    "viz_content": "SELECT rule_id, rule_name, severity, tool_name, count() AS detections, uniq(session_id) AS sessions, max(detected_at) AS last_seen FROM table([[ .DB ]].agentguard_security_events) WHERE detected_at > now() - {{filter_time_range}} GROUP BY rule_id, rule_name, severity, tool_name ORDER BY detections DESC LIMIT 8",
+    "viz_content": "SELECT rule_id, rule_name, severity, tool_name, count() AS detections, uniq(session_id) AS sessions, max(detected_at) AS last_seen FROM table([[ .DB ]].agentguard_security_events) WHERE detected_at > now() - {{filter_time_range}} AND ('{{filter_deployment}}' = 'all' OR deployment_id = '{{filter_deployment}}') GROUP BY rule_id, rule_name, severity, tool_name ORDER BY detections DESC LIMIT 8",
     "viz_config": {
       "chartType": "table",
       "config": {
@@ -169,7 +192,7 @@
       "nextY": 10
     },
     "viz_type": "chart",
-    "viz_content": "SELECT session_id, any(agent_id) AS agent_id, count() AS detections, count_if(severity = 'critical') AS critical, uniq(rule_id) AS rules, max(detected_at) AS last_seen FROM table([[ .DB ]].agentguard_security_events) WHERE detected_at > now() - {{filter_time_range}} GROUP BY session_id ORDER BY critical DESC, detections DESC LIMIT 8",
+    "viz_content": "SELECT session_id, any(agent_id) AS agent_id, count() AS detections, count_if(severity = 'critical') AS critical, uniq(rule_id) AS rules, max(detected_at) AS last_seen FROM table([[ .DB ]].agentguard_security_events) WHERE detected_at > now() - {{filter_time_range}} AND ('{{filter_deployment}}' = 'all' OR deployment_id = '{{filter_deployment}}') GROUP BY session_id ORDER BY critical DESC, detections DESC LIMIT 8",
     "viz_config": {
       "chartType": "table",
       "config": {
@@ -193,7 +216,7 @@
       "nextY": 15
     },
     "viz_type": "chart",
-    "viz_content": "SELECT * FROM (SELECT event_time AS time, agent_type, session_id, event_type, tool_name, hook_decision, block_reason FROM table([[ .DB ]].agentguard_cim_event) WHERE event_time > now() - {{filter_time_range}} AND hook_decision NOT IN ('', 'observe', 'allow') ORDER BY event_time DESC LIMIT 100) ORDER BY time",
+    "viz_content": "SELECT * FROM (SELECT event_time AS time, agent_type, session_id, event_type, tool_name, hook_decision, block_reason FROM table([[ .DB ]].agentguard_cim_event) WHERE event_time > now() - {{filter_time_range}} AND ('{{filter_deployment}}' = 'all' OR deployment_id = '{{filter_deployment}}') AND hook_decision NOT IN ('', 'observe', 'allow') ORDER BY event_time DESC LIMIT 100) ORDER BY time",
     "viz_config": {
       "chartType": "table",
       "config": {
@@ -217,7 +240,7 @@
       "nextY": 15
     },
     "viz_type": "chart",
-    "viz_content": "SELECT * FROM (SELECT last_seen, severity, rule_name, agent_id, session_id, if(status = '', 'open', status) AS status FROM table([[ .DB ]].agentguard_threats) WHERE last_seen > now() - {{filter_time_range}} ORDER BY last_seen DESC LIMIT 100) ORDER BY last_seen",
+    "viz_content": "SELECT * FROM (SELECT last_seen, severity, rule_name, agent_id, session_id, if(status = '', 'open', status) AS status FROM table([[ .DB ]].agentguard_threats) WHERE last_seen > now() - {{filter_time_range}} AND ('{{filter_deployment}}' = 'all' OR deployment_id = '{{filter_deployment}}') ORDER BY last_seen DESC LIMIT 100) ORDER BY last_seen",
     "viz_config": {
       "chartType": "table",
       "config": {

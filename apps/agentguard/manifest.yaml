@@ -1,7 +1,7 @@
 package_format_version: 1
 id: io.timeplus.agentguard
 name: AgentGuard
-version: 0.9.0
+version: 0.10.0
 author: Timeplus
 icon: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJiZyIgeDE9IjAiIHkxPSIwIiB4Mj0iNDgiIHkyPSI0OCIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNENTNGOEMiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiM5RjJCQzAiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHJ4PSIxMSIgZmlsbD0idXJsKCNiZykiLz48cGF0aCBkPSJNMjQgMTEgTDM1IDE1LjUgVjI0IEMzNSAzMC41IDMwIDM2IDI0IDM4IEMxOCAzNiAxMyAzMC41IDEzIDI0IFYxNS41IFoiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBmaWxsPSJub25lIi8+PHBhdGggZD0iTTIxIDIwIEwxNy41IDI0LjUgTDIxIDI5IiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBmaWxsPSJub25lIi8+PHBhdGggZD0iTTI3IDIwIEwzMC41IDI0LjUgTDI3IDI5IiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBmaWxsPSJub25lIi8+PC9zdmc+"
 description: >
@@ -11,8 +11,9 @@ description: >
   events, normalizes them into a Common Information Model (agentguard_cim_event),
   computes per-call token/cost/latency metrics, and ships four Core Protection
   detection rules (prompt injection, DLP, privilege escalation, supply chain)
-  that run from install. Six dashboards cover the overview, sessions and
-  activity, token usage, tool calls, a per-session trace and threats.
+  that run from install. Eight dashboards cover the overview, sessions and
+  activity, token usage, tool calls, a per-session trace, threats, usage by
+  agent, and latency and errors.
   Agent Rooms 3D is an optional custom UI, shown on
   Timeplus app server 3.5.2 or later; older versions install the app without
   it. Pause a rule with:
@@ -247,6 +248,12 @@ dashboards:
   - file: dashboards/threats.json
     name: "Agents: Threats"
     description: Security detections. Open threats by severity, detections by rule, tool and session, blocked actions and recent threats.
+  - file: dashboards/agents.json
+    name: "Agents: Usage by Agent"
+    description: Who is using the agents. Sessions and tokens over time per agent, tokens by agent and model, tool calls by agent, usage per agent and per deployment.
+  - file: dashboards/latency.json
+    name: "Agents: Latency and Errors"
+    description: How fast and how reliable. Model request latency percentiles and distribution, turn duration, model request errors and retries, slowest requests, reliability by agent type.
 
 uis:
   - name: agent-rooms

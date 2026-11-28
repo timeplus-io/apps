@@ -1,0 +1,341 @@
+[
+  {
+    "id": "ctl-time",
+    "title": "Time range",
+    "description": "",
+    "position": {
+      "h": 1,
+      "w": 4,
+      "x": 0,
+      "y": 0,
+      "nextX": 4,
+      "nextY": 1
+    },
+    "viz_type": "control",
+    "viz_content": "",
+    "viz_config": {
+      "chartType": "selector",
+      "defaultValue": "6h",
+      "inlineValues": "15m,1h,6h,24h,7d",
+      "label": "Time range",
+      "labelWidth": "35",
+      "target": "filter_time_range"
+    }
+  },
+  {
+    "id": "ctl-agent",
+    "title": "Agent type",
+    "description": "",
+    "position": {
+      "h": 1,
+      "w": 4,
+      "x": 4,
+      "y": 0,
+      "nextX": 8,
+      "nextY": 1
+    },
+    "viz_type": "control",
+    "viz_content": "",
+    "viz_config": {
+      "chartType": "selector",
+      "defaultValue": "all",
+      "inlineValues": "all,claudecode,codex,openclaw,hermes",
+      "label": "Agent type",
+      "labelWidth": "35",
+      "target": "filter_agent"
+    }
+  },
+  {
+    "id": "ctl-deployment",
+    "title": "Deployment",
+    "description": "",
+    "position": {
+      "h": 1,
+      "w": 4,
+      "x": 8,
+      "y": 0,
+      "nextX": 12,
+      "nextY": 1
+    },
+    "viz_type": "control",
+    "viz_content": "SELECT replace_all(deployment_id, char(39), '') AS deployment FROM table([[ .DB ]].agentguard_cim_event) WHERE event_time > now() - 30d AND deployment_id != '' GROUP BY deployment_id ORDER BY max(event_time) DESC LIMIT 50",
+    "viz_config": {
+      "chartType": "selector",
+      "defaultValue": "all",
+      "inlineValues": "",
+      "label": "Deployment",
+      "labelWidth": "35",
+      "target": "filter_deployment"
+    }
+  },
+  {
+    "id": "la-percentiles",
+    "title": "Model request latency over time",
+    "description": "Median, 95th and 99th percentile of the model request time, in seconds.",
+    "position": {
+      "h": 4,
+      "w": 6,
+      "x": 0,
+      "y": 1,
+      "nextX": 6,
+      "nextY": 5
+    },
+    "viz_type": "chart",
+    "viz_content": "SELECT time, percentile, seconds FROM ( SELECT to_datetime(int_div(to_unix_timestamp(event_time), greatest(60, int_div(date_diff('second', now() - {{filter_time_range}}, now()), 60))) * greatest(60, int_div(date_diff('second', now() - {{filter_time_range}}, now()), 60))) AS time, round(quantile(0.5)(metric_value) / 1000, 2) AS p50, round(quantile(0.95)(metric_value) / 1000, 2) AS p95, round(quantile(0.99)(metric_value) / 1000, 2) AS p99 FROM table([[ .DB ]].agentguard_cim_metrics) WHERE event_time > now() - {{filter_time_range}} AND ('{{filter_agent}}' = 'all' OR agent_type = '{{filter_agent}}') AND ('{{filter_deployment}}' = 'all' OR deployment_id = '{{filter_deployment}}') AND metric_name = 'llm.latency_ms' GROUP BY time) ARRAY JOIN ['p50', 'p95', 'p99'] AS percentile, [p50, p95, p99] AS seconds ORDER BY time",
+    "viz_config": {
+      "chartType": "line",
+      "config": {
+        "xAxis": "time",
+        "yAxis": "seconds",
+        "color": "percentile",
+        "xRange": "Infinity",
+        "xFormat": "",
+        "xTitle": "",
+        "yTitle": "",
+        "yRange": {
+          "min": null,
+          "max": null
+        },
+        "lineStyle": "straight",
+        "dataLabel": false,
+        "showAll": false,
+        "legend": true,
+        "points": true,
+        "gridlines": true,
+        "unit": {
+          "position": "right",
+          "value": "s"
+        },
+        "fractionDigits": 2,
+        "colors": [
+          "#ED64A6",
+          "#F0BE3E",
+          "#DA4B36",
+          "#9A1563",
+          "#FF4A71",
+          "#D12D50",
+          "#8934D9",
+          "#D53F8C",
+          "#F7775A",
+          "#8934D9"
+        ],
+        "yTickLabel": {
+          "maxChar": 25
+        }
+      }
+    }
+  },
+  {
+    "id": "la-histogram",
+    "title": "Model request latency distribution",
+    "description": "How many model requests took how long, by agent type.",
+    "position": {
+      "h": 4,
+      "w": 6,
+      "x": 6,
+      "y": 1,
+      "nextX": 12,
+      "nextY": 5
+    },
+    "viz_type": "chart",
+    "viz_content": "SELECT *, concat(to_string(latency), ' ', to_string(agent_type)) AS k FROM (SELECT multi_if(metric_value < 1000, 0, metric_value < 2000, 1, metric_value < 5000, 2, metric_value < 10000, 3, metric_value < 20000, 4, metric_value < 30000, 5, metric_value < 60000, 6, metric_value < 120000, 7, 8) AS i, multi_if(metric_value < 1000, 'under 1 s', metric_value < 2000, '1 to 2 s', metric_value < 5000, '2 to 5 s', metric_value < 10000, '5 to 10 s', metric_value < 20000, '10 to 20 s', metric_value < 30000, '20 to 30 s', metric_value < 60000, '30 to 60 s', metric_value < 120000, '60 to 120 s', 'over 120 s') AS latency, agent_type, count() AS requests FROM table([[ .DB ]].agentguard_cim_metrics) WHERE event_time > now() - {{filter_time_range}} AND ('{{filter_agent}}' = 'all' OR agent_type = '{{filter_agent}}') AND ('{{filter_deployment}}' = 'all' OR deployment_id = '{{filter_deployment}}') AND metric_name = 'llm.latency_ms' GROUP BY i, latency, agent_type) ORDER BY i",
+    "viz_config": {
+      "chartType": "column",
+      "config": {
+        "xAxis": "latency",
+        "yAxis": "requests",
+        "color": "agent_type",
+        "groupType": "stack",
+        "updateMode": "key",
+        "updateKey": "k",
+        "xFormat": "",
+        "xTitle": "",
+        "yTitle": "",
+        "dataLabel": false,
+        "legend": true,
+        "gridlines": true,
+        "unit": {
+          "position": "left",
+          "value": ""
+        },
+        "fractionDigits": 0,
+        "colors": [
+          "#ED64A6",
+          "#F0BE3E",
+          "#DA4B36",
+          "#9A1563",
+          "#FF4A71",
+          "#D12D50",
+          "#8934D9",
+          "#D53F8C",
+          "#F7775A",
+          "#8934D9"
+        ],
+        "yTickLabel": {
+          "maxChar": 25
+        },
+        "xTickLabel": {
+          "maxChar": 40
+        }
+      }
+    }
+  },
+  {
+    "id": "la-turns",
+    "title": "Turn duration by agent type",
+    "description": "Median and 95th percentile of the time from a prompt to the last event of its turn, in seconds.",
+    "position": {
+      "h": 4,
+      "w": 6,
+      "x": 0,
+      "y": 5,
+      "nextX": 6,
+      "nextY": 9
+    },
+    "viz_type": "chart",
+    "viz_content": "SELECT *, concat(to_string(agent), ' ', to_string(percentile)) AS k FROM (SELECT agent, percentile, seconds FROM ( SELECT agent, round(quantile(0.5)(seconds), 1) AS p50, round(quantile(0.95)(seconds), 1) AS p95 FROM (SELECT any(agent_type) AS agent, date_diff('second', min(event_time), max(event_time)) AS seconds FROM table([[ .DB ]].agentguard_cim_event) WHERE event_time > now() - {{filter_time_range}} AND ('{{filter_agent}}' = 'all' OR agent_type = '{{filter_agent}}') AND ('{{filter_deployment}}' = 'all' OR deployment_id = '{{filter_deployment}}') AND if(agent_type = 'claudecode', json_value(raw_event_data, '$.prompt_id'), run_id) != '' GROUP BY session_id, if(agent_type = 'claudecode', json_value(raw_event_data, '$.prompt_id'), run_id) HAVING count_if(event_type = 'user_input') > 0) GROUP BY agent) ARRAY JOIN ['p50', 'p95'] AS percentile, [p50, p95] AS seconds ORDER BY agent) ORDER BY seconds DESC",
+    "viz_config": {
+      "chartType": "bar",
+      "config": {
+        "xAxis": "agent",
+        "yAxis": "seconds",
+        "color": "percentile",
+        "groupType": "dodge",
+        "updateMode": "key",
+        "updateKey": "k",
+        "xFormat": "",
+        "xTitle": "",
+        "yTitle": "",
+        "dataLabel": true,
+        "legend": true,
+        "gridlines": true,
+        "unit": {
+          "position": "left",
+          "value": ""
+        },
+        "fractionDigits": 1,
+        "colors": [
+          "#ED64A6",
+          "#F0BE3E",
+          "#DA4B36",
+          "#9A1563",
+          "#FF4A71",
+          "#D12D50",
+          "#8934D9",
+          "#D53F8C",
+          "#F7775A",
+          "#8934D9"
+        ],
+        "yTickLabel": {
+          "maxChar": 40
+        },
+        "xTickLabel": {
+          "maxChar": 40
+        }
+      }
+    }
+  },
+  {
+    "id": "la-errors",
+    "title": "Model request errors and retries",
+    "description": "Model requests that failed or were retried (Codex), and turns that an API error ended (Claude Code), over time.",
+    "position": {
+      "h": 4,
+      "w": 6,
+      "x": 6,
+      "y": 5,
+      "nextX": 12,
+      "nextY": 9
+    },
+    "viz_type": "chart",
+    "viz_content": "SELECT *, concat(to_string(time), ' ', to_string(kind)) AS k FROM (SELECT format_datetime(to_datetime(int_div(to_unix_timestamp(event_time), greatest(60, int_div(date_diff('second', now() - {{filter_time_range}}, now()), 60))) * greatest(60, int_div(date_diff('second', now() - {{filter_time_range}}, now()), 60))), '%m-%d %H:%M') AS time, multi_if(hook_name = 'stop_failure', 'turn ended by an API error', json_value(event_data, '$.status') NOT IN ('', 'completed') OR json_value(event_data, '$.error') NOT IN ('', 'null'), 'model request failed', to_int64_or_zero(json_value(event_data, '$.attempt_number')) > 1, 'model request retried', '') AS kind, count() AS events FROM table([[ .DB ]].agentguard_hook_events) WHERE event_time > now() - {{filter_time_range}} AND ('{{filter_agent}}' = 'all' OR agent_type = '{{filter_agent}}') AND ('{{filter_deployment}}' = 'all' OR deployment_id = '{{filter_deployment}}') AND hook_name IN ('post_model_request', 'stop_failure') AND multi_if(hook_name = 'stop_failure', 'turn ended by an API error', json_value(event_data, '$.status') NOT IN ('', 'completed') OR json_value(event_data, '$.error') NOT IN ('', 'null'), 'model request failed', to_int64_or_zero(json_value(event_data, '$.attempt_number')) > 1, 'model request retried', '') != '' GROUP BY time, kind ORDER BY time) ORDER BY time",
+    "viz_config": {
+      "chartType": "column",
+      "config": {
+        "xAxis": "time",
+        "yAxis": "events",
+        "color": "kind",
+        "groupType": "stack",
+        "updateMode": "key",
+        "updateKey": "k",
+        "xFormat": "",
+        "xTitle": "",
+        "yTitle": "",
+        "dataLabel": false,
+        "legend": true,
+        "gridlines": true,
+        "unit": {
+          "position": "left",
+          "value": ""
+        },
+        "fractionDigits": 0,
+        "colors": [
+          "#ED64A6",
+          "#F0BE3E",
+          "#DA4B36",
+          "#9A1563",
+          "#FF4A71",
+          "#D12D50",
+          "#8934D9",
+          "#D53F8C",
+          "#F7775A",
+          "#8934D9"
+        ],
+        "yTickLabel": {
+          "maxChar": 25
+        },
+        "xTickLabel": {
+          "maxChar": 40
+        }
+      }
+    }
+  },
+  {
+    "id": "la-slowest",
+    "title": "Slowest model requests",
+    "description": "The eight model requests that took the longest in the selected window.",
+    "position": {
+      "h": 5,
+      "w": 6,
+      "x": 0,
+      "y": 9,
+      "nextX": 6,
+      "nextY": 14
+    },
+    "viz_type": "chart",
+    "viz_content": "SELECT event_time AS time, round(metric_value / 1000, 1) AS seconds, tags['model'] AS model, agent_type, session_id FROM table([[ .DB ]].agentguard_cim_metrics) WHERE event_time > now() - {{filter_time_range}} AND ('{{filter_agent}}' = 'all' OR agent_type = '{{filter_agent}}') AND ('{{filter_deployment}}' = 'all' OR deployment_id = '{{filter_deployment}}') AND metric_name = 'llm.latency_ms' ORDER BY metric_value DESC LIMIT 8",
+    "viz_config": {
+      "chartType": "table",
+      "config": {
+        "rowCount": 100,
+        "updateMode": "all",
+        "updateKey": "",
+        "tableWrap": false
+      }
+    }
+  },
+  {
+    "id": "la-reliability",
+    "title": "Reliability by agent type",
+    "description": "Model requests and tool calls, and how many failed.",
+    "position": {
+      "h": 5,
+      "w": 6,
+      "x": 6,
+      "y": 9,
+      "nextX": 12,
+      "nextY": 14
+    },
+    "viz_type": "chart",
+    "viz_content": "SELECT e.agent AS agent, m.model_requests AS model_requests, h.failed_requests AS failed_requests, h.retries AS retries, h.turns_ended_by_error AS turns_ended_by_error, e.tool_calls AS tool_calls, e.failed_calls AS failed_tool_calls, round(100 * e.failed_calls / greatest(e.tool_calls, 1), 1) AS tool_failure_pct FROM (SELECT to_string(agent_type) AS agent, count_if(event_type = 'tool_complete') AS tool_calls, count_if(event_type = 'tool_complete' AND NOT tool_success) AS failed_calls FROM table([[ .DB ]].agentguard_cim_event) WHERE event_time > now() - {{filter_time_range}} AND ('{{filter_agent}}' = 'all' OR agent_type = '{{filter_agent}}') AND ('{{filter_deployment}}' = 'all' OR deployment_id = '{{filter_deployment}}') GROUP BY agent) AS e LEFT JOIN (SELECT to_string(agent_type) AS agent, count_if(metric_name = 'llm.call') AS model_requests FROM table([[ .DB ]].agentguard_cim_metrics) WHERE event_time > now() - {{filter_time_range}} AND ('{{filter_agent}}' = 'all' OR agent_type = '{{filter_agent}}') AND ('{{filter_deployment}}' = 'all' OR deployment_id = '{{filter_deployment}}') GROUP BY agent) AS m ON m.agent = e.agent LEFT JOIN (SELECT to_string(agent_type) AS agent, count_if(multi_if(hook_name = 'stop_failure', 'turn ended by an API error', json_value(event_data, '$.status') NOT IN ('', 'completed') OR json_value(event_data, '$.error') NOT IN ('', 'null'), 'model request failed', to_int64_or_zero(json_value(event_data, '$.attempt_number')) > 1, 'model request retried', '') = 'model request failed') AS failed_requests, count_if(multi_if(hook_name = 'stop_failure', 'turn ended by an API error', json_value(event_data, '$.status') NOT IN ('', 'completed') OR json_value(event_data, '$.error') NOT IN ('', 'null'), 'model request failed', to_int64_or_zero(json_value(event_data, '$.attempt_number')) > 1, 'model request retried', '') = 'model request retried') AS retries, count_if(multi_if(hook_name = 'stop_failure', 'turn ended by an API error', json_value(event_data, '$.status') NOT IN ('', 'completed') OR json_value(event_data, '$.error') NOT IN ('', 'null'), 'model request failed', to_int64_or_zero(json_value(event_data, '$.attempt_number')) > 1, 'model request retried', '') = 'turn ended by an API error') AS turns_ended_by_error FROM table([[ .DB ]].agentguard_hook_events) WHERE event_time > now() - {{filter_time_range}} AND ('{{filter_agent}}' = 'all' OR agent_type = '{{filter_agent}}') AND ('{{filter_deployment}}' = 'all' OR deployment_id = '{{filter_deployment}}') AND hook_name IN ('post_model_request', 'stop_failure') GROUP BY agent) AS h ON h.agent = e.agent ORDER BY tool_calls DESC LIMIT 8",
+    "viz_config": {
+      "chartType": "table",
+      "config": {
+        "rowCount": 100,
+        "updateMode": "all",
+        "updateKey": "",
+        "tableWrap": false
+      }
+    }
+  }
+]
