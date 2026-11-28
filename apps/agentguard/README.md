@@ -77,7 +77,7 @@ Set `timeplus.database: ag` in AgentGuard's `config.yaml` (or `TIMEPLUS_DATABASE
 
 ## Dashboards
 
-Six dashboards, each on one question and with at most six charts. Each has a **Time range** control; all but Threats and Session Trace also filter by **Agent type**.
+Six dashboards, each on one question and with at most six charts. All but Session Trace have a **Time range** control, and all but Threats and Session Trace also filter by **Agent type**. Session Trace has a **Session** list and a **Turn** list instead.
 
 | Dashboard | File | Shows |
 |---|---|---|
@@ -85,7 +85,7 @@ Six dashboards, each on one question and with at most six charts. Each has a **T
 | Agents: Sessions and Activity | `dashboards/sessions.json` | Active sessions over time, activity mix (prompts, model requests, tool calls, replies), sessions by project, session profile per agent type, time waiting on a person, the session list |
 | Agents: Token Usage | `dashboards/tokens.json` | Tokens by model and by type, cache hit ratio, model request latency (p95), usage per model, the sessions using the most tokens |
 | Agents: Tool Calls | `dashboards/tools.json` | Tool calls over time, top tools, tool duration (p95), failed and blocked calls, MCP servers and skills, repeated calls |
-| Agents: Session Trace | `dashboards/session_trace.json` | One session: summary, steps, turns, context growth, time by tool, detections. Type a session id, or leave `latest` for the most recent session |
+| Agents: Session Trace | `dashboards/session_trace.json` | One session as a trace: a two-line summary (project, agent, model, state, times, counts and tokens), a waterfall of its turns, a waterfall of the steps of one turn (prompt, model requests, tool calls, waits on a person, reply), context growth, time by tool, detections. Pick the session in **Session**, at the top, and the turn in **Turn**, right above the steps; both default to `latest` |
 | Agents: Threats | `dashboards/threats.json` | Open threats by severity, detections over time by rule, by rule and tool, by session, blocked actions, recent threats |
 
 Where the data comes from: sessions, steps, tool calls and waits on a person from `agentguard_cim_event`; tokens and latency from `agentguard_cim_metrics`; threats from `agentguard_security_events` and `agentguard_threats`; skills from `agentguard_skills`.
@@ -96,9 +96,23 @@ What to expect:
 - **Failed tool calls**: for Claude Code, every call the agent reports as failed (a non-zero exit, a tool error). For Codex, MCP calls that return an error; a Codex shell call counts as a success whatever its exit status, as the hook does not give it. Failures are recorded from the upgrade to 0.8.0 on.
 - **Tool duration for Claude Code** is there for calls made after the upgrade to 0.7.0.
 - A Claude Code turn is its `prompt_id`. The plugin sends it as `run_id` from 0.7.0; for older rows the dashboards read it from the payload.
+- **Session Trace**:
+  - *Session* lists the 50 most recently active sessions, newest first, as last event, agent, project and id. *Turn* lists the turns of that session as start time, first words of the prompt, tool calls and id. Type in a list to search it.
+  - *Turns* draws one bar per turn along the time of the session (the latest 50). *Steps of the turn* draws one row per step, in order, on the time of the turn: a tool call and a model request from start to end, a prompt, a reply and a wait as a mark. A failed tool call has its own colour.
+  - Point at a bar for the details: duration, the tool input and result (or error), the model and token counts of a model request, the prompt or reply text.
+  - A tool call starts at its end less its duration, a model request at its end less its latency. Model requests are drawn when the turn has token metrics: Codex, and Claude Code with the plugin 0.7.1 or later, where they arrive when the turn ends.
+  - A panel has a fixed height: it cannot grow or shrink with the number of steps, and a chart cannot scroll inside it. The steps panel has the height of the turns panel, which suits the usual turn of up to about 25 steps; a longer turn is drawn denser, with fewer labels, up to its first 200 steps. In edit mode the panel can be dragged taller. Steps are not nested: a sub-agent's steps are rows like the others.
 - Charts over time use up to 60 bars, at least a minute wide, so the bar width follows the time range. Tables that rank show the top eight; tables that list show the newest 100 rows with the latest at the bottom.
 
-Editing a dashboard: a column or bar chart with a series (`color`) must update by a key that is unique per row (`updateMode: "key"`, with `updateKey` naming a column made of x and series together), or it draws one series per bar and looks unstacked; the console's table shows the last `rowCount` rows of a result and opens at its last row, the controls must fill the first row (a panel beside a narrower control row is lifted into it), and a text control needs a default value. `make test` checks these.
+Editing a dashboard: a column or bar chart with a series (`color`) must update by a key that is unique per row (`updateMode: "key"`, with `updateKey` naming a column made of x and series together), or it draws one series per bar and looks unstacked; the console's table shows the last `rowCount` rows of a result and opens at its last row, the controls of a row must fill it (a panel beside a narrower control row is lifted into it; a control can sit lower than the first row, as Turn does right above the steps panel it drives), and every control needs a default value. A selector takes its options from the first column of the query in its `viz_content`; the chosen text is put into the panel queries as it is, so the Session and Turn lists build each option without quote characters and the queries take the id as its last word. The two waterfalls are `grammar` charts: an interval mark with a start (`y`) and an end (`y1`) on a transposed coordinate, with the tooltip fields named in the spec. `make test` checks these.
+
+## Upgrading to 0.9.0
+
+0.9.0 turns Agents: Session Trace into a trace view. Only that dashboard changes.
+
+- The Session ID text box is a **Session** list of the 50 most recently active sessions, and a **Turn** list, right above the steps, picks a turn of that session.
+- The Turns and Steps tables are **waterfall charts**: one bar per turn on the time of the session, and one row per step of the picked turn, with the details in the tooltip.
+- The session summary is two lines of text instead of a one-row table.
 
 ## Upgrading to 0.8.1
 

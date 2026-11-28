@@ -93,9 +93,11 @@ SQL in `viz_content` uses both:
 
 ## viz_type: `"control"`
 
-Controls set filter variables. They do not run a query; `viz_content` is always `""`.
+Controls set filter variables. `viz_content` is `""`, except for a selector that takes its options from a query (see "Options from a query").
 
 **The controls must fill row 0.** The grid compacts upward: if the controls only cover columns 0–5 of row 0, a panel placed at `x >= 6, y: 1` is lifted to `y: 0` and sits beside them. Give the controls a total width of 12 (two controls of `w: 6`, one of `w: 12`) and start every other panel at `y: 1`.
+
+A control does not have to be in row 0. One that drives a single panel can sit right above it (a Turn list above the chart of that turn's steps), in a row of its own (`h: 1`) that controls fill in the same way.
 
 **Every control needs a `defaultValue`.** A panel whose query uses a `{{filter_*}}` variable with no value does not run; it shows "No value assigned for variable(s)".
 
@@ -127,12 +129,43 @@ Controls set filter variables. They do not run a query; `viz_content` is always 
 | `target` | The `{{filter_*}}` variable this control writes |
 | `defaultValue` | Initially selected value |
 | `inlineValues` | Comma-separated list of options |
+| `viz_content` (on the panel) | Optional SQL: the first column of its result is added to the options — see below |
 
 `inlineValues` can use template functions:
 ```json
 "inlineValues": "[[ join \",\" (fromJson .Config.product_ids) ]]"
 "defaultValue": "[[ index (fromJson .Config.product_ids) 0 ]]"
 ```
+
+### Options from a query
+
+A selector lists the first column of the result of the panel's `viz_content`, in the order of the result, followed by `inlineValues` and the `defaultValue`. Use it when the options are in the data: sessions, hosts, symbols. The list has a search box, so a long list stays usable.
+
+```json
+{
+  "id": "ctrl-session",
+  "title": "Session",
+  "position": { "h": 1, "w": 12, "x": 0, "y": 0, "nextX": 12, "nextY": 1 },
+  "viz_type": "control",
+  "viz_content": "SELECT replace_all(concat(format_datetime(max(event_time), '%m-%d %H:%M'), ' · ', any(agent), ' · ', session_id), char(39), '') AS session FROM table([[ .DB ]].events) GROUP BY session_id ORDER BY max(event_time) DESC LIMIT 50",
+  "viz_config": {
+    "chartType": "selector",
+    "label": "Session",
+    "labelWidth": "25",
+    "target": "filter_session",
+    "defaultValue": "latest",
+    "inlineValues": ""
+  }
+}
+```
+
+- **The option is both what is shown and what is substituted.** There is no separate label and value. To show more than a bare id, build a readable text and let the queries take the id out of it: with the id as the last word, `array_element(split_by_char(' ', '{{filter_session}}'), -1)`.
+- **The list is narrow** (about 35 characters before it cuts the text). Put what tells the options apart first — time, name — and a long id last.
+- **The text goes into the panel queries between quotes, as it is.** Strip quote characters from the options (`replace_all(…, char(39), '')`), or one value with a `'` in it breaks every panel.
+- Use a historical query (`table(...)`) with an `ORDER BY` and a `LIMIT`.
+- Keep a `defaultValue`. It is added to the list when the query does not return it, which is how a word such as `latest` can stand for "the newest one".
+- Prefer this to a text control whenever the user would have to copy a value from another page.
+- **A selector's query can use another control's variable**, and runs again when that value changes: a Turn list `WHERE session_id = '{{filter_session}}'` follows the Session list. The dependent control keeps its chosen value when the first one changes, so make the panel queries fall back when that value no longer belongs (`if(count_if(turn = picked) > 0, picked, <latest turn>)`).
 
 ### Text Input
 
@@ -240,6 +273,8 @@ This pulls the `price` value from the row where `updateKey` column equals `BTC-U
 | `content` | string | Markdown template with `{{col}}` or `{{@key::col}}` placeholders |
 | `updateMode` | string | `"all"` replace all, `"key"` look up by key, `"time"` append |
 | `updateKey` | string | Column name for key-mode lookups |
+
+A `md` panel is the right panel for **one record**: a summary of the session, host or order a control picked. A one-row table wastes its width on headers and hides half its columns behind a scrollbar. Sizing: the text scrolls inside the panel when it is taller than it; a panel of `h: 2` with a title holds two lines of text, so put several facts on a line, separated by ` · `, and check the render.
 
 ---
 
@@ -717,6 +752,31 @@ Stacked area (transform via advancedSpec):
 }
 ```
 
+Trace waterfall (Gantt): one horizontal bar per row, from a start to an end. An interval mark takes the start as `y` and the end as `y1`; a transposed coordinate lays the bars sideways. Used for the turns and steps of a session in `apps/agentguard/dashboards/session_trace.json`.
+
+```json
+{
+  "markType": "interval",
+  "xField": "step",
+  "yField": ["start_s"],
+  "colorField": "kind",
+  "xScaleType": "band",
+  "yScaleType": "linear",
+  "temporalMode": "",
+  "streamMode": "replace",
+  "legendPosition": "top",
+  "advancedSpec": "{\"marks\":[{\"type\":\"interval\",\"encode\":{\"x\":\"step\",\"y\":\"start_s\",\"y1\":\"end_s\",\"color\":\"kind\"},\"style\":{\"maxWidth\":18},\"tooltip\":{\"items\":[{\"field\":\"seconds\",\"name\":\"seconds\"},{\"field\":\"input\",\"name\":\"input\"}]}}],\"coordinate\":{\"transforms\":[{\"type\":\"transpose\"}]},\"scales\":{\"x\":{\"type\":\"band\"},\"y\":{\"type\":\"linear\",\"nice\":true}},\"axes\":{\"x\":{\"title\":false},\"y\":{\"title\":\"seconds from the start\"}}}"
+}
+```
+
+- **The query returns one row per bar**: a label unique per row and in display order (`concat(lpad(to_string(n), 3, '0'), ' ', name)`), the start and the end as numbers on one scale (seconds from the first row), and any column the tooltip shows. Rows are drawn top to bottom in the order of the result.
+- **Start and end as offsets, not timestamps.** `round((start_ms - first_ms) / 1000, 2)`. Give a moment (an event without a duration) a small width (`greatest(end_ms, start_ms + 200)`), or it is not drawn.
+- **`tooltip.items`** names the columns to show when a bar is pointed at, so the text a table would hold (input, result, error) can live in the tooltip. Keep each to a few hundred characters and on one line (`replace_regex(col, '\\s+', ' ')`).
+- **`style.maxWidth`** keeps bars thin when there are few rows in a tall panel.
+- **Scope the time axis.** One axis over a whole session leaves idle time between turns and shrinks every bar to a sliver; draw one turn (one trace) at a time and let a control pick it.
+- **A chart does not scroll inside its panel.** G2's `scrollbar` and `slider` options in `g2Overrides` have no effect, and a `g2Overrides.height` larger than the panel is clipped. A panel's height is also fixed by its `position.h`: it does not grow or shrink with the number of rows. Pick a height for the usual case (`h: 5` suits up to about 25 rows; more rows are drawn denser, with fewer labels), cap the rows, and put the detail in the tooltip.
+- A window function next to scalar subqueries in one `SELECT` failed with `Not found column`; number the rows in an inner query (`row_number() OVER (ORDER BY start_ms) AS n`) and compute the rest outside.
+
 **Gotchas**
 - `temporalRange` is **minutes**, not milliseconds. Setting it to `60000` gives you a 60000-minute (~41-day) window and your sliding chart will appear empty until ~41 days pass.
 - `legendPosition: 'hidden'` not `'none'`. The Selector engine reserves `'none'` for its placeholder item and silently coerces it to `''`.
@@ -830,6 +890,8 @@ GROUP BY repo ORDER BY cnt DESC LIMIT 5 BY emit_version()
 | Table shows 5 rows, and the wrong ones (the bottom of a ranking) | A table shows the last `rowCount` rows (default 5). Set `rowCount`, and size or order the result — see "table" |
 | A panel sits beside the controls instead of below them | The controls must fill the 12 columns of row 0 |
 | Every panel says "No value assigned for variable(s)" | A control has an empty `defaultValue` (typically a text control) |
+| The user has to paste an id into a text control | Make it a selector with its options from a query — see "Options from a query" |
+| A table that always has one row (a summary of the selected item) | Use a `md` panel: the query returns the row, the `content` lays its columns out as text with `{{column}}`. Format dates and numbers in SQL |
 | Column chart x axis shows `2026-11-27T16:35:00Z` | Select the time bucket as text with `format_datetime` |
 | Line chart draws long diagonals between far-apart points | A line joins points across empty periods; use a column chart for counts on sparse data |
 | `Aggregate function any(col) is found in WHERE` | `any(col) AS col` plus a filter on `col`: the alias replaces the column in `WHERE`. Alias it under another name |

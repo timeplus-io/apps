@@ -298,7 +298,7 @@ This covers:
 - Panel structure (`id`, `title`, `position`, `viz_type`, `viz_content`, `viz_config`)
 - 12-column position grid and common width/height values
 - Template variables (`[[ .DB ]]` vs `{{filter_*}}`)
-- Control panels: `selector` (dropdown) and `text` (free-form input), and how to lay them out
+- Control panels: `selector` (dropdown, with static options or options from a query) and `text` (free-form input), and how to lay them out
 - Chart types: `line`, `area`, `bar`, `column`, `singleValue`, `table`, `ohlc`, `geo`, `md`, `grammar` (3.2+ — generic Vistral-grammar-driven viz: scatter, layered marks, band-axis bars, stacked area, custom transforms, etc.). For the underlying `VistralSpec` grammar (marks, transforms, scales, encode channels), see the Vistral skill: [`vistral/agentskill/SKILL.md`](https://github.com/timeplus-io/vistral/blob/main/agentskill/SKILL.md).
 - All `viz_config.config` fields per chart type with defaults
 - `updateMode` (`"all"` / `"key"` / `"time"`) — when to use each
