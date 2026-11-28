@@ -149,6 +149,7 @@ uis:                               # optional — custom web pages, see "Custom 
 | `dictionary` | `CREATE DICTIONARY` | `CREATE DICTIONARY IF NOT EXISTS` | `DROP DICTIONARY` |
 | `format_schema` | `CREATE FORMAT SCHEMA` | `CREATE FORMAT SCHEMA IF NOT EXISTS` | `DROP FORMAT SCHEMA` |
 | `named_collection` | `CREATE NAMED COLLECTION` | `CREATE NAMED COLLECTION IF NOT EXISTS` | `DROP NAMED COLLECTION` |
+| `system` | any single statement (`INSERT`, `DROP VIEW IF EXISTS`, `GRANT`, `SYSTEM …`) | write it so a re-run is harmless: it runs again on every upgrade | — (the statement is not undone) |
 
 ## DDL Template Variables
 
@@ -186,6 +187,39 @@ App upgrades re-run every DDL file against the existing database — the install
 | `udf` | `CREATE OR REPLACE FUNCTION <name>` | UDFs are global (no database qualifier — see [udf](#udf)) and their body is typically what changes in an upgrade. `OR REPLACE` hot-swaps the implementation; `IF NOT EXISTS` would silently keep the old code on upgrade. |
 
 **Do not use `CREATE OR REPLACE VIEW`.** A view is a dependency for downstream MVs, queries, and dashboards. `OR REPLACE` would drop and recreate it, breaking anything referencing the view during the brief recreation window and on schema changes. Use `CREATE VIEW IF NOT EXISTS` — if the view definition needs to change, bump the app version and treat it as a migration (drop + recreate explicitly, or version the view name).
+
+### Changing a view on an installed app
+
+Editing a view's file changes nothing on an installed app: the upgrade re-runs it with `IF NOT EXISTS` and skips it, so the old definition keeps running. Taking the file out of the manifest does not help either: **an upgrade never removes a resource that is no longer listed**, so the old view stays and keeps writing.
+
+To change a view (or materialized view), replace it:
+
+1. Add the new definition under a **new name** (`mv_orders_v2`), in a new file.
+2. Take the old file out of the repo and the manifest.
+3. Add a `type: system` resource that drops the old view, listed just before the new one. `IF EXISTS` makes it a no-op on a fresh install and on later upgrades:
+
+```sql
+-- ddl/041_drop_mv_orders.sql
+DROP VIEW IF EXISTS {{ .DB }}.mv_orders
+```
+```yaml
+  - file: ddl/041_drop_mv_orders.sql
+    type: system
+    name: drop_mv_orders
+  - file: ddl/042_mv_orders_v2.sql
+    type: materialized_view
+    name: mv_orders_v2
+```
+
+Things to decide for a materialized view:
+
+- **Do not let the replacement read from the earliest row** (`WHERE _tp_time > earliest_ts()`, `seek_to = 'earliest'`) when it writes to the same target as the old one: it would write every stored row a second time. A new view that reads from now on leaves the old rows as they are. Use the backfill only for a view that is new, not a replacement.
+- Rows the old view wrote wrongly stay in the target stream. Say so in the upgrade notes.
+- Events that arrive between the drop and the create are not processed by either view.
+- Keep the earlier drop resources in the manifest, so an install that skips a version still gets rid of its old views.
+- Update whatever names the view: other DDL comments, the README, tests.
+
+Working example: `apps/agentguard` (`ddl/057`–`070`, and "Upgrading to 0.6.1" in its README).
 
 **Forms that do NOT accept `IF NOT EXISTS`:**
 
@@ -264,12 +298,14 @@ This covers:
 - Panel structure (`id`, `title`, `position`, `viz_type`, `viz_content`, `viz_config`)
 - 12-column position grid and common width/height values
 - Template variables (`[[ .DB ]]` vs `{{filter_*}}`)
-- Control panels: `selector` (dropdown) and `text_input`
+- Control panels: `selector` (dropdown) and `text` (free-form input), and how to lay them out
 - Chart types: `line`, `area`, `bar`, `column`, `singleValue`, `table`, `ohlc`, `geo`, `md`, `grammar` (3.2+ — generic Vistral-grammar-driven viz: scatter, layered marks, band-axis bars, stacked area, custom transforms, etc.). For the underlying `VistralSpec` grammar (marks, transforms, scales, encode channels), see the Vistral skill: [`vistral/agentskill/SKILL.md`](https://github.com/timeplus-io/vistral/blob/main/agentskill/SKILL.md).
 - All `viz_config.config` fields per chart type with defaults
 - `updateMode` (`"all"` / `"key"` / `"time"`) — when to use each
 - Default color palette
-- Common mistakes
+- Common mistakes, and how to check a dashboard once it is installed
+
+**Before shipping a dashboard, install it, open every panel and compare it with its query result.** Dashboard mistakes do not fail at install: the panel renders, wrongly. The ones that have shipped unnoticed: a stacked chart that draws one series per bar, a table that shows the five lowest rows of a ranking, a panel that slides up beside the controls. All are in the reference's "Common Mistakes".
 
 ## Custom UI
 
@@ -578,6 +614,22 @@ SELECT window_start AS time, product_id, ...
 ### Multi-series line/area chart renders as a single overlapping line
 **Cause:** `viz_config.config.color` left at `""`. The chart treats the result as one series and draws every point on the same line.
 **Fix:** Set `"color"` to the column that distinguishes series (e.g. `"color": "stock_id"` for `SELECT time, stock_id, close FROM ...`). The reference doc lists this as the required key for multi-series; see `references/dashboard-spec.md` → "line and area".
+
+### Stacked bar/column chart draws one series per bar
+**Cause:** A `bar` or `column` chart keeps one row per x value in `updateMode: "all"`. A query with one row per series for each x (`time, activity, events`) loses all but one series of every bar. `groupType: "dodge"` loses them too. The legend still lists every series, so the chart looks plausible.
+**Fix:** Return a key that is unique per row — `concat(to_string(time), ' ', to_string(activity)) AS k` — and set `"updateMode": "key"`, `"updateKey": "k"`. See `references/dashboard-spec.md` → "bar and column". Check by comparing one bar's height with the sum of its rows in the query result.
+
+### Table shows only five rows, and the wrong five
+**Cause:** A `table` shows the last `rowCount` rows of the result (default 5) and opens scrolled to its last row. `ORDER BY score DESC LIMIT 50` shows the five lowest scores.
+**Fix:** Set `config.rowCount` at or above the `LIMIT` (maximum 100). For a ranking, return few enough rows to fit the panel, best first. For a list, order oldest first so the newest rows are in view. See `references/dashboard-spec.md` → "table".
+
+### A filter on a column passes every row, or fails with `Aggregate function … is found in WHERE`
+**Cause:** A `SELECT` alias with the name of a column replaces that column in `WHERE`. `SELECT 'codex' AS agent_type … WHERE agent_type = 'codex'` compares the constant with itself and passes every row; `SELECT any(agent_type) AS agent_type … WHERE agent_type = 'x'` puts an aggregate in `WHERE` and fails.
+**Fix:** Select the column itself, or give the alias another name (`AS agent`). This applies to materialized views as much as to dashboard queries: a view written this way reads every row of its source.
+
+### An edited view does not change on upgrade
+**Cause:** The upgrade re-runs the file with `IF NOT EXISTS` and keeps the installed view. A view taken out of the manifest is not removed either.
+**Fix:** Replace it under a new name and drop the old one with a `type: system` resource. See [Changing a view on an installed app](#changing-a-view-on-an-installed-app).
 
 ### Dashboard WHERE filter fails with `Missing columns: '_tp_time'`
 **Cause:** Views that alias `window_start AS time` (typical for tumble bars) do not propagate `_tp_time` to consumers.

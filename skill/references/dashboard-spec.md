@@ -95,6 +95,10 @@ SQL in `viz_content` uses both:
 
 Controls set filter variables. They do not run a query; `viz_content` is always `""`.
 
+**The controls must fill row 0.** The grid compacts upward: if the controls only cover columns 0–5 of row 0, a panel placed at `x >= 6, y: 1` is lifted to `y: 0` and sits beside them. Give the controls a total width of 12 (two controls of `w: 6`, one of `w: 12`) and start every other panel at `y: 1`.
+
+**Every control needs a `defaultValue`.** A panel whose query uses a `{{filter_*}}` variable with no value does not run; it shows "No value assigned for variable(s)".
+
 ### Dropdown / Selector
 
 ```json
@@ -146,6 +150,15 @@ Controls set filter variables. They do not run a query; `viz_content` is always 
 ```
 
 Use `"chartType": "text"` for a free-form text field. Do NOT use `"text_input"` — that value silently falls through to the selector renderer and shows a dropdown. The empty `"inlineValues": ""` is required (match the UI builder's emitted shape exactly).
+
+A text control with an empty `defaultValue` stops every panel that uses it. When "nothing typed" should mean something (the latest session, all hosts), give the control a word for it and handle that word in SQL:
+
+```json
+"defaultValue": "latest"
+```
+```sql
+WHERE session_id = (SELECT if('{{filter_session}}' IN ('', 'latest'), arg_max(session_id, event_time), '{{filter_session}}') FROM table([[ .DB ]].events))
+```
 
 ---
 
@@ -295,6 +308,8 @@ Time-series charts. Requires a datetime column for X, numeric column for Y.
 
 Use `area` for the same config to get a filled area chart.
 
+A line joins its points across periods with no row, so sparse data (a few buckets with events, hours apart) draws long diagonals that look like a trend. For counts over time on sparse data use a `column` chart; keep lines for values that exist in most buckets (ratios, latency, sizes).
+
 ---
 
 ### `bar` and `column`
@@ -307,11 +322,11 @@ Categorical charts. `bar` = horizontal bars, `column` = vertical bars.
   "config": {
     "xAxis": "repo",
     "yAxis": "count",
-    "color": "repo",
+    "color": "",
     "groupType": "stack",
     "updateMode": "all",
     "updateKey": "",
-    "xFormat": "HH:mm",
+    "xFormat": "",
     "xTitle": "",
     "yTitle": "",
     "dataLabel": true,
@@ -331,17 +346,53 @@ Categorical charts. `bar` = horizontal bars, `column` = vertical bars.
 |---|---|---|
 | `xAxis` | string | Category column (string or datetime) |
 | `yAxis` | string | Value column (numeric) |
-| `color` | string | Column for color grouping |
+| `color` | string | Column that splits each bar into series. **Needs `updateMode: "key"` with a key that is unique per row — see below.** |
 | `groupType` | string | `"stack"` or `"dodge"` (side by side) |
 | `updateMode` | string | `"all"` replace all, `"key"` upsert by key, `"time"` append by time |
 | `updateKey` | string | Column for key-based updates (e.g. `"emit_version()"`) |
-| `xFormat` | string | Format string for datetime x-axis labels |
+| `xFormat` | string | Format string for datetime x-axis labels. It did not take effect on a `column` chart in the console (Timeplus 3.5): the labels stayed full ISO timestamps. Select the x value as text instead — see below. |
 | `xTickLabel.maxChar` | number | Max characters on x-axis labels |
 
 **Update modes:**
 - `"all"` — replace the entire dataset on each query result (historical queries)
 - `"time"` — append data; use with a time column as `updateKey` for streaming leaderboards
-- `"key"` — upsert rows by `updateKey` value (for mutable streams)
+- `"key"` — upsert rows by `updateKey` value (for mutable streams, and for **any chart with more than one row per x value**)
+
+> **A bar or column chart with a series must update by a key that is unique per row.** In `updateMode: "all"` the chart keeps ONE row per x value. A query that returns one row per series for each x (`time, activity, events`) then draws a single series in every bar and silently drops the rest: the chart renders, the legend lists every series, and the bars are simply not stacked. `groupType: "dodge"` loses the rows the same way. Nothing fails at install.
+>
+> Return a column made of the x value and the series together, and update by it:
+>
+> ```sql
+> SELECT *, concat(to_string(time), ' ', to_string(activity)) AS k
+> FROM (SELECT ... AS time, ... AS activity, count() AS events FROM ... GROUP BY time, activity)
+> ORDER BY time
+> ```
+> ```json
+> "xAxis": "time", "yAxis": "events", "color": "activity", "groupType": "stack",
+> "updateMode": "key", "updateKey": "k"
+> ```
+>
+> A single-series chart (one row per x) is fine with `updateMode: "all"`. To check a multi-series chart, compare one bar with the query result: the bar's height must be the sum of that x value's rows.
+
+**Time on the x axis of a column chart.** Select the bucket as text, so the label is what you want and the order is the query's:
+
+```sql
+SELECT format_datetime(window_start, '%m-%d %H:%M') AS time, count() AS events
+FROM tumble(table([[ .DB ]].events), event_time, 5m)
+WHERE event_time > now() - {{filter_time_range}}
+GROUP BY window_start ORDER BY window_start
+```
+
+A fixed bucket gives too many bars on a long range (5 minutes over 7 days is 2,016). To keep at most 60 bars whatever the range, derive the bucket from the range, with a floor of one minute:
+
+```sql
+-- step in seconds: the selected range divided by 60, at least 60
+format_datetime(to_datetime(int_div(to_unix_timestamp(event_time),
+    greatest(60, int_div(date_diff('second', now() - {{filter_time_range}}, now()), 60)))
+  * greatest(60, int_div(date_diff('second', now() - {{filter_time_range}}, now()), 60))), '%m-%d %H:%M') AS time
+```
+
+Only buckets with at least one row are drawn; an empty period shows as missing bars, not as a gap.
 
 ---
 
@@ -427,7 +478,7 @@ Tabular view with per-column styling, trend indicators, and conditional formatti
 
 | Key | Type | Notes |
 |---|---|---|
-| `rowCount` | number | Max rows to display: 5, 10, 20, 30, 50, 100 |
+| `rowCount` | number | Rows to display: 5, 10, 20, 30, 50, 100. **Default 5, and the table shows the LAST `rowCount` rows of the result** — see below. |
 | `updateMode` | string | Same as bar/column: `"all"`, `"key"`, `"time"` |
 | `updateKey` | string | Key column for `"key"` update mode |
 | `tableWrap` | bool | Wrap long cell text |
@@ -438,8 +489,15 @@ Tabular view with per-column styling, trend indicators, and conditional formatti
 
 **Minimal table config** (omit `tableStyles` entirely and it auto-generates from query headers):
 ```json
-"viz_config": { "chartType": "table" }
+"viz_config": { "chartType": "table", "config": { "rowCount": 100, "updateMode": "all", "updateKey": "", "tableWrap": false } }
 ```
+
+**A table shows the last `rowCount` rows of its result, and opens scrolled to its last row.** With `{ "chartType": "table" }` alone, `rowCount` is 5: a query with `ORDER BY score DESC LIMIT 50` shows the five *lowest* scores. So:
+
+- Set `rowCount` at or above the query's `LIMIT` (the maximum is 100), and keep `LIMIT` at 100 or less.
+- **A ranking** ("top sessions"): return few enough rows to fit the panel without scrolling, best first. About 8 rows fit a panel of `h: 5`, 6 fit `h: 4`.
+- **A list** (events, sessions, a log): order oldest first, so the newest rows are the ones in view. To list the newest 100, take them newest first in a subquery and re-order outside: `SELECT * FROM (SELECT ... ORDER BY time DESC LIMIT 100) ORDER BY time`.
+- `updateMode: "key"` does not change the scrolling. `updateMode: "time"` on a historical query showed one row.
 
 ---
 
@@ -689,6 +747,7 @@ Use this standard 10-color palette for consistency:
 | `"all"` | Historical (batch) queries; the full result replaces the chart | `""` |
 | `"time"` | Streaming aggregations with `emit_version()` — append new result sets | `"emit_version()"` or a timestamp column |
 | `"key"` | Mutable streams — upsert rows by primary key column | primary key column name |
+| `"key"` | A bar or column chart with a series (`color`), on any query: more than one row per x value | a column unique per row, e.g. `concat(to_string(x), ' ', to_string(series)) AS k` |
 
 **Streaming leaderboard pattern** (append mode):
 ```sql
@@ -767,3 +826,19 @@ GROUP BY repo ORDER BY cnt DESC LIMIT 5 BY emit_version()
 | Table shows no data | Check `updateMode` — use `"key"` for mutable streams |
 | Streaming leaderboard doesn't update | Set `updateMode: "time"`, `updateKey: "emit_version()"` |
 | `inlineValues` not reflecting config | Use `[[ join "," (fromJson .Config.list_key) ]]` |
+| Stacked (or dodged) bar/column chart shows one colour per bar | The chart keeps one row per x value in `updateMode: "all"`. Add a key unique per row and set `updateMode: "key"` — see "bar and column" |
+| Table shows 5 rows, and the wrong ones (the bottom of a ranking) | A table shows the last `rowCount` rows (default 5). Set `rowCount`, and size or order the result — see "table" |
+| A panel sits beside the controls instead of below them | The controls must fill the 12 columns of row 0 |
+| Every panel says "No value assigned for variable(s)" | A control has an empty `defaultValue` (typically a text control) |
+| Column chart x axis shows `2026-11-27T16:35:00Z` | Select the time bucket as text with `format_datetime` |
+| Line chart draws long diagonals between far-apart points | A line joins points across empty periods; use a column chart for counts on sparse data |
+| `Aggregate function any(col) is found in WHERE` | `any(col) AS col` plus a filter on `col`: the alias replaces the column in `WHERE`. Alias it under another name |
+
+---
+
+## Checking a dashboard
+
+A wrong dashboard installs cleanly and renders: the panel is just wrong. Two checks catch what the JSON cannot show.
+
+1. **Run every query.** Replace `[[ .DB ]]` and each `{{filter_*}}` with real values and run each `viz_content` against an instance with data, for every value of each selector. This finds SQL errors and missing chart columns.
+2. **Look at every panel, and compare with the data.** Install the app, open each dashboard, and for each chart compare one bar, one line or the first rows of one table with the result of its query. This finds dropped series, tables showing the wrong rows, panels in the wrong place and unreadable axes — none of which fail a query.
