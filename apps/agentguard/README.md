@@ -15,7 +15,7 @@ Installs the [AgentGuard](https://github.com/timeplus-io/AgentGuard) streaming p
 | Security | `agentguard_security_events`, `agentguard_threats` + `mv_threats` |
 | Derived | `agentguard_skills` + `mv_skills_*`, `agentguard_memory_ops` + `mv_memory_*` |
 | Cost | `agentguard_pricing`, `agentguard_cost_budgets` (schema only) |
-| Rules | `agentguard_rules` + four Core Protection detections `mv_rule_rp001..rp004`, running from install |
+| Rules | `agentguard_rules` + 18 detection rules in seven views `mv_rule_*`, running from install |
 | Dashboards | Eight dashboards: overview, sessions and activity, token usage, tool calls, session trace, threats, usage by agent, latency and errors (see below) |
 | Custom UI | Agent Rooms 3D, a live 3D view of agent sessions (see below) |
 
@@ -45,23 +45,52 @@ Or from the apps repo root: `make build APP=agentguard`.
 
 ## Detection rules
 
-The four Core Protection rules run from the moment the app is installed:
+Eighteen rules, in seven views, run from the moment the app is installed. Each rule has its own id and severity, and a detection says what it found.
 
-| MV | Rule |
-|---|---|
-| `mv_rule_rp001` | Prompt Injection Shield |
-| `mv_rule_rp002` | DLP Sentinel |
-| `mv_rule_rp003` | Privilege Guard |
-| `mv_rule_rp004` | Supply Chain Watch |
+| View | Rule | Severity | Fires on |
+|---|---|---|---|
+| `mv_rule_privilege` | `priv.sudo` | medium | `sudo` or `doas` as a command |
+| | `priv.system-file` | high | `/etc/shadow`, `/etc/sudoers`, a write to `/etc/passwd` |
+| | `priv.chmod` | medium | world-writable, setuid or setgid permissions |
+| | `priv.persist` | high | writing a crontab, a `--privileged` container, `LD_PRELOAD=`, `nsenter`, `chroot` |
+| `mv_rule_destructive` | `destroy.delete` | high | a recursive delete of `/`, the home directory or a system directory |
+| | `destroy.action` | medium | a forced push that names a protected branch, a hard reset by several commits, `DROP DATABASE`, `kubectl delete namespace`, `terraform destroy` |
+| `mv_rule_supply_chain` | `supply.pipe-shell` | high | a download piped into a shell |
+| | `supply.source` | medium | an alternate package index, a clone from an unknown host, an image from a registry named by host |
+| | `supply.install` | info | an ordinary package install |
+| `mv_rule_secrets` | `secret.sent` | high | a token, `-u user:password`, credentials in a URL or a database password in a command |
+| | `secret.file` | medium | a credential file read or named: `.ssh` keys, `.aws/credentials`, `.env`, `.netrc`, `.npmrc`, kube and docker configs |
+| | `secret.exposed` | high | a token in a tool result or a reply (GitHub, Anthropic, AWS, Google, OpenAI-style, bearer, JWT, private key block) |
+| | `secret.assigned` | medium | `api_key = …` and the like, with a value, in a tool result or a reply |
+| | `secret.prompt` | medium | a token or a password typed into a prompt |
+| `mv_rule_exfiltration` | `exfil.send` | critical | a credential file or the environment piped, uploaded or encoded into a request, in one command |
+| `mv_rule_tamper` | `guard.tamper` | high | editing the agent's settings or hooks, `unset AGENTGUARD_…`, `--dangerously-skip-permissions`, `--no-verify` |
+| `mv_rule_injection` | `inject.content` | high | instruction-override phrases in what a file read, a web fetch or an MCP tool returned |
+| | `inject.prompt` | low | jailbreak phrasing in a prompt |
 
-Matches land in `ag.agentguard_security_events`; `mv_threats` folds them into `ag.agentguard_threats` (one row per agent/session/rule). To switch a rule off or back on:
+How the rules read an event:
+
+- **Command rules read the command of a shell tool call** (`Bash`, `shell`, `exec`, …), taken out of the tool input. The text of a file being written or read is not a command, and words inside it do not raise these rules. The secret rules read every tool.
+- **A dangerous word in quoted text does not count.** The command has to stand where a command stands: at the start, or after `;`, `&&`, `|`, `(`.
+- **A detection never repeats the secret.** The message names the kind and, for a token, its first six characters and its length.
+- **Images are skipped** when a tool result is scanned.
+
+Matches land in `ag.agentguard_security_events`. `mv_threats_v2` folds them into `ag.agentguard_threats` (one row per agent, session and rule), leaving out `info` and `low` detections: those are a record, not a threat. To switch a view of rules off or back on:
 
 ```sql
-SYSTEM PAUSE MATERIALIZED VIEW ag.mv_rule_rp002;
-SYSTEM RESUME MATERIALIZED VIEW ag.mv_rule_rp002;
+SYSTEM PAUSE MATERIALIZED VIEW ag.mv_rule_supply_chain;
+SYSTEM RESUME MATERIALIZED VIEW ag.mv_rule_supply_chain;
 ```
 
 (The package deliberately does not pause rules at install time: a `SYSTEM PAUSE` issued right after a distributed `CREATE` fails on multi-node clusters, and re-running it on upgrade would re-pause rules you had enabled.)
+
+What the rules do not do: they look at one event at a time, so a credential file read in one tool call and sent in a later one is two `medium` findings, not an `exfil.send`. They match patterns, so a command built to avoid the pattern passes. Treat them as a first line, and read the session behind a threat on the **Agents: Session Trace** dashboard.
+
+### Changing a rule
+
+A regular expression in a SQL string needs every backslash doubled. `'\b'` with one backslash is a backspace character: the statement is valid, the pattern never matches, and the rule is silently dead. `make test` fails on a single backslash in a rule file.
+
+`tests/rules/cases.json` holds benign and risky tool calls, results and prompts with the rules each must raise. `make test-rules` writes them to `agentguard_cim_event` on a development instance and compares what fired; a benign case that raises a rule fails as much as a missed one. Add a case with every rule change. An installed view is not changed by an upgrade, so a changed rule view ships under a new name with a drop of the old one (see `skill/SKILL.md` → "Changing a view on an installed app").
 
 ## Attaching the AgentGuard UI
 
@@ -109,6 +138,16 @@ What to expect:
 - Charts over time use up to 60 bars, at least a minute wide, so the bar width follows the time range. Tables that rank show the top eight; tables that list show the newest 100 rows with the latest at the bottom.
 
 Editing a dashboard: a column or bar chart with a series (`color`) must update by a key that is unique per row (`updateMode: "key"`, with `updateKey` naming a column made of x and series together), or it draws one series per bar and looks unstacked; the console's table shows the last `rowCount` rows of a result and opens at its last row, the controls of a row must fill it (a panel beside a narrower control row is lifted into it; a control can sit lower than the first row, as Turn does right above the steps panel it drives), and every control needs a default value. A selector takes its options from the first column of the query in its `viz_content`; the chosen text is put into the panel queries as it is, so the Session and Turn lists build each option without quote characters and the queries take the id as its last word. The two waterfalls are `grammar` charts: an interval mark with a start (`y`) and an end (`y1`) on a transposed coordinate, with the tooltip fields named in the spec. `make test` checks these.
+
+## Upgrading to 0.11.0
+
+The detection rules are replaced ([#86](https://github.com/timeplus-io/apps/issues/86)).
+
+- The four views `mv_rule_rp001` … `mv_rule_rp004` are dropped and seven `mv_rule_*` views take their place. The old rules flagged every shell call, and most of their pattern conditions could never match (see "Changing a rule").
+- `mv_threats` is replaced by `mv_threats_v2`, which leaves `info` and `low` detections out of the threats.
+- Rule ids change (`rp-003` → `priv.sudo`, `destroy.delete`, …). Detections and threats recorded before the upgrade keep their old ids; the new views read from the upgrade on. To clear the old open threats: `DELETE FROM ag.agentguard_threats WHERE rule_id LIKE 'rp-%'`.
+- If you had paused a rule view, pause its replacement after the upgrade.
+- The function `ag_dlp_jwt_check` is no longer used by a rule; it is left installed.
 
 ## Upgrading to 0.10.0
 

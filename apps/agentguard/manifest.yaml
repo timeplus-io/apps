@@ -1,7 +1,7 @@
 package_format_version: 1
 id: io.timeplus.agentguard
 name: AgentGuard
-version: 0.10.0
+version: 0.11.0
 author: Timeplus
 icon: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJiZyIgeDE9IjAiIHkxPSIwIiB4Mj0iNDgiIHkyPSI0OCIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNENTNGOEMiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiM5RjJCQzAiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHJ4PSIxMSIgZmlsbD0idXJsKCNiZykiLz48cGF0aCBkPSJNMjQgMTEgTDM1IDE1LjUgVjI0IEMzNSAzMC41IDMwIDM2IDI0IDM4IEMxOCAzNiAxMyAzMC41IDEzIDI0IFYxNS41IFoiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBmaWxsPSJub25lIi8+PHBhdGggZD0iTTIxIDIwIEwxNy41IDI0LjUgTDIxIDI5IiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBmaWxsPSJub25lIi8+PHBhdGggZD0iTTI3IDIwIEwzMC41IDI0LjUgTDI3IDI5IiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBmaWxsPSJub25lIi8+PC9zdmc+"
 description: >
@@ -9,15 +9,15 @@ description: >
   OpenClaw, Hermes, OpenInference/OTLP), with Agent Rooms 3D, a live 3D view of agent
   sessions. Ingests OTLP traces/logs/metrics and agent hook
   events, normalizes them into a Common Information Model (agentguard_cim_event),
-  computes per-call token/cost/latency metrics, and ships four Core Protection
-  detection rules (prompt injection, DLP, privilege escalation, supply chain)
-  that run from install. Eight dashboards cover the overview, sessions and
+  computes per-call token/cost/latency metrics, and ships detection rules in
+  seven families (privilege and persistence, destructive actions, supply chain,
+  secrets, exfiltration, guard tampering, prompt injection) that run from install. Eight dashboards cover the overview, sessions and
   activity, token usage, tool calls, a per-session trace, threats, usage by
   agent, and latency and errors.
   Agent Rooms 3D is an optional custom UI, shown on
   Timeplus app server 3.5.2 or later; older versions install the app without
   it. Pause a rule with:
-    SYSTEM PAUSE MATERIALIZED VIEW <db>.mv_rule_rp001;
+    SYSTEM PAUSE MATERIALIZED VIEW <db>.mv_rule_supply_chain;
 db_name: ag
 categories:
   - security
@@ -108,9 +108,6 @@ resources:
   - file: ddl/029_agentguard_threats.sql
     type: mutable_stream
     name: agentguard_threats
-  - file: ddl/030_mv_threats.sql
-    type: materialized_view
-    name: mv_threats
   - file: ddl/031_agentguard_pricing.sql
     type: mutable_stream
     name: agentguard_pricing
@@ -153,21 +150,9 @@ resources:
   - file: ddl/044_agentguard_rules.sql
     type: stream
     name: agentguard_rules
-  - file: ddl/045_mv_rule_rp001.sql
-    type: materialized_view
-    name: mv_rule_rp001
   - file: ddl/046_ag_dlp_jwt_check.sql
     type: udf
     name: ag_dlp_jwt_check
-  - file: ddl/047_mv_rule_rp002.sql
-    type: materialized_view
-    name: mv_rule_rp002
-  - file: ddl/048_mv_rule_rp003.sql
-    type: materialized_view
-    name: mv_rule_rp003
-  - file: ddl/049_mv_rule_rp004.sql
-    type: materialized_view
-    name: mv_rule_rp004
   - file: ddl/050_mv_cim_openinference_hooks.sql
     type: materialized_view
     name: mv_cim_openinference_hooks
@@ -228,6 +213,45 @@ resources:
   - file: ddl/071_mv_cim_metrics_claudecode_llm.sql
     type: materialized_view
     name: mv_cim_metrics_claudecode_llm
+  - file: ddl/072_drop_mv_rule_rp001.sql
+    type: system
+    name: drop_mv_rule_rp001
+  - file: ddl/073_drop_mv_rule_rp002.sql
+    type: system
+    name: drop_mv_rule_rp002
+  - file: ddl/074_drop_mv_rule_rp003.sql
+    type: system
+    name: drop_mv_rule_rp003
+  - file: ddl/075_drop_mv_rule_rp004.sql
+    type: system
+    name: drop_mv_rule_rp004
+  - file: ddl/076_drop_mv_threats.sql
+    type: system
+    name: drop_mv_threats
+  - file: ddl/077_mv_threats_v2.sql
+    type: materialized_view
+    name: mv_threats_v2
+  - file: ddl/078_mv_rule_privilege.sql
+    type: materialized_view
+    name: mv_rule_privilege
+  - file: ddl/079_mv_rule_destructive.sql
+    type: materialized_view
+    name: mv_rule_destructive
+  - file: ddl/080_mv_rule_supply_chain.sql
+    type: materialized_view
+    name: mv_rule_supply_chain
+  - file: ddl/081_mv_rule_secrets.sql
+    type: materialized_view
+    name: mv_rule_secrets
+  - file: ddl/082_mv_rule_exfiltration.sql
+    type: materialized_view
+    name: mv_rule_exfiltration
+  - file: ddl/083_mv_rule_tamper.sql
+    type: materialized_view
+    name: mv_rule_tamper
+  - file: ddl/084_mv_rule_injection.sql
+    type: materialized_view
+    name: mv_rule_injection
 
 dashboards:
   - file: dashboards/main.json
